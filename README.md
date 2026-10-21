@@ -293,6 +293,8 @@ the app's `.csproj` (see `samples/Counter/Counter.csproj`):
 | `@if (c) { … } else if (c2) { … } else { … }` | `When(...)`; chains share one memoized selector |
 | `@foreach (var x in items) { <li @key="x.Id">…</li> }` | keyed `Each(...)`; `items` may be a list expression or an `IReadOnlySignal<IReadOnlyList<T>>`; without `@key` the item is the key |
 | `<Badge Label="hi" Count="@n" />` | `new Badge { Label = "hi", Count = n }` (uppercase tag = component) |
+| `<Card>…</Card>` | `new Card { ChildContent = new Slot(() => …) }`; render it inside `Card` with `@render(ChildContent)` |
+| `<Card><template slot="Header">…</template>…</Card>` | a named slot: `Header = new Slot(() => …)`, the rest still goes to `ChildContent` |
 | `<Link href="/x">…</Link>`, `<NavLink href="/x" activeClass="on">…</NavLink>` | `Html.Link` / `Html.NavLink` |
 | `@code { … }`, `@using X`, `@namespace X` | class members, usings, namespace |
 | `@* … *@`, `<!-- … -->`, `@@`, `&amp; &times; &#65;` | comments, literal `@`, decoded entities |
@@ -304,7 +306,12 @@ the app's `.csproj` (see `samples/Counter/Counter.csproj`):
 - Each template, `@if`/`else` block and `@foreach` body must have exactly one root node; `@if` and
   `@foreach` must sit inside an element.
 - Component props are evaluated once when the parent builds (pass a signal for reactivity);
-  literal props are strings. Custom components cannot take child content yet.
+  literal props are strings.
+- Child content: declare `public Slot? ChildContent { get; set; }` (and any named slots, e.g.
+  `Header`) and place it with `@render(ChildContent)`; an unset slot renders nothing. The content
+  is built where the component renders it, so it belongs to the component's scope (and is torn
+  down with it) while still reading the parent's signals. `samples/Counter/Page.nwui` is an example;
+  from C#, `new Card { ChildContent = new Slot(() => P("hi")) }`.
 - Template errors are `NWUI001` (syntax), `NWUI002` (structure), `NWUI003` (unsupported) with the
   position in the `.nwui` file. User C# is emitted under `#line`, so C# errors point at the template line and column, e.g. `CounterView.nwui(3,69): error CS0103`.
 - The dev server watches `.nwui` files like `.cs` files.
@@ -315,13 +322,13 @@ the app's `.csproj` (see `samples/Counter/Counter.csproj`):
 - Globals (`Scheduler`, `Renderer`, tracker, `Router.Current`) mean exactly one app per module instance.
 - No base-path/hash routing, no SSR/hydration.
 - `.nwui` has no editor support yet (no syntax highlighting/IntelliSense inside templates);
-  only `@if`/`@foreach` control flow, no child content/slots for custom components.
+  only `@if`/`@foreach` control flow, slots take no parameters (no `Slot<T>` yet).
 - Pages are rebuilt on navigation; keep state that should survive in a store provided via context
   (see `samples/Counter/AppState.cs`).
 
 ## Roadmap ideas
 
-- Templates: child content/slots for components, `@switch`, a TextMate grammar / VS Code extension
+- Templates: reactive props (`@prop`), parameterized slots (`Slot<T>`), `@switch`, a TextMate grammar / VS Code extension
   for `.nwui`, and a NuGet package that wires the generator up automatically.
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
 - `<Suspense>`-style async boundaries once NetWasm supports async interop; nested/layout routes.

@@ -1,0 +1,11 @@
+@* Shared page frame: the section and heading, with the page's own markup passed as child content. *@
+<section id="@Id">
+    <h2>@Title</h2>
+    @render(ChildContent)
+</section>
+
+@code {
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public Slot? ChildContent { get; set; }
+}

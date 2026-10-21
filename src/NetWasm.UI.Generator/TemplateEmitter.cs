@@ -371,11 +371,7 @@ internal sealed class TemplateEmitter
             return;
         }
 
-        foreach (var child in Trim(el.Children))
-        {
-            throw Unsupported($"Component <{el.Tag}> cannot have child content (only <Link> and <NavLink> can).", child.Start, 1);
-        }
-
+        var slots = SlotsOf(el);
         var refName = RefOf(el, el.Tag);
         if (refName is not null)
         {
@@ -396,9 +392,26 @@ internal sealed class TemplateEmitter
                 throw Unsupported($"'{a.Name}' is not supported on components.", a.Start, a.Name.Length);
             }
 
-            sb.Append(any ? ", " : " ").Append(a.Name).Append(" = ");
+            sb.Append(any ? "," : string.Empty);
             any = true;
+            User(new Directive(a.Name, a.Start));
+            sb.Append(" = ");
             EmitPropValue(a);
+        }
+
+        foreach (var (name, start, body) in slots)
+        {
+            sb.Append(any ? "," : string.Empty);
+            any = true;
+            User(new Directive(name, start));
+            sb.Append(" = new global::NetWasm.UI.Slot(() => new global::NetWasm.UI.Content[] {");
+            for (var i = 0; i < body.Count; i++)
+            {
+                sb.Append(i == 0 ? " " : ", ");
+                EmitNode(body[i], nodePosition: false);
+            }
+
+            sb.Append(" })");
         }
 
         sb.Append(any ? " }" : "}");
@@ -410,6 +423,69 @@ internal sealed class TemplateEmitter
         if (nodePosition)
         {
             sb.Append(".Render()");
+        }
+    }
+
+    /// <summary>
+    /// A component's child content: <c>&lt;template slot="Name"&gt;…&lt;/template&gt;</c> children fill the
+    /// <c>Name</c> slot; everything else goes to <c>ChildContent</c>.
+    /// </summary>
+    private static List<(string Name, int Start, List<TNode> Body)> SlotsOf(TElement el)
+    {
+        var slots = new List<(string Name, int Start, List<TNode> Body)>();
+        var loose = new List<TNode>();
+        foreach (var child in Trim(el.Children))
+        {
+            if (child is not TElement { Tag: "template" } t)
+            {
+                loose.Add(child);
+                continue;
+            }
+
+            TAttribute? slot = null;
+            foreach (var a in t.Attributes)
+            {
+                if (a.Name != "slot")
+                {
+                    throw Unsupported($"'{a.Name}' is not supported on a slot <template>; only 'slot' is.", a.Start, a.Name.Length);
+                }
+
+                slot = a;
+            }
+
+            if (slot is null || !slot.HasValue || slot.Segments.Count != 1 || slot.Segments[0].IsCode)
+            {
+                throw Structure("A <template> inside a component needs slot=\"Name\".", t.Start, t.Tag.Length + 1);
+            }
+
+            var name = slot.Segments[0].Text.Trim();
+            if (name.Length == 0 || !CSharpScanner.IsIdentStart(name[0]) || CSharpScanner.ScanIdent(name, 0) != name.Length)
+            {
+                throw Parse($"'{name}' is not a valid slot name; use a property name like slot=\"Header\".", slot.Segments[0].Start, System.Math.Max(1, slot.Segments[0].Text.Length));
+            }
+
+            Add(name, slot.Segments[0].Start, Trim(t.Children));
+        }
+
+        if (loose.Count > 0)
+        {
+            Add("ChildContent", loose[0].Start, loose);
+        }
+
+        return slots;
+
+        void Add(string name, int start, List<TNode> body)
+        {
+            foreach (var s in slots)
+            {
+                if (s.Name == name)
+                {
+                    var hint = name == "ChildContent" ? " (loose child content fills 'ChildContent')" : string.Empty;
+                    throw Structure($"Slot '{name}' is given more than once{hint}.", start, 1);
+                }
+            }
+
+            slots.Add((name, start, body));
         }
     }
 
@@ -780,6 +856,11 @@ internal sealed class TemplateEmitter
     {
         if (!lineHidden)
         {
+            if (target.Length > 0 && target[target.Length - 1] != '\n')
+            {
+                target.Append('\n');
+            }
+
             target.Append("#line hidden\n");
             lineHidden = true;
         }

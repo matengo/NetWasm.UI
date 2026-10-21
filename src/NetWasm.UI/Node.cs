@@ -117,7 +117,7 @@ public readonly struct Content
     public static implicit operator Content(Attr attr) => new(attr);
     public static implicit operator Content(Listener listener) => new(listener);
     public static implicit operator Content(Component component) => new(component);
-    public static implicit operator Content(Fragment fragment) => new(fragment);
+    public static implicit operator Content(Fragment? fragment) => new(fragment!);
 
     public static Content Of(IContent content) => new(content);
 
@@ -129,7 +129,8 @@ public readonly struct Content
         }
         else
         {
-            content!.ApplyTo(parent);
+            // Null content (e.g. an unset optional Slot) renders nothing.
+            content?.ApplyTo(parent);
         }
     }
 }

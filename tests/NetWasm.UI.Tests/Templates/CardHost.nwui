@@ -1,0 +1,27 @@
+@* Passes child content into Card. *@
+<main>
+    <Card Title="Plain">
+        <p class="msg">Hello @Name</p>
+        and more
+    </Card>
+    <Card Title="Slots">
+        <template slot="Header"><em>head @Name</em></template>
+        <span>
+            @if (Open.Value) {
+                <b class="open">open</b>
+            }
+        </span>
+    </Card>
+    <Card Title="Empty" />
+    <div class="toggle">
+        @if (Show.Value) {
+            <Card Title="Toggled"><i>@Name</i></Card>
+        }
+    </div>
+</main>
+
+@code {
+    public Signal<string> Name { get; } = new("Ada");
+    public Signal<bool> Open { get; } = new(false);
+    public Signal<bool> Show { get; } = new(true);
+}

@@ -1,5 +1,4 @@
-<section id="todos">
-    <h2>Todos</h2>
+<Page Id="todos" Title="Todos">
     <form @onsubmit="Add">
         <input id="new-todo" placeholder="What needs doing?" @ref="input" @bind="draft" />
         <button type="submit" disabled="@(draft.Value.Trim().Length == 0)">Add</button>
@@ -14,7 +13,7 @@
     </ul>
     <p class="status">@remaining of @items.Value.Count remaining</p>
     <button id="clear-done" @onclick="ClearDone">Clear completed</button>
-</section>
+</Page>
 
 @code {
     private Signal<IReadOnlyList<TodoItem>> items = null!;

@@ -146,6 +146,73 @@ public partial class TemplateTests : RendererTest
         Assert.Equal("click", d.Clicked);
     }
 
+    [Fact]
+    public void Card_renders_child_content_and_named_slots()
+    {
+        App.Mount(new CardHost(), "#app");
+
+        var cards = Dom.QueryAll("div", Has("card"));
+        Assert.Equal(4, cards.Count);
+        Assert.Equal(
+            "<div class=\"card\"><h2>Plain</h2><!----><div class=\"body\"><p class=\"msg\">Hello Ada</p>and more</div></div>",
+            cards[0].ToHtml());
+        Assert.Equal(
+            "<div class=\"card\"><h2>Slots</h2><header><em>head Ada</em></header><!----><div class=\"body\"><span><!----></span></div></div>",
+            cards[1].ToHtml());
+        Assert.Equal(
+            "<div class=\"card\"><h2>Empty</h2><!----><div class=\"body\"></div></div>",
+            cards[2].ToHtml());
+    }
+
+    [Fact]
+    public void Card_child_content_stays_reactive_to_the_parent_state()
+    {
+        var host = new CardHost();
+        App.Mount(host, "#app");
+
+        host.Name.Value = "Grace";
+        host.Open.Value = true;
+
+        Assert.Equal("<p class=\"msg\">Hello Grace</p>", Dom.Query("p", Has("msg"))!.ToHtml());
+        Assert.Equal("<em>head Grace</em>", Dom.Query("em")!.ToHtml());
+        Assert.Equal("<i>Grace</i>", Dom.Query("i")!.ToHtml());
+        Assert.NotNull(Dom.Query("b", Has("open")));
+    }
+
+    [Fact]
+    public void Card_child_content_is_released_with_the_component()
+    {
+        var host = new CardHost();
+        App.Mount(host, "#app");
+        var italic = Dom.Query("i")!;
+        var italicText = italic.Children[0];
+
+        host.Show.Value = false;
+
+        Assert.Null(Dom.Query("i"));
+        Assert.False(Dom.Nodes.ContainsKey(italic.Id));
+        Assert.False(Dom.Nodes.ContainsKey(italicText.Id));
+
+        host.Name.Value = "Linus";
+        host.Show.Value = true;
+        Assert.Equal("<i>Linus</i>", Dom.Query("i")!.ToHtml());
+    }
+
+    [Fact]
+    public void Slot_can_be_built_from_csharp()
+    {
+        App.Mount(new Lambda(() => Div(new Card
+        {
+            Title = "C#",
+            Header = new Slot(() => Strong("h")),
+            ChildContent = new Slot(() => new Content[] { "a", Span("b") }),
+        })), "#app");
+
+        Assert.Equal(
+            "<div class=\"card\"><h2>C#</h2><header><strong>h</strong></header><!----><div class=\"body\">a<span>b</span></div></div>",
+            Dom.Query("div", Has("card"))!.ToHtml());
+    }
+
     // ---- compiler ----
 
     [Theory]
@@ -156,7 +223,11 @@ public partial class TemplateTests : RendererTest
     [InlineData("<div>@ </div>", "NWUI001", "'@@'")]
     [InlineData("<div>@for (;;) { }</div>", "NWUI003", "not supported")]
     [InlineData("<div @foo=\"x\"></div>", "NWUI003", "Unknown directive")]
-    [InlineData("<div><Foo>child</Foo></div>", "NWUI003", "child content")]
+    [InlineData("<div><Foo><template>x</template></Foo></div>", "NWUI002", "needs slot=")]
+    [InlineData("<div><Foo><template slot=\"A\" class=\"x\"></template></Foo></div>", "NWUI003", "only 'slot' is")]
+    [InlineData("<div><Foo><template slot=\"1a\"></template></Foo></div>", "NWUI001", "not a valid slot name")]
+    [InlineData("<div><Foo><template slot=\"A\"></template><template slot=\"A\"></template></Foo></div>", "NWUI002", "more than once")]
+    [InlineData("<div><Foo><template slot=\"ChildContent\"></template>x</Foo></div>", "NWUI002", "loose child content")]
     [InlineData("<div>@if (x) { <a></a><b></b> }</div>", "NWUI002", "exactly one root")]
     [InlineData("<div @onclick:preventDefault></div>", "NWUI002", "without an '@onclick' handler")]
     [InlineData("@if (x) { <a></a> }", "NWUI002", "wrap it in an element")]
@@ -224,6 +295,38 @@ public partial class TemplateTests : RendererTest
         Assert.Equal("C:\\p\\Oops.nwui", mapped.Path);
         Assert.Equal(1, mapped.StartLinePosition.Line);
         Assert.Equal(8, mapped.StartLinePosition.Character);
+    }
+
+    [Fact]
+    public void Unknown_props_and_slots_map_back_to_the_nwui_file()
+    {
+        const string user = "<div>\n  <Plain Size=\"1\">\n    <i>x</i>\n  </Plain>\n</div>\n";
+        var compilation = CSharpCompilation.Create(
+            "T",
+            Array.Empty<SyntaxTree>(),
+            References(),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var driver = CSharpGeneratorDriver.Create(
+            new[] { new TemplateGenerator().AsSourceGenerator() },
+            new[]
+            {
+                (AdditionalText)new InMemoryText("C:\\p\\Plain.nwui", "<b>x</b>"),
+                new InMemoryText("C:\\p\\User.nwui", user),
+            });
+
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var genDiagnostics);
+
+        Assert.Empty(genDiagnostics);
+        var errors = output.GetDiagnostics()
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .Select(d => (d.Id, d.Location.GetMappedLineSpan()))
+            .OrderBy(e => e.Item2.StartLinePosition.Line)
+            .ToList();
+        Assert.Equal(2, errors.Count);
+        Assert.All(errors, e => Assert.Equal("CS0117", e.Id));
+        Assert.All(errors, e => Assert.Equal("C:\\p\\User.nwui", e.Item2.Path));
+        Assert.Equal((1, 9), (errors[0].Item2.StartLinePosition.Line, errors[0].Item2.StartLinePosition.Character));
+        Assert.Equal((2, 4), (errors[1].Item2.StartLinePosition.Line, errors[1].Item2.StartLinePosition.Character));
     }
 
     [Fact]

@@ -245,6 +245,9 @@ public sealed class FakeDomHost : IDomHost
     public FakeNode? Query(string tag, Func<FakeNode, bool>? predicate = null) =>
         Document.Descendants().FirstOrDefault(n => n.Kind == "element" && n.Tag == tag && (predicate is null || predicate(n)));
 
+    public List<FakeNode> QueryAll(string tag, Func<FakeNode, bool>? predicate = null) =>
+        Document.Descendants().Where(n => n.Kind == "element" && n.Tag == tag && (predicate is null || predicate(n))).ToList();
+
     private static void Attach(FakeNode parent, FakeNode child, FakeNode? before)
     {
         Detach(child);

@@ -1,5 +1,4 @@
-<section id="counter">
-    <h2>Counter</h2>
+<Page Id="counter" Title="Counter">
     <p>Count: <strong id="count">@count</strong> &middot; doubled: @doubled</p>
     <button id="inc" @onclick="() => count.Value++">+1</button>
     <button id="dec" @onclick="() => count.Value--">-1</button>
@@ -7,7 +6,7 @@
     @if (count.Value >= 10) {
         <p class="hint">That's a lot of clicks!</p>
     }
-</section>
+</Page>
 
 @code {
     private Signal<int> count = null!;

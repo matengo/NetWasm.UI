@@ -1,0 +1,14 @@
+@* A component that takes child content: ChildContent plus a named Header slot. *@
+<div class="card">
+    <h2>@Title</h2>
+    @if (Header is not null) {
+        <header>@render(Header)</header>
+    }
+    <div class="body">@render(ChildContent)</div>
+</div>
+
+@code {
+    public string Title { get; set; } = "";
+    public Slot? Header { get; set; }
+    public Slot? ChildContent { get; set; }
+}
