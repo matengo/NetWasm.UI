@@ -28,6 +28,10 @@ fit that model. NetWasm.UI instead uses:
 |-------------------------|---------|---------|---------|
 | `Counter.wasm`          | 316 KB  | 59 KB   | 75 KB   |
 | `netwasm.page.mjs` host | 315 KB  | 59 KB   | 70 KB   |
+| **Whole page (10 requests)** | **649 KB** | **125 KB** | – |
+
+Half of the download is NetWasm's own JS host, not application code. `tools/serve.py`
+compresses with Brotli/gzip so DevTools "transferred" numbers match a production server.
 
 ## Quick look
 
@@ -73,7 +77,7 @@ Ul(Each(items, i => i.Id, item =>
 | `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings + `dom.mjs` decoder. `netwasm0.1` only. |
 | `samples/Counter`            | Counter + TodoList demo app (`OutputType=JsModule`, page host).       |
 | `tests/NetWasm.UI.Tests`     | xunit tests running against an in-memory `FakeDomHost` decoder.       |
-| `tools/serve.py`             | Static server with correct `.mjs`/`.wasm` MIME types.                 |
+| `tools/serve.py`             | Static dev server with correct `.mjs`/`.wasm` MIME types and Brotli/gzip (`pip install brotli` for Brotli). |
 
 ## Getting started
 
