@@ -40,6 +40,31 @@ production server.
 
 ## Quick look
 
+Components can be written as `.nwui` templates (HTML + Razor-style `@`), compiled at build time
+by a source generator into plain `Html` builder calls:
+
+```razor
+@* CounterView.nwui → public partial class CounterView : Component *@
+<section>
+    <h2>Counter</h2>
+    <p>Count: <strong>@count</strong> &middot; doubled: @doubled</p>
+    <button @onclick="() => count.Value++">+1</button>
+    <button disabled="@(count.Value == 0)" @onclick="() => count.Value = 0">Reset</button>
+    @if (count.Value >= 10) {
+        <p class="hint">That's a lot of clicks!</p>
+    }
+</section>
+
+@code {
+    private readonly Signal<int> count = new(0);
+    private Computed<int> doubled = null!;
+
+    partial void OnInit() => doubled = new Computed<int>(() => count.Value * 2);
+}
+```
+
+…or directly with the C# API, which is what the generator emits:
+
 ```csharp
 using NetWasm.UI;
 using NetWasm.UI.Reactive;
@@ -80,6 +105,7 @@ Ul(Each(items, i => i.Id, item =>
 |------------------------------|----------------------------------------------------------------------|
 | `src/NetWasm.UI`             | Core: reactivity, binary renderer, component/builder API. Targets `netwasm0.1` and `net10.0` (for tests). |
 | `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings + `dom.mjs` decoder. `netwasm0.1` only. |
+| `src/NetWasm.UI.Generator`   | Roslyn incremental source generator: `*.nwui` templates → `Component` partial classes. |
 | `samples/Counter`            | Counter + TodoList demo app (`OutputType=JsModule`, page host).       |
 | `tests/NetWasm.UI.Tests`     | xunit tests running against an in-memory `FakeDomHost` decoder.       |
 | `tests/NetWasm.UI.E2E`       | Playwright (.NET) browser tests: publish + serve `samples/Counter`, drive it in Chromium. |
@@ -238,17 +264,65 @@ OnCleanup(() => timer.Dispose());       // when the component/branch is torn dow
 - `OnCleanup` inside an `Effect` runs before the effect's next run and on dispose.
 - `OnMount` runs once per build, in its own batch, and is skipped if its scope was disposed first.
 
+## Templates (`.nwui`)
+
+A `Foo.nwui` file becomes `public partial class Foo : Component` in `RootNamespace` + folder
+(or `@namespace X.Y`). The generator only emits `Html`/`TemplateRuntime` calls, so there is no
+template engine at runtime and nothing reflection-based for NetWasm to trip over. Wire it up in
+the app's `.csproj` (see `samples/Counter/Counter.csproj`):
+
+```xml
+<ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
+                  OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                  SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
+<AdditionalFiles Include="**\*.nwui" Exclude="bin\**;obj\**" />
+<CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
+```
+
+| Syntax | Becomes |
+|---|---|
+| `@name`, `@a.b(c)[0]`, `@(x + 1)` | reactive text `Text(() => expr)`; a `Signal`/`Computed` prints (and tracks) its value |
+| `@render(expr)` | any `Content` (node, component, fragment) inserted as-is |
+| `class="a @b"`, `title="@x"` | static `Attr`, or reactive `Attr(name, () => …)` when it contains `@` |
+| `disabled="@cond"` (also `checked`, `hidden`, `readonly`, `required`, `selected`, `multiple`, `autofocus`, `open`) | toggled attribute / `checked` property |
+| `value="…"` | the `value` property (`Value(...)`) |
+| `@onclick="() => …"`, `@onsubmit="Save"` | `On("click", handler)`; handler is `Action` or `Action<DomEvent>` |
+| `@onclick:preventDefault`, `@onclick:stopPropagation`, `@onsubmit:preventDefault="false"` | listener flags (`submit` prevents default unless turned off) |
+| `@bind="signal"` | `Spread(Bind(signal))` for `Signal<string>` / `Signal<bool>` |
+| `@ref="field"` | assigns the `Element` (or component) to a generated field |
+| `@if (c) { … } else if (c2) { … } else { … }` | `When(...)`; chains share one memoized selector |
+| `@foreach (var x in items) { <li @key="x.Id">…</li> }` | keyed `Each(...)`; `items` may be a list expression or an `IReadOnlySignal<IReadOnlyList<T>>`; without `@key` the item is the key |
+| `<Badge Label="hi" Count="@n" />` | `new Badge { Label = "hi", Count = n }` (uppercase tag = component) |
+| `<Link href="/x">…</Link>`, `<NavLink href="/x" activeClass="on">…</NavLink>` | `Html.Link` / `Html.NavLink` |
+| `@code { … }`, `@using X`, `@namespace X` | class members, usings, namespace |
+| `@* … *@`, `<!-- … -->`, `@@`, `&amp; &times; &#65;` | comments, literal `@`, decoded entities |
+
+- `Build()` calls `partial void OnInit()` first, inside the component's scope; implement it in
+  `@code` to call `Use`, `Provide`, `OnMount` or create `Computed`s.
+- Whitespace follows JSX: text on one line is kept, multi-line text is trimmed per line and joined
+  with single spaces, whitespace-only lines disappear.
+- Each template, `@if`/`else` block and `@foreach` body must have exactly one root node; `@if` and
+  `@foreach` must sit inside an element.
+- Component props are evaluated once when the parent builds (pass a signal for reactivity);
+  literal props are strings. Custom components cannot take child content yet.
+- Template errors are `NWUI001` (syntax), `NWUI002` (structure), `NWUI003` (unsupported) with the
+  position in the `.nwui` file. User C# is emitted under `#line`, so C# errors point at the template line and column, e.g. `CounterView.nwui(3,69): error CS0103`.
+- The dev server watches `.nwui` files like `.cs` files.
+
 ## Known limitations
 
 - NetWasm 0.10 (`netwasm0.1`) has no `System.Linq`, reflection or `async`. Write plain loops.
 - Globals (`Scheduler`, `Renderer`, tracker, `Router.Current`) mean exactly one app per module instance.
-- No base-path/hash routing, no SSR/hydration, no Razor syntax – components are built with the C# `Html` API.
+- No base-path/hash routing, no SSR/hydration.
+- `.nwui` has no editor support yet (no syntax highlighting/IntelliSense inside templates);
+  only `@if`/`@foreach` control flow, no child content/slots for custom components.
 - Pages are rebuilt on navigation; keep state that should survive in a store provided via context
   (see `samples/Counter/AppState.cs`).
 
 ## Roadmap ideas
 
-- Razor-like syntax via a source generator that emits `Html` builder calls (no runtime cost).
+- Templates: child content/slots for components, `@switch`, a TextMate grammar / VS Code extension
+  for `.nwui`, and a NuGet package that wires the generator up automatically.
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
 - `<Suspense>`-style async boundaries once NetWasm supports async interop; nested/layout routes.
 - Wasm size work: strip unused `Html` helpers, measure per-feature cost.

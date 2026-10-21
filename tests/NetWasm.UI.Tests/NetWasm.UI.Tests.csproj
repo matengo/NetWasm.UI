@@ -9,8 +9,15 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" SetTargetFramework="TargetFramework=net10.0" />
+    <!-- Runs the .nwui generator on Templates/ and also exposes TemplateCompiler to the tests. -->
+    <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="Templates\**\*.nwui" />
+    <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
   </ItemGroup>
 </Project>

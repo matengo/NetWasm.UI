@@ -8,7 +8,7 @@ namespace NetWasm.UI.DevServer;
 /// </summary>
 internal sealed class SourceWatcher : IDisposable
 {
-    private static readonly string[] Extensions = [".cs", ".csproj", ".props", ".targets", ".mjs", ".js", ".html", ".css", ".json"];
+    private static readonly string[] Extensions = [".cs", ".nwui", ".csproj", ".props", ".targets", ".mjs", ".js", ".html", ".css", ".json"];
     private static readonly string[] IgnoredSegments = ["bin", "obj", ".git", ".vs", "node_modules", "TestResults"];
 
     private readonly FileSystemWatcher watcher;

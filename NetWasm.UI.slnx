@@ -4,6 +4,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/NetWasm.UI.Browser/NetWasm.UI.Browser.csproj" />
+    <Project Path="src/NetWasm.UI.Generator/NetWasm.UI.Generator.csproj" />
     <Project Path="src/NetWasm.UI/NetWasm.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">

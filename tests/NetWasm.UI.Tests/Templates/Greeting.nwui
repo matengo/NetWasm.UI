@@ -1,0 +1,23 @@
+@* Text, reactive expressions, attributes, events, bind and ref. *@
+<div class="greeting">
+    <h1>Hello, @Name!</h1>
+    <p title="Count is @count.Value" data-double="@(count.Value * 2)">
+        Count: @count &middot; doubled: @(count.Value * 2)
+    </p>
+    <button id="inc" @onclick="() => count.Value++" disabled="@(count.Value >= 3)">+1</button>
+    <input @ref="input" @bind="draft" />
+    <input type="checkbox" checked="@flag.Value" />
+    <span class="mail">me@example.com @@home &lt;3&gt; &#65;&#x42;</span>
+    <!-- not rendered -->
+    <p class="value">@draft.Value</p>
+</div>
+
+@code {
+    private readonly Signal<int> count = new(0);
+    private readonly Signal<string> draft = new("hi");
+
+    public string Name { get; set; } = "World";
+    public Signal<bool> flag { get; } = new(true);
+    public Element Input => input;
+    public Signal<int> Count => count;
+}

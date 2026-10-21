@@ -1,0 +1,74 @@
+<section id="todos">
+    <h2>Todos</h2>
+    <form @onsubmit="Add">
+        <input id="new-todo" placeholder="What needs doing?" @ref="input" @bind="draft" />
+        <button type="submit" disabled="@(draft.Value.Trim().Length == 0)">Add</button>
+    </form>
+    <ul>
+        @foreach (var item in items) {
+            <li @key="item.Id" class="@(item.Done.Value ? "todo done" : "todo")">
+                <label><input @bind="item.Done" /> @item.Title</label>
+                <button class="remove" title="Remove" @onclick="() => Remove(item)">&times;</button>
+            </li>
+        }
+    </ul>
+    <p class="status">@remaining of @items.Value.Count remaining</p>
+    <button id="clear-done" @onclick="ClearDone">Clear completed</button>
+</section>
+
+@code {
+    private Signal<IReadOnlyList<TodoItem>> items = null!;
+
+    // The draft is page-local on purpose: it resets when you navigate away.
+    private readonly Signal<string> draft = new(string.Empty);
+    private Computed<int> remaining = null!;
+
+    partial void OnInit()
+    {
+        items = Use(AppState.Context).Todos;
+        OnMount(() => input.Focus());
+        remaining = new Computed<int>(() =>
+        {
+            var n = 0;
+            foreach (var i in items.Value)
+            {
+                if (!i.Done.Value)
+                {
+                    n++;
+                }
+            }
+
+            return n;
+        });
+    }
+
+    private void Add()
+    {
+        var title = draft.Value.Trim();
+        if (title.Length == 0)
+        {
+            return;
+        }
+
+        items.Value = new List<TodoItem>(items.Value) { new(title) };
+        draft.Value = string.Empty;
+    }
+
+    private void Remove(TodoItem item) => items.Value = Filter(i => i != item);
+
+    private void ClearDone() => items.Value = Filter(i => !i.Done.Value);
+
+    private List<TodoItem> Filter(System.Func<TodoItem, bool> keep)
+    {
+        var result = new List<TodoItem>();
+        foreach (var i in items.Value)
+        {
+            if (keep(i))
+            {
+                result.Add(i);
+            }
+        }
+
+        return result;
+    }
+}

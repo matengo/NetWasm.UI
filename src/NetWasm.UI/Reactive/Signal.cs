@@ -79,5 +79,6 @@ public sealed class Signal<T> : IReadOnlySignal<T>, ISource
 
     void ISource.RemoveDependent(Computation dependent) => dependents.Remove(dependent);
 
-    public override string ToString() => value?.ToString() ?? string.Empty;
+    /// <summary>The current value, formatted with the invariant culture. Tracked, so <c>@count</c> in a template stays reactive.</summary>
+    public override string ToString() => TemplateRuntime.Str(Value) ?? string.Empty;
 }

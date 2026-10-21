@@ -1,0 +1,47 @@
+@using NetWasm.UI.Dom
+@* Control flow, components, routing links, @render, lifecycle via OnInit. *@
+<section>
+    @if (Level.Value == 0) {
+        <p class="zero">none</p>
+    } else if (Level.Value < 3) {
+        <p class="few">few: @Level.Value</p>
+    } else {
+        <p class="many">many</p>
+    }
+    @if (Level.Value > 0) {
+        <em>positive</em>
+    }
+    <ul>
+        @foreach (var item in Items) {
+            <li @key="item.Id" class="item @(item.Done ? "done" : "open")">@item.Title</li>
+        }
+    </ul>
+    <ol>
+        @foreach (string tag in Tags.Value) {
+            <li>@tag</li>
+        }
+    </ol>
+    <Badge Label="static" Count="@Level.Peek()" />
+    @render(Extra)
+    <form @onsubmit="Submit" @onsubmit:stopPropagation>
+        <a href="/x" @onclick="(DomEvent e) => Clicked = e.Type" @onclick:preventDefault>x</a>
+    </form>
+    <nav><Link href="/home" class="lnk">Home</Link><NavLink href="@AboutHref">About</NavLink></nav>
+    <p class="theme">@theme</p>
+</section>
+
+@code {
+    private string theme = "";
+
+    public Signal<int> Level { get; } = new(0);
+    public Signal<IReadOnlyList<TemplateItem>> Items { get; } = new(new TemplateItem[0]);
+    public Signal<IReadOnlyList<string>> Tags { get; } = new(new[] { "a", "b" });
+    public Node Extra { get; set; } = Html.Text("extra");
+    public string AboutHref { get; set; } = "/about";
+    public int Submitted { get; private set; }
+    public string? Clicked { get; private set; }
+
+    partial void OnInit() => theme = Use(TemplateTests.Theme);
+
+    private void Submit() => Submitted++;
+}

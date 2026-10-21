@@ -65,13 +65,7 @@ public static class Html
 
     public static TextNode Text<T>(IReadOnlySignal<T> signal) => new(() => Format(signal.Value));
 
-    private static string Format<T>(T value) => value switch
-    {
-        null => string.Empty,
-        string s => s,
-        IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
-        _ => value.ToString() ?? string.Empty,
-    };
+    private static string Format<T>(T value) => TemplateRuntime.Str(value) ?? string.Empty;
 
     // ---- attributes ----
 
@@ -101,6 +95,9 @@ public static class Html
 
     public static Listener On(string eventName, Action<DomEvent> handler, ListenerFlags flags = ListenerFlags.None) =>
         new(eventName, handler, flags);
+
+    public static Listener On(string eventName, Action handler, ListenerFlags flags = ListenerFlags.None) =>
+        new(eventName, _ => handler(), flags);
 
     public static Listener OnClick(Action<DomEvent> handler) => new("click", handler);
     public static Listener OnClick(Action handler) => new("click", _ => handler());

@@ -91,4 +91,7 @@ public sealed class Computed<T> : Computation, IReadOnlySignal<T>, ISource
     }
 
     void ISource.RemoveDependent(Computation dependent) => dependents.Remove(dependent);
+
+    /// <summary>The current value, formatted with the invariant culture. Tracked, so <c>@doubled</c> in a template stays reactive.</summary>
+    public override string ToString() => TemplateRuntime.Str(Value) ?? string.Empty;
 }

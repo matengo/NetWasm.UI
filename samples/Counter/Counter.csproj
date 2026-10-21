@@ -8,6 +8,14 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />
     <ProjectReference Include="..\..\src\NetWasm.UI.Browser\NetWasm.UI.Browser.csproj" />
+    <!-- Compiles *.nwui templates into components at build time. -->
+    <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                      SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="**\*.nwui" Exclude="bin\**;obj\**" />
+    <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
   </ItemGroup>
   <ItemGroup>
     <NetWasmJavaScriptModule Include="..\..\src\NetWasm.UI.Browser\dom.mjs" Module="netwasm.ui.dom" />

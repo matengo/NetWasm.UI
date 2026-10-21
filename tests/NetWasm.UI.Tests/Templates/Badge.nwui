@@ -1,0 +1,6 @@
+<span class="badge">@Label: @Count</span>
+
+@code {
+    public string Label { get; set; } = "";
+    public int Count { get; set; }
+}
