@@ -9,4 +9,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/NetWasm.UI.Tests/NetWasm.UI.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/DevServer/DevServer.csproj" />
+  </Folder>
 </Solution>

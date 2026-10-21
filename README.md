@@ -30,8 +30,9 @@ fit that model. NetWasm.UI instead uses:
 | `netwasm.page.mjs` host | 315 KB  | 59 KB   | 70 KB   |
 | **Whole page (10 requests)** | **649 KB** | **125 KB** | – |
 
-Half of the download is NetWasm's own JS host, not application code. `tools/serve.py`
-compresses with Brotli/gzip so DevTools "transferred" numbers match a production server.
+Half of the download is NetWasm's own JS host, not application code. The dev server
+(`tools/DevServer`) compresses with Brotli/gzip so DevTools "transferred" numbers resemble a
+production server.
 
 ## Quick look
 
@@ -77,19 +78,28 @@ Ul(Each(items, i => i.Id, item =>
 | `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings + `dom.mjs` decoder. `netwasm0.1` only. |
 | `samples/Counter`            | Counter + TodoList demo app (`OutputType=JsModule`, page host).       |
 | `tests/NetWasm.UI.Tests`     | xunit tests running against an in-memory `FakeDomHost` decoder.       |
-| `tools/serve.py`             | Static dev server with correct `.mjs`/`.wasm` MIME types and Brotli/gzip (`pip install brotli` for Brotli). |
+| `tools/DevServer`            | Kestrel dev server: publishes the app, serves it with Brotli/gzip and correct MIME types, watches sources and reloads the browser. |
 
 ## Getting started
 
-Prerequisites: .NET SDK 10.0.3xx, Python 3 (for the dev server). The NetWasm SDK is resolved
-from `global.json` and downloads its host tooling on first restore.
+Prerequisites: .NET SDK 10.0.3xx. The NetWasm SDK is resolved from `global.json` and downloads
+its host tooling on first restore.
 
 ```powershell
-dotnet test                                   # core unit tests (net10.0)
-dotnet publish samples/Counter -c Release     # → samples/Counter/bin/Release/netwasm0.1/publish
-python tools/serve.py samples/Counter/bin/Release/netwasm0.1/publish 8765
-# open http://localhost:8765/
+dotnet test                                        # core unit tests (net10.0)
+dotnet run --project tools/DevServer -- samples/Counter
+# → publishes, serves http://localhost:8765/ and rebuilds + reloads the browser on save
 ```
+
+Dev server options: `--port <n>`, `-c Debug|Release`, `--no-watch` (serve only),
+`--no-publish` (skip initial publish), `-w <dir>` (watch root, default repo root).
+
+### Live reload, not hot reload
+
+NetWasm is closed-world AOT: there is no runtime to patch, so .NET Hot Reload (Edit & Continue)
+cannot apply. The dev server instead watches sources, re-runs `dotnet publish` (~15–20 s for the
+sample today) and pushes a reload over a WebSocket; build errors are shown as an overlay in the
+page. Preserving signal state across reloads is on the roadmap.
 
 ## Architecture
 
@@ -150,10 +160,12 @@ Event payload convention (JS side): `input`/`change` → `target.value` (checkbo
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
 - Router, `<Suspense>`-style async boundaries once NetWasm supports async interop.
 - Wasm size work: strip unused `Html` helpers, measure per-feature cost.
+- Dev loop: snapshot/restore signal state across live reloads, CSS swap without reload, faster
+  incremental NetWasm publish.
 
 ## Development notes
 
-- Serve over `http://localhost` with correct MIME types (`tools/serve.py`); `file://` does not
+- Serve over `http://localhost` with correct MIME types (`tools/DevServer`); `file://` does not
   work and browsers cache a wrong `.mjs` MIME type aggressively (hard reload after fixing).
 - `[JSImport]` methods are `static extern`; a `subscribe` host function must return an object with
   `dispose()` for `JSSubscription`.
