@@ -17,19 +17,22 @@ internal sealed class TemplateEmitter
 
     private readonly LineMap lines;
     private readonly string path;
+    private readonly ISet<string> reactiveProps;
     private readonly StringBuilder sb = new();
     private readonly List<(string Type, string Name)> refs = new();
     private bool lineHidden;
 
-    private TemplateEmitter(string text, string path)
+    private TemplateEmitter(string text, string path, ISet<string> reactiveProps)
     {
         lines = new LineMap(text);
         this.path = path.Replace("\"", string.Empty);
+        this.reactiveProps = reactiveProps;
     }
 
-    public static string Emit(TemplateFile file, string text, string path, string? ns, string className)
+    /// <param name="reactiveProps"><c>Component.Prop</c> names whose type is <c>Prop&lt;T&gt;</c>; the parent passes those as getters.</param>
+    public static string Emit(TemplateFile file, string text, string path, string? ns, string className, ISet<string>? reactiveProps = null)
     {
-        var e = new TemplateEmitter(text, path);
+        var e = new TemplateEmitter(text, path, reactiveProps ?? new HashSet<string>());
         return e.EmitFile(file, ns, className);
     }
 
@@ -69,6 +72,25 @@ internal sealed class TemplateEmitter
         foreach (var (type, name) in refs)
         {
             header.Append("    private ").Append(type).Append(' ').Append(name).Append(" = null!;\n");
+        }
+
+        foreach (var p in file.Props)
+        {
+            header.Append("\n    public global::NetWasm.UI.Prop<");
+            User(p.Type, string.Empty, string.Empty, header);
+            HiddenIn(header);
+            header.Append("    >");
+            User(p.Name, string.Empty, string.Empty, header);
+            HiddenIn(header);
+            header.Append("    { get; set; }");
+            if (p.Default is not null)
+            {
+                header.Append(" =");
+                User(p.Default, string.Empty, string.Empty, header);
+                HiddenIn(header);
+            }
+
+            header.Append(";\n");
         }
 
         header.Append("\n    /// <summary>Runs at the start of Build, inside the component's scope (Use/Provide/OnMount work here).</summary>\n");
@@ -396,7 +418,14 @@ internal sealed class TemplateEmitter
             any = true;
             User(new Directive(a.Name, a.Start));
             sb.Append(" = ");
-            EmitPropValue(a);
+            if (IsReactiveProp(el.Tag, a.Name))
+            {
+                EmitReactivePropValue(a);
+            }
+            else
+            {
+                EmitPropValue(a);
+            }
         }
 
         foreach (var (name, start, body) in slots)
@@ -487,6 +516,35 @@ internal sealed class TemplateEmitter
 
             slots.Add((name, start, body));
         }
+    }
+
+    private bool IsReactiveProp(string tag, string prop)
+    {
+        var dot = tag.LastIndexOf('.');
+        return reactiveProps.Contains((dot < 0 ? tag : tag.Substring(dot + 1)) + "." + prop);
+    }
+
+    /// <summary>
+    /// For a <c>Prop&lt;T&gt;</c> prop, <c>Prop="@expr"</c> becomes <c>new(() => expr)</c> so the child re-reads it
+    /// (and tracks what it reads). Literals and bare props still convert implicitly from the value.
+    /// </summary>
+    private void EmitReactivePropValue(TAttribute a)
+    {
+        var hasCode = false;
+        foreach (var seg in a.Segments)
+        {
+            hasCode |= seg.IsCode;
+        }
+
+        if (!a.HasValue || !hasCode)
+        {
+            EmitPropValue(a);
+            return;
+        }
+
+        sb.Append("new(() => ");
+        EmitPropValue(a);
+        sb.Append(')');
     }
 
     /// <summary>Literal props are strings; <c>Prop="@expr"</c> passes the expression as-is; a bare <c>Prop</c> is <c>true</c>.</summary>

@@ -23,7 +23,23 @@ internal sealed class TemplateFile
     public List<Directive> Usings { get; } = new();
     public Directive? Namespace { get; set; }
     public List<Directive> CodeBlocks { get; } = new();
+    public List<PropDecl> Props { get; } = new();
     public List<TNode> Nodes { get; } = new();
+}
+
+/// <summary><c>@prop Type Name = default;</c></summary>
+internal sealed class PropDecl
+{
+    public PropDecl(Directive type, Directive name, Directive? defaultValue)
+    {
+        Type = type;
+        Name = name;
+        Default = defaultValue;
+    }
+
+    public Directive Type { get; }
+    public Directive Name { get; }
+    public Directive? Default { get; }
 }
 
 /// <summary>A piece of user C# with its offset in the template (for #line mapping).</summary>

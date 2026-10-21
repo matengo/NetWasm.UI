@@ -1,0 +1,17 @@
+@* Reactive props: the parent passes getters, reads in markup are tracked. *@
+<div class="meter @(Level > 3 ? "high" : "low")" data-level="@Level">
+    <b>@Label</b>: @Level
+    @if (Level > 3) {
+        <em>hot</em>
+    }
+    <i class="snap">@snapshot</i>
+</div>
+
+@prop int Level = 1;
+@prop string Label = "";
+
+@code {
+    private int snapshot;
+
+    partial void OnInit() => snapshot = Level.Value;
+}

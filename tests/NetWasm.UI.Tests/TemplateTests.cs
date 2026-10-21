@@ -213,6 +213,68 @@ public partial class TemplateTests : RendererTest
             Dom.Query("div", Has("card"))!.ToHtml());
     }
 
+    [Fact]
+    public void Reactive_props_render_values_and_defaults()
+    {
+        App.Mount(new MeterHost(), "#app");
+
+        var meters = Dom.QueryAll("div");
+        Assert.Equal(
+            "<div class=\"meter low\" data-level=\"2\"><b>Level of Ada</b>: 2<!----><i class=\"snap\">2</i></div>",
+            meters[0].ToHtml());
+        Assert.Equal(
+            "<div class=\"meter low\" data-level=\"1\"><b>fixed</b>: 1<!----><i class=\"snap\">1</i></div>",
+            meters[1].ToHtml());
+        Assert.Equal(new[] { "<span>Ada</span>", "<span>literal</span>" }, Dom.QueryAll("span").Where(s => s.Attributes.Count == 0).Select(s => s.ToHtml()));
+        Assert.Equal("<span class=\"badge\">plain: 2</span>", Dom.Query("span", Has("badge"))!.ToHtml());
+    }
+
+    [Fact]
+    public void Reactive_props_follow_the_parent_signals_but_plain_props_do_not()
+    {
+        var host = new MeterHost();
+        App.Mount(host, "#app");
+
+        host.LevelSignal.Value = 5;
+        host.NameSignal.Value = "Grace";
+
+        Assert.Equal(
+            "<div class=\"meter high\" data-level=\"5\"><b>Level of Grace</b>: 5<em>hot</em><!----><i class=\"snap\">2</i></div>",
+            Dom.QueryAll("div")[0].ToHtml());
+        Assert.Equal("<span>Grace</span>", Dom.QueryAll("span").First(s => s.Attributes.Count == 0).ToHtml());
+        Assert.Equal("<span class=\"badge\">plain: 2</span>", Dom.Query("span", Has("badge"))!.ToHtml());
+    }
+
+    [Fact]
+    public void Prop_wraps_values_signals_and_getters()
+    {
+        var signal = new Signal<int>(1);
+        Prop<int> fixedValue = 3;
+        Prop<int> fromSignal = signal;
+        var fromGetter = new Prop<int>(() => signal.Value * 10);
+
+        Assert.False(fixedValue.IsReactive);
+        Assert.True(fromSignal.IsReactive);
+        Assert.Equal(3, fixedValue.Value);
+        signal.Value = 2;
+        Assert.Equal(2, fromSignal.Value);
+        Assert.Equal(20, fromGetter.Value);
+        Assert.Equal("20", fromGetter.ToString());
+        int plain = fromSignal;
+        Assert.Equal(2, plain);
+        Assert.Equal(0, default(Prop<int>).Value);
+    }
+
+    [Fact]
+    public void Compiler_finds_prop_declarations_and_prop_properties()
+    {
+        var props = TemplateCompiler.PropsOf(
+            "C:\\p\\Widget.nwui",
+            "<b>x</b>\n@prop int A = 1;\n@prop List<string> B\n@code {\n public Prop<int> C { get; set; }\n public NetWasm.UI.Prop<bool> D { get; set; }\n public int E { get; set; }\n}\n");
+
+        Assert.Equal(new[] { "Widget.A", "Widget.B", "Widget.C", "Widget.D" }, props.OrderBy(p => p));
+    }
+
     // ---- compiler ----
 
     [Theory]
@@ -232,6 +294,8 @@ public partial class TemplateTests : RendererTest
     [InlineData("<div @onclick:preventDefault></div>", "NWUI002", "without an '@onclick' handler")]
     [InlineData("@if (x) { <a></a> }", "NWUI002", "wrap it in an element")]
     [InlineData("<div>@(a</div>", "NWUI001", "Unbalanced")]
+    [InlineData("@prop Count\n<div></div>", "NWUI001", "@prop Type Name")]
+    [InlineData("@prop int Count =\n<div></div>", "NWUI001", "default value")]
     public void Compiler_reports_template_errors(string template, string id, string message)
     {
         var result = TemplateCompiler.Compile("C:\\p\\Bad.nwui", template, "App", "C:\\p\\");
@@ -327,6 +391,33 @@ public partial class TemplateTests : RendererTest
         Assert.All(errors, e => Assert.Equal("C:\\p\\User.nwui", e.Item2.Path));
         Assert.Equal((1, 9), (errors[0].Item2.StartLinePosition.Line, errors[0].Item2.StartLinePosition.Character));
         Assert.Equal((2, 4), (errors[1].Item2.StartLinePosition.Line, errors[1].Item2.StartLinePosition.Character));
+    }
+
+    [Fact]
+    public void Prop_declaration_errors_map_back_to_the_nwui_file()
+    {
+        const string template = "<b>@Size</b>\n@prop Nope Size = 1;\n@prop int Other = \"x\";\n";
+        var compilation = CSharpCompilation.Create(
+            "T",
+            Array.Empty<SyntaxTree>(),
+            References(),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var driver = CSharpGeneratorDriver.Create(
+            new[] { new TemplateGenerator().AsSourceGenerator() },
+            new[] { (AdditionalText)new InMemoryText("C:\\p\\Sized.nwui", template) });
+
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var genDiagnostics);
+
+        Assert.Empty(genDiagnostics);
+        var errors = output.GetDiagnostics()
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .Select(d => (d.Id, Span: d.Location.GetMappedLineSpan()))
+            .OrderBy(e => e.Span.StartLinePosition.Line)
+            .ToList();
+        Assert.Equal(2, errors.Count);
+        Assert.All(errors, e => Assert.Equal("C:\\p\\Sized.nwui", e.Span.Path));
+        Assert.Equal(("CS0246", 1, 6), (errors[0].Id, errors[0].Span.StartLinePosition.Line, errors[0].Span.StartLinePosition.Character));
+        Assert.Equal(("CS0029", 2, 18), (errors[1].Id, errors[1].Span.StartLinePosition.Line, errors[1].Span.StartLinePosition.Character));
     }
 
     [Fact]

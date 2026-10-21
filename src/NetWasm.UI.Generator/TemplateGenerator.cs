@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace NetWasm.UI.Generator;
@@ -65,7 +66,7 @@ internal static class TemplateCompiler
     public static readonly DiagnosticDescriptor UnsupportedError = new(
         "NWUI003", "Unsupported template feature", "{0}", "NetWasm.UI.Templates", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static CompiledTemplate Compile(string path, string text, string? rootNamespace, string? projectDir)
+    public static CompiledTemplate Compile(string path, string text, string? rootNamespace, string? projectDir, string? reactiveProps = null)
     {
         var className = SafeIdentifier(Path.GetFileNameWithoutExtension(path));
         var relativeDir = RelativeDirectory(path, projectDir);
@@ -87,7 +88,15 @@ internal static class TemplateCompiler
                 }
             }
 
-            var source = TemplateEmitter.Emit(file, text, path, ns, className);
+            var reactive = new HashSet<string>(
+                (reactiveProps ?? string.Empty).Split(new[] { '|' }, System.StringSplitOptions.RemoveEmptyEntries),
+                System.StringComparer.Ordinal);
+            foreach (var p in PropsOf(file, className))
+            {
+                reactive.Add(p);
+            }
+
+            var source = TemplateEmitter.Emit(file, text, path, ns, className, reactive);
             return new CompiledTemplate(path, hint, source, null);
         }
         catch (TemplateException ex)
@@ -98,6 +107,57 @@ internal static class TemplateCompiler
             var span = new TextSpan(start, length);
             return new CompiledTemplate(path, hint, null, new TemplateDiagnostic(ex.Id, ex.Message, span, source.Lines.GetLinePositionSpan(span)));
         }
+    }
+
+    /// <summary><c>Class.Prop</c> for every <c>@prop</c> and every <c>Prop&lt;T&gt;</c> property in <c>@code</c> of a template.</summary>
+    public static IEnumerable<string> PropsOf(string path, string text)
+    {
+        TemplateFile file;
+        try
+        {
+            file = TemplateParser.Parse(text);
+        }
+        catch (TemplateException)
+        {
+            return System.Array.Empty<string>();
+        }
+
+        return PropsOf(file, SafeIdentifier(Path.GetFileNameWithoutExtension(path)));
+    }
+
+    private static List<string> PropsOf(TemplateFile file, string className)
+    {
+        var result = new List<string>();
+        foreach (var p in file.Props)
+        {
+            result.Add(className + "." + p.Name.Code);
+        }
+
+        foreach (var block in file.CodeBlocks)
+        {
+            var tree = CSharpSyntaxTree.ParseText("class __C {" + block.Code + "\n}");
+            foreach (var member in tree.GetRoot().DescendantNodes())
+            {
+                if (member is PropertyDeclarationSyntax { Parent: ClassDeclarationSyntax { Identifier.ValueText: "__C" } } prop && IsPropType(prop.Type))
+                {
+                    result.Add(className + "." + prop.Identifier.ValueText);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary><c>Prop&lt;T&gt;</c>, optionally qualified (<c>NetWasm.UI.Prop&lt;T&gt;</c>, <c>global::…</c>).</summary>
+    public static bool IsPropType(TypeSyntax type)
+    {
+        var name = type switch
+        {
+            QualifiedNameSyntax q => q.Right,
+            AliasQualifiedNameSyntax a => a.Name,
+            _ => type,
+        };
+        return name is GenericNameSyntax { Identifier.ValueText: "Prop", TypeArgumentList.Arguments.Count: 1 };
     }
 
     public static Diagnostic ToDiagnostic(CompiledTemplate t)
@@ -171,11 +231,29 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             return (Namespace: ns, ProjectDir: dir);
         });
 
-        var templates = context.AdditionalTextsProvider
+        var sources = context.AdditionalTextsProvider
             .Where(static t => t.Path.EndsWith(".nwui", System.StringComparison.OrdinalIgnoreCase))
-            .Select(static (t, ct) => (t.Path, Text: t.GetText(ct)?.ToString() ?? string.Empty))
+            .Select(static (t, ct) => (t.Path, Text: t.GetText(ct)?.ToString() ?? string.Empty));
+
+        // Which component props are Prop<T> (from .nwui files and hand-written C# components):
+        // parents pass those as getters. Kept as one sorted string so the pipeline can compare it cheaply.
+        var templateProps = sources.SelectMany(static (t, _) => TemplateCompiler.PropsOf(t.Path, t.Text)).Collect();
+        var csharpProps = context.SyntaxProvider.CreateSyntaxProvider(
+                static (node, _) => node is PropertyDeclarationSyntax { Parent: ClassDeclarationSyntax } p && TemplateCompiler.IsPropType(p.Type),
+                static (ctx, _) => ((ClassDeclarationSyntax)ctx.Node.Parent!).Identifier.ValueText + "." + ((PropertyDeclarationSyntax)ctx.Node).Identifier.ValueText)
+            .Collect();
+        var reactiveProps = templateProps.Combine(csharpProps).Select(static (p, _) =>
+        {
+            var all = new SortedSet<string>(p.Left, System.StringComparer.Ordinal);
+            all.UnionWith(p.Right);
+            return string.Join("|", all);
+        });
+
+        var templates = sources
             .Combine(options)
-            .Select(static (pair, _) => TemplateCompiler.Compile(pair.Left.Path, pair.Left.Text, pair.Right.Namespace, pair.Right.ProjectDir));
+            .Combine(reactiveProps)
+            .Select(static (pair, _) => TemplateCompiler.Compile(
+                pair.Left.Left.Path, pair.Left.Left.Text, pair.Left.Right.Namespace, pair.Left.Right.ProjectDir, pair.Right));
 
         context.RegisterSourceOutput(templates, static (spc, t) =>
         {

@@ -297,6 +297,7 @@ the app's `.csproj` (see `samples/Counter/Counter.csproj`):
 | `<Card><template slot="Header">…</template>…</Card>` | a named slot: `Header = new Slot(() => …)`, the rest still goes to `ChildContent` |
 | `<Link href="/x">…</Link>`, `<NavLink href="/x" activeClass="on">…</NavLink>` | `Html.Link` / `Html.NavLink` |
 | `@code { … }`, `@using X`, `@namespace X` | class members, usings, namespace |
+| `@prop int Level = 1;` | a reactive prop: `public Prop<int> Level { get; set; } = 1;` |
 | `@* … *@`, `<!-- … -->`, `@@`, `&amp; &times; &#65;` | comments, literal `@`, decoded entities |
 
 - `Build()` calls `partial void OnInit()` first, inside the component's scope; implement it in
@@ -305,8 +306,15 @@ the app's `.csproj` (see `samples/Counter/Counter.csproj`):
   with single spaces, whitespace-only lines disappear.
 - Each template, `@if`/`else` block and `@foreach` body must have exactly one root node; `@if` and
   `@foreach` must sit inside an element.
-- Component props are evaluated once when the parent builds (pass a signal for reactivity);
-  literal props are strings.
+- Plain component props (`public int Count { get; set; }`) are evaluated once when the parent
+  builds; literal props are strings.
+- Reactive props: declare `@prop Type Name [= default];` (or any `Prop<T>` property, also in
+  hand-written C# components). The parent then passes `Level="@level"` / `Label="Hi @name.Value"`
+  as a getter (`Level = new(() => level)`), so the child follows the parent's signals. Read it
+  with `@Level`, `@if (Level > 3)`, `class="@(…)"` or `Level.Value` inside a `Func`; those reads
+  are tracked. Reading `Level.Value` in `OnInit`/`@code` gives a snapshot (`Build` is untracked).
+  From C#: `new Chip { Caption = nameSignal }`, `new Chip { Caption = new(() => …) }` or
+  `Caption = "fixed"`. `samples/Counter/Page.nwui` uses `@prop string Title`.
 - Child content: declare `public Slot? ChildContent { get; set; }` (and any named slots, e.g.
   `Header`) and place it with `@render(ChildContent)`; an unset slot renders nothing. The content
   is built where the component renders it, so it belongs to the component's scope (and is torn
@@ -328,7 +336,7 @@ the app's `.csproj` (see `samples/Counter/Counter.csproj`):
 
 ## Roadmap ideas
 
-- Templates: reactive props (`@prop`), parameterized slots (`Slot<T>`), `@switch`, a TextMate grammar / VS Code extension
+- Templates: parameterized slots (`Slot<T>`), `@switch`, a TextMate grammar / VS Code extension
   for `.nwui`, and a NuGet package that wires the generator up automatically.
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
 - `<Suspense>`-style async boundaries once NetWasm supports async interop; nested/layout routes.

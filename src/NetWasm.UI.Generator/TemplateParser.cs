@@ -208,6 +208,7 @@ internal sealed class TemplateParser
             case "code":
             case "using":
             case "namespace":
+            case "prop":
                 if (file is null)
                 {
                     throw Error($"'@{keyword}' is only allowed at the top level of a template.", at, keyword.Length + 1);
@@ -225,7 +226,7 @@ internal sealed class TemplateParser
             case "functions":
             case "inject":
             case "page":
-                throw new TemplateException("NWUI003", $"'@{keyword}' is not supported in .nwui templates (supported: @if, @foreach, @render, @code, @using, @namespace).", at, keyword.Length + 1);
+                throw new TemplateException("NWUI003", $"'@{keyword}' is not supported in .nwui templates (supported: @if, @foreach, @render, @code, @prop, @using, @namespace).", at, keyword.Length + 1);
         }
 
         var exprEnd = CSharpScanner.ScanImplicit(s, pos);
@@ -272,6 +273,13 @@ internal sealed class TemplateParser
             throw Error($"Expected a name after '@{keyword}'.", at, keyword.Length + 1);
         }
 
+        if (keyword == "prop")
+        {
+            file.Props.Add(ParseProp(value, pos, at));
+            pos = lineEnd;
+            return;
+        }
+
         var d = new Directive(value, pos);
         if (keyword == "using")
         {
@@ -283,6 +291,57 @@ internal sealed class TemplateParser
         }
 
         pos = lineEnd;
+    }
+
+    /// <summary><c>Type Name</c> or <c>Type Name = default</c>; <paramref name="start"/> is the offset of <paramref name="decl"/>.</summary>
+    private PropDecl ParseProp(string decl, int start, int at)
+    {
+        var depth = 0;
+        var eq = -1;
+        for (var i = 0; i < decl.Length && eq < 0; i++)
+        {
+            switch (decl[i])
+            {
+                case '<' or '(' or '[' or '{':
+                    depth++;
+                    break;
+                case '>' or ')' or ']' or '}':
+                    depth--;
+                    break;
+                case '=' when depth == 0:
+                    eq = i;
+                    break;
+            }
+        }
+
+        var left = (eq < 0 ? decl : decl.Substring(0, eq)).TrimEnd();
+        var nameStart = left.Length;
+        while (nameStart > 0 && CSharpScanner.IsIdentPart(left[nameStart - 1]))
+        {
+            nameStart--;
+        }
+
+        var name = left.Substring(nameStart);
+        var type = left.Substring(0, nameStart).Trim();
+        if (name.Length == 0 || !CSharpScanner.IsIdentStart(name[0]) || type.Length == 0)
+        {
+            throw Error("Expected '@prop Type Name' or '@prop Type Name = default'.", at, 5);
+        }
+
+        Directive? defaultValue = null;
+        if (eq >= 0)
+        {
+            var raw = decl.Substring(eq + 1);
+            var code = raw.Trim();
+            if (code.Length == 0)
+            {
+                throw Error($"Expected a default value after '=' in '@prop {left}'.", start + eq, 1);
+            }
+
+            defaultValue = new Directive(code, start + eq + 1 + (raw.Length - raw.TrimStart().Length));
+        }
+
+        return new PropDecl(new Directive(type, start), new Directive(name, start + nameStart), defaultValue);
     }
 
     private TIf ParseIf(int at, TemplateFile? file)

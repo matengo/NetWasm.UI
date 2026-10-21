@@ -1,0 +1,16 @@
+@* Passes signals into reactive props (Meter, Chip) and into a plain prop (Badge). *@
+<main>
+    <Meter Level="@level" Label="Level of @name.Value" />
+    <Meter Label="fixed" />
+    <Chip Caption="@name.Value" />
+    <Chip Caption="literal" />
+    <Badge Label="plain" Count="@level.Value" />
+</main>
+
+@code {
+    private readonly Signal<int> level = new(2);
+    private readonly Signal<string> name = new("Ada");
+
+    public Signal<int> LevelSignal => level;
+    public Signal<string> NameSignal => name;
+}

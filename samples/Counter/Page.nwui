@@ -4,8 +4,9 @@
     @render(ChildContent)
 </section>
 
+@prop string Title = "";
+
 @code {
     public string Id { get; set; } = "";
-    public string Title { get; set; } = "";
     public Slot? ChildContent { get; set; }
 }
