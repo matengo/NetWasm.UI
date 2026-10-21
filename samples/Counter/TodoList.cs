@@ -22,17 +22,17 @@ public sealed class TodoItem
 
 public sealed class TodoList : Component
 {
-    private readonly Signal<IReadOnlyList<TodoItem>> items = new(new List<TodoItem>
-    {
-        new("Build a reactive core"),
-        new("Batch DOM ops into one call"),
-        new("Ship it"),
-    });
+    private Signal<IReadOnlyList<TodoItem>> items = null!;
 
+    // The draft is page-local on purpose: it resets when you navigate away.
     private readonly Signal<string> draft = new(string.Empty);
 
     protected override Node Build()
     {
+        items = Use(AppState.Context).Todos;
+        var input = Input(Id("new-todo"), Placeholder("What needs doing?"), Spread(Bind(draft)));
+        OnMount(input.Focus);
+
         var remaining = new Computed<int>(() =>
         {
             var n = 0;
@@ -52,7 +52,7 @@ public sealed class TodoList : Component
             H2("Todos"),
             Form(
                 OnSubmit(_ => Add()),
-                Input(Id("new-todo"), Placeholder("What needs doing?"), Spread(Bind(draft))),
+                input,
                 Button(Type("submit"), Disabled(() => draft.Value.Trim().Length == 0), "Add")),
             Ul(Each(items, i => i.Id, RenderItem)),
             P(Class("status"), Text(() => $"{remaining.Value} of {items.Value.Count} remaining")),

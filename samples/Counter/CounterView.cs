@@ -6,10 +6,9 @@ namespace Counter;
 
 public sealed class CounterView : Component
 {
-    private readonly Signal<int> count = new(0);
-
     protected override Node Build()
     {
+        var count = Use(AppState.Context).Count;
         var doubled = new Computed<int>(() => count.Value * 2);
 
         return Section(

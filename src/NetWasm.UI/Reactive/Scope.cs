@@ -7,10 +7,12 @@ namespace NetWasm.UI.Reactive;
 /// Owns computations and other disposables created while it is the current owner.
 /// Disposing a scope disposes everything created inside it, which is how conditional
 /// and list rendering tear down their subtrees without any runtime reflection.
+/// Scopes form a tree (via <see cref="Parent"/>) that <see cref="Context{T}"/> lookups walk.
 /// </summary>
 public sealed class Scope : IDisposable
 {
     private readonly List<IDisposable> owned = new();
+    private Dictionary<object, object?>? contexts;
     private bool disposed;
 
     /// <summary>Creates a scope owned by the current owner, if any.</summary>
@@ -22,12 +24,34 @@ public sealed class Scope : IDisposable
     /// <summary>Creates a scope owned by an explicit parent (or a root scope when <paramref name="parent"/> is null).</summary>
     public Scope(Scope? parent)
     {
+        Parent = parent;
         parent?.Register(this);
     }
 
     internal static Scope? Current => Tracker.CurrentOwner;
 
+    public Scope? Parent { get; }
+
+    public bool IsDisposed => disposed;
+
     public void Register(IDisposable disposable) => owned.Add(disposable);
+
+    internal void SetContext(object key, object? value) => (contexts ??= new Dictionary<object, object?>())[key] = value;
+
+    /// <summary>Looks <paramref name="key"/> up in this scope and its ancestors.</summary>
+    internal bool TryGetContext(object key, out object? value)
+    {
+        for (var s = this; s is not null; s = s.Parent)
+        {
+            if (s.contexts is not null && s.contexts.TryGetValue(key, out value))
+            {
+                return true;
+            }
+        }
+
+        value = null;
+        return false;
+    }
 
     /// <summary>Runs <paramref name="action"/> with this scope as the current owner.</summary>
     public void Run(Action action)
@@ -73,5 +97,6 @@ public sealed class Scope : IDisposable
         }
 
         owned.Clear();
+        contexts = null;
     }
 }

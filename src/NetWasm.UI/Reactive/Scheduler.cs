@@ -11,6 +11,7 @@ namespace NetWasm.UI.Reactive;
 public static class Scheduler
 {
     private static readonly Queue<Effect> queue = new();
+    private static readonly Queue<Action> afterFlush = new();
     private static int depth;
     private static bool flushing;
 
@@ -20,6 +21,9 @@ public static class Scheduler
     public static bool InBatch => depth > 0;
 
     internal static void Enqueue(Effect effect) => queue.Enqueue(effect);
+
+    /// <summary>Queues <paramref name="action"/> to run (in its own batch) after the next flush has reached the host.</summary>
+    internal static void AfterFlush(Action action) => afterFlush.Enqueue(action);
 
     public static void Batch(Action action)
     {
@@ -66,12 +70,26 @@ public static class Scheduler
         {
             flushing = false;
         }
+
+        // OnMount callbacks: the DOM is up to date now. Each runs in its own batch so its writes
+        // flush (and may enqueue further callbacks, drained by the nested Flush).
+        var mountGuard = 0;
+        while (afterFlush.Count > 0)
+        {
+            if (++mountGuard > 100_000)
+            {
+                throw new InvalidOperationException("OnMount cycle detected.");
+            }
+
+            Batch(afterFlush.Dequeue());
+        }
     }
 
     /// <summary>Clears all state. Intended for tests.</summary>
     internal static void Reset()
     {
         queue.Clear();
+        afterFlush.Clear();
         depth = 0;
         flushing = false;
         Flushed = null;

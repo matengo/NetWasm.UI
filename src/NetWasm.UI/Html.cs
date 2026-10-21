@@ -141,6 +141,28 @@ public static class Html
         where TKey : notnull =>
         new(() => items.Value, key, render);
 
+    // ---- context & lifecycle ----
+
+    /// <summary>Provides <paramref name="value"/> to everything built after this call in the current component and its descendants.</summary>
+    public static void Provide<T>(Context<T> context, T value) => context.Provide(value);
+
+    /// <summary>Builds <paramref name="render"/> in a child scope where <paramref name="context"/> is <paramref name="value"/>.</summary>
+    public static Node Provide<T>(Context<T> context, T value, Func<Node> render)
+    {
+        var scope = new Scope();
+        scope.SetContext(context, value);
+        return scope.Run(render);
+    }
+
+    /// <summary>The nearest provided value of <paramref name="context"/>. Call while building, not inside a reactive lambda.</summary>
+    public static T Use<T>(Context<T> context) => context.Use();
+
+    /// <summary>Runs after this component's DOM has been applied by the host. See <see cref="Lifecycle.OnMount"/>.</summary>
+    public static void OnMount(Action callback) => Lifecycle.OnMount(callback);
+
+    /// <summary>Runs when the current component/branch (or effect run) is torn down. See <see cref="Lifecycle.OnCleanup"/>.</summary>
+    public static void OnCleanup(Action cleanup) => Lifecycle.OnCleanup(cleanup);
+
     // ---- routing ----
 
     /// <summary>An in-app link: renders <c>&lt;a href&gt;</c> and routes plain clicks through <see cref="Routing.Router.Current"/>.

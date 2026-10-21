@@ -77,6 +77,9 @@ public sealed class Element : Node
 
     public string Tag { get; }
 
+    /// <summary>Moves keyboard focus to this element (typically from <c>OnMount</c>).</summary>
+    public void Focus() => Renderer.Focus(Id);
+
     public Element Add(params Content[] content)
     {
         for (var i = 0; i < content.Length; i++)

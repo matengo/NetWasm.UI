@@ -197,14 +197,39 @@ Routes(
 - `Effect` re-runs are queued on the `Scheduler`; at batch depth 0 the queue is flushed, then the
   `Renderer` ships one batch to the host.
 - `Scope` owns disposables (effects, nested scopes, components) so `Show`/`For` branches tear
-  down cleanly.
+  down cleanly. Scopes form a tree that context lookups walk.
+
+### Context, stores and lifecycle
+
+```csharp
+public sealed class AppState            // a "store" is just a class with signals
+{
+    public static readonly Context<AppState> Context = new("AppState");
+    public Signal<int> Count { get; } = new(0);
+}
+
+// root component, while building:
+Provide(AppState.Context, state);       // or Provide(ctx, value, () => subtree) for a scoped value
+// any descendant (incl. Show/For branches and routed pages), while building:
+var count = Use(AppState.Context).Count;
+
+var input = Input();
+OnMount(input.Focus);                   // after the host applied this update's DOM ops
+OnCleanup(() => timer.Dispose());       // when the component/branch is torn down
+```
+
+- Contexts are keyed by the `Context<T>` instance (no reflection). `Use` throws if nothing was
+  provided and there is no default. Call `Use` while building, not inside a reactive lambda.
+- `OnCleanup` inside an `Effect` runs before the effect's next run and on dispose.
+- `OnMount` runs once per build, in its own batch, and is skipped if its scope was disposed first.
 
 ## Known limitations
 
 - NetWasm 0.10 (`netwasm0.1`) has no `System.Linq`, reflection or `async`. Write plain loops.
 - Globals (`Scheduler`, `Renderer`, tracker, `Router.Current`) mean exactly one app per module instance.
 - No base-path/hash routing, no SSR/hydration, no Razor syntax – components are built with the C# `Html` API.
-- Pages are rebuilt on navigation; keep state that should survive in a long-lived component or store.
+- Pages are rebuilt on navigation; keep state that should survive in a store provided via context
+  (see `samples/Counter/AppState.cs`).
 
 ## Roadmap ideas
 

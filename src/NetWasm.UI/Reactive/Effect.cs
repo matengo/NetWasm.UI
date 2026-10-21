@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace NetWasm.UI.Reactive;
 
@@ -6,6 +7,7 @@ namespace NetWasm.UI.Reactive;
 public sealed class Effect : Computation
 {
     private readonly Action action;
+    private List<Action>? cleanups;
     private bool scheduled;
 
     public Effect(Action action)
@@ -13,6 +15,34 @@ public sealed class Effect : Computation
         this.action = action;
         Tracker.CurrentOwner?.Register(this);
         Run();
+    }
+
+    internal void AddCleanup(Action cleanup) => (cleanups ??= new List<Action>()).Add(cleanup);
+
+    private void RunCleanups()
+    {
+        var list = cleanups;
+        if (list is null)
+        {
+            return;
+        }
+
+        cleanups = null;
+        for (var i = list.Count - 1; i >= 0; i--)
+        {
+            Tracker.Untracked(list[i]);
+        }
+    }
+
+    public override void Dispose()
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        RunCleanups();
+        base.Dispose();
     }
 
     internal void Run()
@@ -23,6 +53,7 @@ public sealed class Effect : Computation
             return;
         }
 
+        RunCleanups();
         ClearSources();
         var previous = Tracker.Current;
         var previousOwner = Tracker.CurrentOwner;
