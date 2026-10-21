@@ -91,15 +91,43 @@ dotnet run --project tools/DevServer -- samples/Counter
 # → publishes, serves http://localhost:8765/ and rebuilds + reloads the browser on save
 ```
 
-Dev server options: `--port <n>`, `-c Debug|Release`, `--no-watch` (serve only),
+Dev server options: `--port <n>`, `-O O0|O1|Oz` (NetWasm optimization, default `O1`),
+`--release` (= `-O Oz`, production sizes), `-c Debug|Release`, `--no-watch` (serve only),
 `--no-publish` (skip initial publish), `-w <dir>` (watch root, default repo root).
 
 ### Live reload, not hot reload
 
 NetWasm is closed-world AOT: there is no runtime to patch, so .NET Hot Reload (Edit & Continue)
-cannot apply. The dev server instead watches sources, re-runs `dotnet publish` (~15–20 s for the
-sample today) and pushes a reload over a WebSocket; build errors are shown as an overlay in the
-page. Preserving signal state across reloads is on the roadmap.
+cannot apply. The dev server instead watches sources, re-runs `dotnet publish` and pushes a reload
+over a WebSocket; build errors are shown as an overlay in the page. Saves that do not change file
+content (editor touches, formatters) are ignored via content hashing. Preserving signal state
+across reloads is on the roadmap.
+
+#### Why `dotnet publish`, and how long it takes
+
+The browser layout (`browser/*.mjs`, `netwasm.page.mjs`, `deployment.json`) is only produced by
+the SDK's publish target, so a plain `build` is not enough. Measured on the Counter sample after a
+one-line `.cs` change (NetWasm 0.10.0, Release):
+
+| Step (MSBuild target)              | Oz (default) | Notes                                   |
+|------------------------------------|-------------:|-----------------------------------------|
+| `NetWasmCompileCoreModule`         |       ~7.2 s | AOT, scales with optimization level     |
+| `NetWasmLinkRawModule`             |       ~5.9 s | wasm-ld + binaryen                      |
+| `NetWasmSdkResolveBuildEnvironment`|       ~3.5 s | fixed: probes node/wasm-ld every run    |
+| `NetWasmBuildRawBindings`          |       ~2.6 s |                                         |
+| MSBuild + restore overhead         |       ~1.4 s |                                         |
+| `NetWasmSdkPublishJsModule`        |       ~0.3 s | the actual "publish" part is negligible |
+| **Total**                          |    **~21 s** |                                         |
+
+| `NetWasmOptimization` | Publish after edit | `Counter.wasm` |
+|-----------------------|-------------------:|---------------:|
+| `Oz` (production)     |             ~21 s  |         316 KB |
+| `O1` (dev default)    |             ~14 s  |         519 KB |
+| `O0`                  |             ~12 s  |         615 KB |
+
+`Debug` configuration is slower (~32 s) and larger (869 KB), so the dev server stays on Release.
+The remaining floor is in the toolchain itself (environment probing, non-incremental AOT) and is
+feedback for the NetWasm team rather than something this repo can shave further.
 
 ## Architecture
 

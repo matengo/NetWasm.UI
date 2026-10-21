@@ -13,6 +13,7 @@ var reload = new ReloadHub();
 
 Console.WriteLine($"Project:   {options.ProjectPath}");
 Console.WriteLine($"Watching:  {options.WatchRoot}");
+Console.WriteLine($"Build:     -c {options.Configuration} -O {options.Optimization}{(options.Optimization != "Oz" ? "  (use --release for production sizes)" : string.Empty)}");
 
 var publishDir = await publisher.ResolvePublishDirAsync();
 Console.WriteLine($"Publish:   {publishDir}");
@@ -101,7 +102,7 @@ if (!options.NoWatch)
 {
     var watcher = new SourceWatcher(options.WatchRoot, async changed =>
     {
-        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] change: {Path.GetRelativePath(options.WatchRoot, changed)}");
+        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] change: {string.Join(", ", changed.Select(c => Path.GetRelativePath(options.WatchRoot, c)))}");
         await reload.BroadcastAsync("""{"type":"building"}""");
         var result = await publisher.PublishAsync();
         if (result.Success)

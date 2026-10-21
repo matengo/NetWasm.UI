@@ -8,6 +8,7 @@ internal sealed record PublishResult(bool Success, string Output, TimeSpan Elaps
 internal sealed class Publisher(DevServerOptions options)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
+    private bool restored;
 
     public async Task<string> ResolvePublishDirAsync()
     {
@@ -29,10 +30,12 @@ internal sealed class Publisher(DevServerOptions options)
         {
             Console.Write($"[{DateTime.Now:HH:mm:ss}] publishing… ");
             var sw = Stopwatch.StartNew();
+            var noRestore = restored ? " --no-restore" : string.Empty;
             var (code, output) = await RunDotnetAsync(
-                $"publish \"{options.ProjectPath}\" -c {options.Configuration} -nologo -v q -clp:NoSummary");
+                $"publish \"{options.ProjectPath}\" -c {options.Configuration} -p:NetWasmOptimization={options.Optimization}{noRestore} -nologo -v q -clp:NoSummary");
             sw.Stop();
             var ok = code == 0;
+            restored |= ok;
             Console.WriteLine(ok ? $"ok ({sw.Elapsed.TotalSeconds:0.0}s)" : $"FAILED ({sw.Elapsed.TotalSeconds:0.0}s)");
             return new PublishResult(ok, output, sw.Elapsed);
         }
