@@ -47,7 +47,7 @@ public sealed class AppRoot : Component
             P(Class("status"), Text(() => $"Query: '{p.Query}'")),
             Label("Change name: ", Input(Id("greet-name"), Spread(Bind(greetDraft)))),
             " ",
-            Button(Id("greet-go"), OnClick(() => Router.Current!.Navigate("/greet/" + System.Uri.EscapeDataString(greetDraft.Value))), "Go"));
+            Button(Id("greet-go"), OnClick(() => Router.Current!.Navigate("/greet/" + Url.Encode(greetDraft.Value))), "Go"));
     }
 
     private static Node NotFound() =>

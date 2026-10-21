@@ -26,18 +26,38 @@ fit that model. NetWasm.UI instead uses:
   `/todos/{id}` and `/files/{*path}`, plain clicks are intercepted, ctrl/middle-click and the
   back button behave like normal links.
 
-### Sample sizes (Counter + TodoList demo, Release)
+### Sample sizes (whole demo app: counter, todos, router, `/components`; Release)
 
 | Artifact                | Raw     | Brotli  | Gzip    |
 |-------------------------|---------|---------|---------|
-| `Counter.wasm`          | 316 KB  | 59 KB   | 75 KB   |
-| `netwasm.page.mjs` host | 315 KB  | 59 KB   | 70 KB   |
-| **Whole page (10 requests)** | **649 KB** | **125 KB** | – |
+| `Counter.wasm`          | 463 KB  | 77 KB   | 102 KB  |
+| `netwasm.page.mjs` host | 308 KB  | 58 KB   | 69 KB   |
+| HTML + small JS modules | 10 KB   | 2.5 KB  | 3 KB    |
+| **Whole page**          | **780 KB** | **137 KB** | **174 KB** |
 
-Half of the download is NetWasm's own JS host, not application code. The dev server
-(`tools/DevServer`) compresses with Brotli/gzip so DevTools "transferred" numbers resemble a
-production server.
+About 40 % is NetWasm's own JS host, not application code. Production servers must send
+Brotli/gzip; the dev server (`tools/DevServer`) does, so DevTools "transferred" numbers resemble
+production. The `*.dll`, `*.pdb` and `*.json` files in the publish folder are never downloaded.
 
+#### Keeping the Wasm small
+
+NetWasm compiles a closed world ahead of time, so code size follows what is *reachable*:
+
+- **Avoid `$"…{x}"` with non-string holes in hot paths of library code.** NetWasm's interpolation
+  handler goes through `StringBuilder.FormatValue`, which reaches `double`/`float`/`decimal`
+  formatting (~60 KB raw). `"width: " + n.ToString() + "%"` costs almost nothing.
+- **Interface calls make every implementation reachable.** `((IFormattable)x).ToString(…)` pulls
+  in all number formatting; `TemplateRuntime.Str<T>` uses `typeof(T)` checks instead, which fold
+  away per instantiation.
+- **Generic code is not shared.** Each `For<T, TKey>` used to carry its own `Dictionary`,
+  `HashSet` and diff (~30 KB raw each); the diff now lives in a non-generic `KeyedList` over boxed keys.
+- **Prefer `NetWasm.UI.Routing.Url.Encode/Decode`** over `Uri.EscapeDataString`/`UnescapeDataString`
+  (~40 KB raw).
+- `events` with `+=` pull in multicast delegates; the framework keeps handlers in a `List`.
+
+These changes took the demo's `Counter.wasm` from 645 KB (102 KB Brotli) to 463 KB (77 KB Brotli).
+To find what is big, look at `bin/Release/netwasm0.1/<App>.core.wasm` (before `wasm-opt`, with a
+name section) and `wasm-opt <core.wasm> --print-call-graph` (from the `netwasm.hosttools` package).
 ## Quick look
 
 Components can be written as `.nwui` templates (HTML + Razor-style `@`), compiled at build time
@@ -364,7 +384,7 @@ C# errors still show up in the build and point at the `.nwui` line.
   (IntelliSense via the generated C#), and a NuGet package that wires the generator up automatically.
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
 - `<Suspense>`-style async boundaries once NetWasm supports async interop; nested/layout routes.
-- Wasm size work: strip unused `Html` helpers, measure per-feature cost.
+- Wasm size work: a size report in CI per feature; a slimmer JS host for page-only apps (needs NetWasm).
 - Dev loop: snapshot/restore signal state across live reloads, CSS swap without reload, faster
   incremental NetWasm publish.
 - Production caching: NetWasm emits stable file names but a `buildFingerprint` in `deployment.json`;

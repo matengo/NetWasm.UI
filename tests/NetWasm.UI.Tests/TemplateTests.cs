@@ -469,3 +469,30 @@ public partial class TemplateTests : RendererTest
         protected override Node Build() => build();
     }
 }
+
+public class TemplateRuntimeStrTests
+{
+    [Fact]
+    public void Str_formats_numbers_with_the_invariant_culture()
+    {
+        var saved = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("sv-SE");
+        try
+        {
+            Assert.Equal("1.5", TemplateRuntime.Str(1.5));
+            Assert.Equal("2.25", TemplateRuntime.Str(2.25f));
+            Assert.Equal("3.75", TemplateRuntime.Str(3.75m));
+            Assert.Equal("-1234", TemplateRuntime.Str(-1234));
+            Assert.Equal("True", TemplateRuntime.Str(true));
+            Assert.Equal("x", TemplateRuntime.Str("x"));
+            Assert.Equal("x", TemplateRuntime.Str<object>("x"));
+            Assert.Null(TemplateRuntime.Str<string?>(null));
+            Assert.Null(TemplateRuntime.Str<int?>(null));
+            Assert.Equal("7", TemplateRuntime.Str<int?>(7));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = saved;
+        }
+    }
+}

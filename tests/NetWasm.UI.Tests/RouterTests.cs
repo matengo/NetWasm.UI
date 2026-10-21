@@ -36,6 +36,30 @@ public class RoutePatternTests
         Assert.Null(p["missing"]);
     }
 
+    [Theory]
+    [InlineData("abc-._~XYZ09", "abc-._~XYZ09")]
+    [InlineData("Ada L", "Ada%20L")]
+    [InlineData("Åsa & Ölund/?#%", "%C3%85sa%20%26%20%C3%96lund%2F%3F%23%25")]
+    [InlineData("😀", "%F0%9F%98%80")]
+    [InlineData("", "")]
+    public void Url_encodes_like_Uri_and_round_trips(string raw, string encoded)
+    {
+        Assert.Equal(encoded, Url.Encode(raw));
+        Assert.Equal(Uri.EscapeDataString(raw), Url.Encode(raw));
+        Assert.Equal(raw, Url.Decode(encoded));
+    }
+
+    [Theory]
+    [InlineData("a%2", "a%2")]
+    [InlineData("%zz%41", "%zzA")]
+    [InlineData("100%", "100%")]
+    [InlineData("%c3%a5", "å")]
+    public void Url_decode_keeps_malformed_escapes(string encoded, string expected)
+    {
+        Assert.Equal(expected, Url.Decode(encoded));
+        Assert.Equal(Uri.UnescapeDataString(encoded), Url.Decode(encoded));
+    }
+
     [Fact]
     public void Catch_all_joins_remaining_segments()
     {

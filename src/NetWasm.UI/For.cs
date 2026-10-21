@@ -26,36 +26,50 @@ public sealed class For<T, TKey> : Fragment
 
     protected override void Apply(Element parent)
     {
-        var owner = Scope.Current;
-        var anchor = new Anchor();
-        Renderer.AppendChild(parent.Id, anchor.Id);
-
-        var state = new State(anchor, owner);
+        var keyed = new KeyedList(parent, Scope.Current);
 
         _ = new Effect(() =>
         {
             var list = items();
-            Tracker.Untracked(() => Reconcile(list, state));
+            Tracker.Untracked(() =>
+            {
+                // Keys are boxed so the diffing below is shared by every For<T, TKey> instead of being
+                // compiled once per instantiation (closed-world AOT doesn't share generic code).
+                var keys = new object[list.Count];
+                for (var i = 0; i < keys.Length; i++)
+                {
+                    keys[i] = key(list[i]);
+                }
+
+                keyed.Reconcile(keys, i => render(list[i]));
+            });
         });
     }
+}
 
-    private void Reconcile(IReadOnlyList<T> list, State state)
+/// <summary>The non-generic part of <see cref="For{T, TKey}"/>: diffs boxed keys and moves DOM nodes.</summary>
+internal sealed class KeyedList
+{
+    private readonly Anchor anchor = new();
+    private readonly Scope? owner;
+    private readonly Dictionary<object, Entry> entries = new();
+    private readonly List<object> order = new();
+
+    public KeyedList(Element parent, Scope? owner)
     {
-        var entries = state.Entries;
-        var order = state.Order;
-        var comparer = EqualityComparer<TKey>.Default;
+        this.owner = owner;
+        Renderer.AppendChild(parent.Id, anchor.Id);
+    }
 
-        var newOrder = new List<TKey>(list.Count);
-        var newKeys = new HashSet<TKey>(comparer);
-        for (var i = 0; i < list.Count; i++)
+    public void Reconcile(object[] newOrder, Func<int, Node> render)
+    {
+        var newKeys = new HashSet<object>();
+        for (var i = 0; i < newOrder.Length; i++)
         {
-            var k = key(list[i]);
-            if (!newKeys.Add(k))
+            if (!newKeys.Add(newOrder[i]))
             {
-                throw new InvalidOperationException($"Duplicate key in For: {k}");
+                throw new InvalidOperationException("Duplicate key in For: " + newOrder[i]);
             }
-
-            newOrder.Add(k);
         }
 
         // Remove entries that disappeared.
@@ -73,14 +87,14 @@ public sealed class For<T, TKey> : Fragment
 
         // Surviving items that form the longest increasing subsequence of old positions keep their
         // relative order and are never moved; everything else is (re)inserted before its successor.
-        var oldIndex = new Dictionary<TKey, int>(comparer);
+        var oldIndex = new Dictionary<object, int>();
         for (var i = 0; i < order.Count; i++)
         {
             oldIndex[order[i]] = i;
         }
 
-        var sequence = new int[newOrder.Count];
-        for (var i = 0; i < newOrder.Count; i++)
+        var sequence = new int[newOrder.Length];
+        for (var i = 0; i < newOrder.Length; i++)
         {
             sequence[i] = oldIndex.TryGetValue(newOrder[i], out var idx) ? idx : -1;
         }
@@ -88,8 +102,8 @@ public sealed class For<T, TKey> : Fragment
         var stable = LongestIncreasingSubsequence(sequence);
 
         // Walk the new order backwards so the reference node is always already in position.
-        var referenceId = state.Anchor.Id;
-        for (var i = newOrder.Count - 1; i >= 0; i--)
+        var referenceId = anchor.Id;
+        for (var i = newOrder.Length - 1; i >= 0; i--)
         {
             var k = newOrder[i];
             int nodeId;
@@ -104,9 +118,9 @@ public sealed class For<T, TKey> : Fragment
             }
             else
             {
-                var scope = new Scope(state.Owner);
-                var item = list[i];
-                var node = scope.Run(() => render(item));
+                var scope = new Scope(owner);
+                var index = i;
+                var node = scope.Run(() => render(index));
                 entries[k] = new Entry(node, scope);
                 nodeId = node.Id;
                 Renderer.InsertBefore(referenceId, nodeId);
@@ -118,7 +132,6 @@ public sealed class For<T, TKey> : Fragment
         order.Clear();
         order.AddRange(newOrder);
     }
-
     /// <summary>Marks positions belonging to a longest increasing subsequence of non-negative values.</summary>
     private static bool[] LongestIncreasingSubsequence(int[] sequence)
     {
@@ -169,20 +182,6 @@ public sealed class For<T, TKey> : Fragment
         }
 
         return result;
-    }
-
-    private sealed class State
-    {
-        public State(Anchor anchor, Scope? owner)
-        {
-            Anchor = anchor;
-            Owner = owner;
-        }
-
-        public Anchor Anchor { get; }
-        public Scope? Owner { get; }
-        public Dictionary<TKey, Entry> Entries { get; } = new();
-        public List<TKey> Order { get; } = new();
     }
 
     private readonly struct Entry

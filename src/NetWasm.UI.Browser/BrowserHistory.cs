@@ -29,9 +29,24 @@ public sealed class BrowserHistory : IHistory
 
     public string Path => CurrentPathJs();
 
-    public event Action<string>? Changed;
+    public event Action<string>? Changed
+    {
+        add => changed.Add(value!);
+        remove => changed.Remove(value!);
+    }
+
+    // A list instead of a field-like event: avoids pulling multicast delegate code into the Wasm module.
+    private readonly System.Collections.Generic.List<Action<string>> changed = new();
+
+    private void Raise(string path)
+    {
+        foreach (var handler in changed.ToArray())
+        {
+            handler(path);
+        }
+    }
 
     public void Navigate(string path, bool replace) => NavigateJs(path, replace);
 
-    private static void OnPopState(string path) => instance?.Changed?.Invoke(path);
+    private static void OnPopState(string path) => instance?.Raise(path);
 }

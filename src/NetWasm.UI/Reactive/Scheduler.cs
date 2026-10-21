@@ -16,7 +16,14 @@ public static class Scheduler
     private static bool flushing;
 
     /// <summary>Raised after queued effects ran. The DOM renderer uses this to push its op batch.</summary>
-    public static event Action? Flushed;
+    public static event Action? Flushed
+    {
+        add => flushed.Add(value!);
+        remove => flushed.Remove(value!);
+    }
+
+    // A list instead of a field-like event: avoids pulling multicast delegate code into the Wasm module.
+    private static readonly List<Action> flushed = new();
 
     public static bool InBatch => depth > 0;
 
@@ -64,7 +71,10 @@ public static class Scheduler
                 queue.Dequeue().Run();
             }
 
-            Flushed?.Invoke();
+            foreach (var handler in flushed.ToArray())
+            {
+                handler();
+            }
         }
         finally
         {
@@ -92,6 +102,6 @@ public static class Scheduler
         afterFlush.Clear();
         depth = 0;
         flushing = false;
-        Flushed = null;
+        flushed.Clear();
     }
 }

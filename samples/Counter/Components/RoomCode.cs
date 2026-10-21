@@ -29,7 +29,7 @@ public sealed class RoomCode : Component
                     () => extras,
                     e => e.Name,
                     e => Li(new Stepper { Label = e.Name, Value = e.Amount, Max = 3 }))),
-                P(Class("summary"), Text(() => $"{width.Value * length.Value} m² with {ExtrasTotal()} extras")))),
+                P(Class("summary"), Text(() => (width.Value * length.Value).ToString() + " m² with " + ExtrasTotal().ToString() + " extras")))),
         }.Render();
 
     private int ExtrasTotal()

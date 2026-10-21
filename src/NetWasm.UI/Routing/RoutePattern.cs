@@ -144,7 +144,7 @@ public sealed class RoutePattern
             }
             else
             {
-                values[p] = Uri.UnescapeDataString(parts[i]);
+                values[p] = Url.Decode(parts[i]);
             }
 
             p++;
@@ -206,7 +206,7 @@ public sealed class RoutePattern
                 sb.Append('/');
             }
 
-            sb.Append(Uri.UnescapeDataString(parts[i]));
+            sb.Append(Url.Decode(parts[i]));
         }
 
         return sb.ToString();

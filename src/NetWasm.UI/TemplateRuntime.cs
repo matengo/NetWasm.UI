@@ -9,13 +9,23 @@ namespace NetWasm.UI;
 public static class TemplateRuntime
 {
     /// <summary>Formats a value for an attribute or text: null stays null, numbers etc. use the invariant culture.</summary>
-    public static string? Str<T>(T value) => value switch
+    /// <remarks>
+    /// The <c>typeof(T)</c> checks fold away per instantiation, so a <c>Str&lt;int&gt;</c> only carries integer
+    /// formatting. An <c>IFormattable</c> interface call would make every number type's formatting reachable.
+    /// </remarks>
+    public static string? Str<T>(T value)
     {
-        null => null,
-        string s => s,
-        IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
-        _ => value.ToString(),
-    };
+        if (value is null) return null;
+        if (typeof(T) == typeof(string)) return (string)(object)value;
+        if (typeof(T) == typeof(int)) return ((int)(object)value).ToString(CultureInfo.InvariantCulture);
+        if (typeof(T) == typeof(long)) return ((long)(object)value).ToString(CultureInfo.InvariantCulture);
+        if (typeof(T) == typeof(double)) return ((double)(object)value).ToString(CultureInfo.InvariantCulture);
+        if (typeof(T) == typeof(float)) return ((float)(object)value).ToString(CultureInfo.InvariantCulture);
+        if (typeof(T) == typeof(decimal)) return ((decimal)(object)value).ToString(CultureInfo.InvariantCulture);
+        if (typeof(T) == typeof(bool)) return (bool)(object)value ? "True" : "False";
+
+        return value.ToString();
+    }
 
     /// <summary><c>@if / else if / else</c>: <paramref name="selector"/> returns the index of the branch to show (or -1 for none).</summary>
     public static Content Chain(Func<int> selector, params Func<Node>[] branches)

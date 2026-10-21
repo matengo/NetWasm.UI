@@ -12,8 +12,8 @@ public sealed class ProgressBar : Component
 
     protected override Node Build() =>
         Div(Class("progress"),
-            Div(Class("progress-fill"), Style(() => $"width: {Percent()}%")),
-            Span(Class("progress-text"), Text(() => $"{Value.Value} / {Max.Value}")));
+            Div(Class("progress-fill"), Style(() => "width: " + Percent().ToString() + "%")),
+            Span(Class("progress-text"), Text(() => Value.Value.ToString() + " / " + Max.Value.ToString())));
 
     private int Percent()
     {
