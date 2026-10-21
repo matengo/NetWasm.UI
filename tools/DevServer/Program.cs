@@ -95,7 +95,9 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(publishDir),
     ContentTypeProvider = contentTypes,
     ServeUnknownFileTypes = true,
-    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-store",
+    // no-cache (not no-store): the browser revalidates with ETag/Last-Modified and gets 304s
+    // for unchanged files instead of re-downloading the wasm after every reload.
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache",
 });
 
 if (!options.NoWatch)

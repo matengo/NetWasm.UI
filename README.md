@@ -190,6 +190,9 @@ Event payload convention (JS side): `input`/`change` → `target.value` (checkbo
 - Wasm size work: strip unused `Html` helpers, measure per-feature cost.
 - Dev loop: snapshot/restore signal state across live reloads, CSS swap without reload, faster
   incremental NetWasm publish.
+- Production caching: NetWasm emits stable file names but a `buildFingerprint` in `deployment.json`;
+  an opt-in publish step could move `browser/` to `v/<fingerprint>/` (import map in `index.html`)
+  so hosts can serve it with `Cache-Control: immutable` and browsers keep the compiled wasm cached.
 
 ## Development notes
 
