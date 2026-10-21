@@ -24,6 +24,11 @@ if (!options.SkipInitialPublish)
     if (!initial.Success)
     {
         Console.Error.WriteLine(initial.Output);
+        if (options.NoWatch)
+        {
+            // Nothing will ever fix the build without a watcher (CI/E2E): fail fast.
+            return 1;
+        }
     }
 }
 
@@ -127,6 +132,7 @@ if (!options.NoWatch)
 
 Console.WriteLine($"Listening: http://localhost:{options.Port}  (Brotli/gzip on, {(options.NoWatch ? "watch off" : "watch on")})");
 await app.RunAsync();
+return 0;
 
 static string ReadEmbedded(string name)
 {

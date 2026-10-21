@@ -82,6 +82,7 @@ Ul(Each(items, i => i.Id, item =>
 | `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings + `dom.mjs` decoder. `netwasm0.1` only. |
 | `samples/Counter`            | Counter + TodoList demo app (`OutputType=JsModule`, page host).       |
 | `tests/NetWasm.UI.Tests`     | xunit tests running against an in-memory `FakeDomHost` decoder.       |
+| `tests/NetWasm.UI.E2E`       | Playwright (.NET) browser tests: publish + serve `samples/Counter`, drive it in Chromium. |
 | `tools/DevServer`            | Kestrel dev server: publishes the app, serves it with Brotli/gzip and correct MIME types, watches sources and reloads the browser. |
 
 ## Getting started
@@ -90,10 +91,24 @@ Prerequisites: .NET SDK 10.0.3xx. The NetWasm SDK is resolved from `global.json`
 its host tooling on first restore.
 
 ```powershell
-dotnet test                                        # core unit tests (net10.0)
+dotnet test tests/NetWasm.UI.Tests                 # core unit tests (net10.0, < 1 s)
 dotnet run --project tools/DevServer -- samples/Counter
 # → publishes, serves http://localhost:8765/ and rebuilds + reloads the browser on save
 ```
+
+### Browser (E2E) tests
+
+```powershell
+dotnet build tests/NetWasm.UI.E2E
+pwsh tests/NetWasm.UI.E2E/bin/Debug/net10.0/playwright.ps1 install chromium   # once
+dotnet test tests/NetWasm.UI.E2E
+```
+
+The fixture starts the dev server (`--no-watch`, free port), waits for the first publish and runs
+each test in a fresh Chromium context; any console error or uncaught page error fails the test.
+`NETWASM_UI_E2E_URL=http://localhost:8765` reuses a server you already run, `HEADED=1` shows the
+browser. `.github/workflows/ci.yml` runs build, unit tests, E2E tests and an `Oz` publish with a
+size table in the job summary on `ubuntu-latest`.
 
 Dev server options: `--port <n>`, `-O O0|O1|Oz` (NetWasm optimization, default `O1`),
 `--release` (= `-O Oz`, production sizes), `-c Debug|Release`, `--no-watch` (serve only),

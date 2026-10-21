@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Build
+        run: dotnet build NetWasm.UI.slnx
+
+      - name: Unit tests
+        run: dotnet test tests/NetWasm.UI.Tests --no-build
+
+      - name: Install Chromium for Playwright
+        run: pwsh tests/NetWasm.UI.E2E/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: E2E tests (publishes samples/Counter and drives it in Chromium)
+        run: dotnet test tests/NetWasm.UI.E2E --no-build
+
+      - name: Production publish (Oz) and size report
+        run: |
+          dotnet publish samples/Counter -c Release
+          {
+            echo "### Counter publish sizes (Oz)"
+            echo "| File | Bytes | gzip -9 |"
+            echo "|---|---:|---:|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          find samples/Counter/bin/Release/netwasm0.1/publish -type f \( -name '*.wasm' -o -name '*.mjs' \) \
+            -exec sh -c 'printf "| %s | %s | %s |\n" "${1##*/publish/}" "$(wc -c < "$1")" "$(gzip -9c "$1" | wc -c)"' _ {} \; \
+            | sort >> "$GITHUB_STEP_SUMMARY"
