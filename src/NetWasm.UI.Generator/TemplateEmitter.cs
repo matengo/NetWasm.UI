@@ -847,7 +847,11 @@ internal sealed class TemplateEmitter
         return string.Join(" ", kept);
     }
 
-    private static string Decode(string raw, int start) => Entities.Decode(Collapse(raw), start);
+    private static string Decode(string raw, int start)
+    {
+        Entities.Decode(raw, start); // reports unknown entities at their exact position in the template
+        return Entities.Decode(Collapse(raw), start);
+    }
 
     internal static string Literal(string value)
     {
@@ -974,6 +978,13 @@ internal static class Entities
         ["amp"] = "&", ["lt"] = "<", ["gt"] = ">", ["quot"] = "\"", ["apos"] = "'", ["nbsp"] = "\u00a0",
         ["times"] = "\u00d7", ["middot"] = "\u00b7", ["copy"] = "\u00a9", ["hellip"] = "\u2026",
         ["mdash"] = "\u2014", ["ndash"] = "\u2013", ["larr"] = "\u2190", ["rarr"] = "\u2192",
+        ["uarr"] = "\u2191", ["darr"] = "\u2193", ["minus"] = "\u2212", ["plusmn"] = "\u00b1",
+        ["divide"] = "\u00f7", ["le"] = "\u2264", ["ge"] = "\u2265", ["ne"] = "\u2260",
+        ["deg"] = "\u00b0", ["euro"] = "\u20ac", ["pound"] = "\u00a3", ["reg"] = "\u00ae",
+        ["trade"] = "\u2122", ["sect"] = "\u00a7", ["para"] = "\u00b6", ["bull"] = "\u2022",
+        ["laquo"] = "\u00ab", ["raquo"] = "\u00bb", ["lsquo"] = "\u2018", ["rsquo"] = "\u2019",
+        ["ldquo"] = "\u201c", ["rdquo"] = "\u201d", ["check"] = "\u2713", ["shy"] = "\u00ad",
+        ["zwj"] = "\u200d", ["zwnj"] = "\u200c", ["ensp"] = "\u2002", ["emsp"] = "\u2003", ["thinsp"] = "\u2009",
     };
 
     public static string Decode(string text, int start)
@@ -1012,10 +1023,36 @@ internal static class Entities
                 i = semi;
                 continue;
             }
+            else if (IsEntityName(name))
+            {
+                throw new TemplateException(
+                    "NWUI001",
+                    $"Unknown entity '&{name};'. Use a numeric reference (e.g. '&#8722;') or the character itself.",
+                    start + i,
+                    semi - i + 1);
+            }
 
             b.Append(c);
         }
 
         return b.ToString();
+    }
+
+    private static bool IsEntityName(string name)
+    {
+        if (name.Length == 0 || !char.IsLetter(name[0]))
+        {
+            return false;
+        }
+
+        foreach (var ch in name)
+        {
+            if (!char.IsLetterOrDigit(ch))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

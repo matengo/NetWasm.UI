@@ -1,0 +1,17 @@
+@* A framed box: a Title prop, an optional Actions slot in the header, and child content. *@
+<div class="panel">
+    <div class="panel-head">
+        <h3>@Title</h3>
+        @if (Actions is not null) {
+            <div class="panel-actions">@render(Actions)</div>
+        }
+    </div>
+    @render(ChildContent)
+</div>
+
+@prop string Title = "";
+
+@code {
+    public Slot? Actions { get; set; }
+    public Slot? ChildContent { get; set; }
+}

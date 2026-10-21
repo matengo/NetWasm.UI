@@ -21,12 +21,14 @@ public sealed class AppRoot : Component
                     NavLink("/", "active", "Home"),
                     NavLink("/counter", "active", "Counter"),
                     NavLink("/todos", "active", "Todos"),
+                    NavLink("/components", "active", "Components"),
                     NavLink("/greet/world", "active", "Greet"))),
             Routes(
                 NotFound,
                 Route("/", Home),
                 Route("/counter", () => new CounterView().Render()),
                 Route("/todos", () => new TodoList().Render()),
+                Route("/components", () => new ComponentsPage().Render()),
                 Route("/greet/{name}", Greet)));
     }
 

@@ -190,3 +190,48 @@ public sealed class StoreTests : PageTest
         await Expect(Page.Locator("#new-todo")).ToHaveValueAsync("");   // draft is page-local
     }
 }
+
+public sealed class ComponentsTests : PageTest
+{
+    public ComponentsTests(AppServerFixture app) : base(app)
+    {
+    }
+
+    [Theory]
+    [InlineData(0, "Razor (.nwui)")]
+    [InlineData(1, "C# (code)")]
+    public async Task Nested_components_behave_the_same_in_both_variants(int index, string title)
+    {
+        await OpenAsync("/components");
+        var panel = Page.Locator(".panel").Nth(index);
+        var steppers = panel.Locator(".stepper");
+        var width = steppers.Nth(0);
+        var length = steppers.Nth(1);
+        var doors = steppers.Nth(2);
+        await Expect(panel.Locator("h3")).ToHaveTextAsync(title);
+        await Expect(steppers).ToHaveCountAsync(4);
+        await Expect(width.Locator(".dec")).ToHaveTextAsync("\u2212");     // &minus;
+        await Expect(panel.Locator(".progress-text")).ToHaveTextAsync("12 / 200");
+        await Expect(panel.Locator(".summary")).ToHaveTextAsync("12 m² with 3 extras");
+
+        await width.Locator(".inc").ClickAsync();
+        await length.Locator(".inc").ClickAsync();      // Step = 2
+        await Expect(width.Locator("output")).ToHaveTextAsync("4");
+        await Expect(length.Locator("output")).ToHaveTextAsync("6");
+        await Expect(panel.Locator(".progress-text")).ToHaveTextAsync("24 / 200");
+        await Expect(panel.Locator(".progress-fill")).ToHaveAttributeAsync("style", "width: 12%");
+
+        await doors.Locator(".inc").ClickAsync();
+        await doors.Locator(".inc").ClickAsync();
+        await Expect(doors.Locator("output")).ToHaveTextAsync("3");
+        await Expect(doors.Locator(".inc")).ToBeDisabledAsync();   // Max = 3
+        await Expect(panel.Locator(".summary")).ToHaveTextAsync("24 m² with 5 extras");
+
+        // The other variant has its own state.
+        await Expect(Page.Locator(".panel").Nth(1 - index).Locator(".summary")).ToHaveTextAsync("12 m² with 3 extras");
+
+        await panel.Locator(".reset").ClickAsync();         // Actions slot
+        await Expect(panel.Locator(".summary")).ToHaveTextAsync("12 m² with 3 extras");
+        await Expect(width.Locator(".dec")).ToBeEnabledAsync();
+    }
+}

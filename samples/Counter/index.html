@@ -15,7 +15,19 @@
     .hint { color: #b35; }
     nav a { margin-right: 1rem; }
     nav a.active { font-weight: bold; text-decoration: none; }
-  </style>
+    body:has(#components) { max-width: 56rem; }
+    .variants { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: 1rem; }
+    .panel { border: 1px solid #ccd; border-radius: .5rem; padding: .75rem; background: #fafaff; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; }
+    .panel-head h3 { margin: 0; }
+    .stepper { display: flex; align-items: center; gap: .5rem; margin: .4rem 0; }
+    .stepper-label { min-width: 5rem; }
+    .stepper output { min-width: 1.5rem; text-align: center; font-weight: bold; }
+    .stepper button { margin: 0; width: 2rem; }
+    .extras { padding: 0; margin: .5rem 0; list-style: none; }
+    .progress { position: relative; height: 1.4rem; background: #e6e6ef; border-radius: .7rem; overflow: hidden; margin: .5rem 0; }
+    .progress-fill { height: 100%; background: #6a8cff; transition: width .2s; }
+    .progress-text { position: absolute; inset: 0; text-align: center; font-size: .85rem; line-height: 1.4rem; }  </style>
 </head>
 <body>
   <div id="app"></div>

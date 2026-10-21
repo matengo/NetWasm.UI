@@ -106,7 +106,7 @@ Ul(Each(items, i => i.Id, item =>
 | `src/NetWasm.UI`             | Core: reactivity, binary renderer, component/builder API. Targets `netwasm0.1` and `net10.0` (for tests). |
 | `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings + `dom.mjs` decoder. `netwasm0.1` only. |
 | `src/NetWasm.UI.Generator`   | Roslyn incremental source generator: `*.nwui` templates → `Component` partial classes. |
-| `samples/Counter`            | Counter + TodoList demo app (`OutputType=JsModule`, page host).       |
+| `samples/Counter`            | Demo app (`OutputType=JsModule`, page host): counter, todos, and `/components` (nested components, `.nwui` vs C#). |
 | `tests/NetWasm.UI.Tests`     | xunit tests running against an in-memory `FakeDomHost` decoder.       |
 | `tests/NetWasm.UI.E2E`       | Playwright (.NET) browser tests: publish + serve `samples/Counter`, drive it in Chromium. |
 | `tools/DevServer`            | Kestrel dev server: publishes the app, serves it with Brotli/gzip and correct MIME types, watches sources and reloads the browser. |
@@ -299,7 +299,7 @@ the app's `.csproj` (see `samples/Counter/Counter.csproj`):
 | `<Link href="/x">…</Link>`, `<NavLink href="/x" activeClass="on">…</NavLink>` | `Html.Link` / `Html.NavLink` |
 | `@code { … }`, `@using X`, `@namespace X` | class members, usings, namespace |
 | `@prop int Level = 1;` | a reactive prop: `public Prop<int> Level { get; set; } = 1;` |
-| `@* … *@`, `<!-- … -->`, `@@`, `&amp; &times; &#65;` | comments, literal `@`, decoded entities |
+| `@* … *@`, `<!-- … -->`, `@@`, `&amp; &times; &minus; &#65;` | comments, literal `@`, decoded entities (common named ones plus numeric; an unknown `&name;` is an error) |
 
 - `Build()` calls `partial void OnInit()` first, inside the component's scope; implement it in
   `@code` to call `Use`, `Provide`, `OnMount` or create `Computed`s.
@@ -316,6 +316,10 @@ the app's `.csproj` (see `samples/Counter/Counter.csproj`):
   are tracked. Reading `Level.Value` in `OnInit`/`@code` gives a snapshot (`Build` is untracked).
   From C#: `new Chip { Caption = nameSignal }`, `new Chip { Caption = new(() => …) }` or
   `Caption = "fixed"`. `samples/Counter/Page.nwui` uses `@prop string Title`.
+- Literal props are strings, so pass other types as code: `Step="@(2)"`, `Max="@max"`.
+- `samples/Counter/Components` shows nesting: `Panel` (slots) and `Stepper` (`@prop`, two-way `Signal<int>`)
+  are templates, `ProgressBar` is a C# component, and `RoomRazor.nwui` / `RoomCode.cs` build the same UI
+  from them, once as a template and once in C# (`new Panel { Title = …, ChildContent = new Slot(…) }`).
 - Child content: declare `public Slot? ChildContent { get; set; }` (and any named slots, e.g.
   `Header`) and place it with `@render(ChildContent)`; an unset slot renders nothing. The content
   is built where the component renders it, so it belongs to the component's scope (and is torn

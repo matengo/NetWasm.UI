@@ -1,0 +1,10 @@
+@using Counter.Components
+@* The same room planner twice: once as a template, once in C#. Both use the same components. *@
+<Page Id="components" Title="Components">
+    <p>Panel and Stepper are .nwui components, ProgressBar is a C# component. The left side
+       composes them in a template, the right side in plain C#.</p>
+    <div class="variants">
+        <RoomRazor />
+        <RoomCode />
+    </div>
+</Page>

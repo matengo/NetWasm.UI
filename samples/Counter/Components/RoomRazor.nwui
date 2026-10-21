@@ -1,0 +1,44 @@
+@* Components inside components, written as a template: Panel > Stepper/ProgressBar, also inside @foreach. *@
+<Panel Title="Razor (.nwui)">
+    <template slot="Actions">
+        <button class="reset" @onclick="Reset">Reset</button>
+    </template>
+    <div class="room">
+        <Stepper Label="Width" Value="@width" />
+        <Stepper Label="Length" Value="@length" Step="@(2)" Max="@(20)" />
+        <ProgressBar Value="@(width.Value * length.Value)" Max="@(MaxArea)" />
+        <ul class="extras">
+            @foreach (var extra in extras) {
+                <li><Stepper Label="@extra.Name" Value="@extra.Amount" Max="@(3)" /></li>
+            }
+        </ul>
+        <p class="summary">@(width.Value * length.Value) m² with @ExtrasTotal() extras</p>
+    </div>
+</Panel>
+
+@code {
+    private const int MaxArea = 200;
+
+    private readonly Signal<int> width = new(3);
+    private readonly Signal<int> length = new(4);
+    private readonly RoomExtra[] extras = { new("Doors", 1), new("Windows", 2) };
+
+    private int ExtrasTotal()
+    {
+        var n = 0;
+        foreach (var e in extras)
+        {
+            n += e.Amount.Value;
+        }
+
+        return n;
+    }
+
+    private void Reset()
+    {
+        width.Value = 3;
+        length.Value = 4;
+        extras[0].Amount.Value = 1;
+        extras[1].Amount.Value = 2;
+    }
+}

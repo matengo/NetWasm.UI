@@ -294,6 +294,8 @@ public partial class TemplateTests : RendererTest
     [InlineData("<div @onclick:preventDefault></div>", "NWUI002", "without an '@onclick' handler")]
     [InlineData("@if (x) { <a></a> }", "NWUI002", "wrap it in an element")]
     [InlineData("<div>@(a</div>", "NWUI001", "Unbalanced")]
+    [InlineData("<div>a &nosuch; b</div>", "NWUI001", "Unknown entity '&nosuch;'")]
+    [InlineData("<div title=\"&nosuch;\"></div>", "NWUI001", "Unknown entity")]
     [InlineData("@prop Count\n<div></div>", "NWUI001", "@prop Type Name")]
     [InlineData("@prop int Count =\n<div></div>", "NWUI001", "default value")]
     public void Compiler_reports_template_errors(string template, string id, string message)
@@ -314,6 +316,9 @@ public partial class TemplateTests : RendererTest
         var lines = result.Diagnostic!.Lines;
         Assert.Equal(2, lines.Start.Line);
         Assert.Equal(0, lines.Start.Character);
+
+        var entity = TemplateCompiler.Compile("C:\\p\\Bad.nwui", "<div>\n    a\n    b &oops; &minus;\n</div>", "App", "C:\\p\\");
+        Assert.Equal((2, 6), (entity.Diagnostic!.Lines.Start.Line, entity.Diagnostic.Lines.Start.Character));
     }
 
     [Fact]

@@ -8,7 +8,7 @@
             <li @key="item.Id" class="@(item.Done.Value ? "todo done" : "todo")">
                 <label><input @bind="item.Done" /> @item.Title</label>
                 <button class="remove" title="Remove" @onclick="() => Remove(item)">&times;</button>
-            </li>
+            </li> 
         }
     </ul>
     <p class="status">@remaining of @items.Value.Count remaining</p>
