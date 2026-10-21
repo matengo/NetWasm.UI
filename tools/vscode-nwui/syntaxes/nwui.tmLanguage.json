@@ -1,0 +1,271 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "NetWasm.UI Template",
+  "scopeName": "text.html.nwui",
+  "fileTypes": ["nwui"],
+  "patterns": [
+    { "include": "#nwui" },
+    { "include": "#component-tag" },
+    { "include": "text.html.basic" }
+  ],
+  "injections": {
+    "L:text.html.nwui meta.tag -string -comment -meta.embedded": {
+      "patterns": [{ "include": "#directive-attribute" }]
+    },
+    "L:text.html.nwui string.quoted -comment -meta.embedded": {
+      "patterns": [
+        { "include": "#escape" },
+        { "include": "#explicit-expression" },
+        { "include": "#implicit-expression" }
+      ]
+    }
+  },
+  "repository": {
+    "nwui": {
+      "patterns": [
+        { "include": "#razor-comment" },
+        { "include": "#escape" },
+        { "include": "#code-block" },
+        { "include": "#line-directive" },
+        { "include": "#prop-directive" },
+        { "include": "#if" },
+        { "include": "#else" },
+        { "include": "#foreach" },
+        { "include": "#render" },
+        { "include": "#block-close" },
+        { "include": "#explicit-expression" },
+        { "include": "#implicit-expression" }
+      ]
+    },
+    "razor-comment": {
+      "name": "comment.block.nwui",
+      "begin": "@\\*",
+      "end": "\\*@",
+      "beginCaptures": { "0": { "name": "punctuation.definition.comment.begin.nwui" } },
+      "endCaptures": { "0": { "name": "punctuation.definition.comment.end.nwui" } }
+    },
+    "escape": {
+      "name": "constant.character.escape.nwui",
+      "match": "@@"
+    },
+    "code-block": {
+      "begin": "(@)(code)\\s*(\\{)",
+      "end": "\\}",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.nwui.transition" },
+        "2": { "name": "keyword.control.nwui.directive" },
+        "3": { "name": "punctuation.section.block.begin.nwui" }
+      },
+      "endCaptures": { "0": { "name": "punctuation.section.block.end.nwui" } },
+      "contentName": "meta.embedded.block.csharp source.cs",
+      "patterns": [{ "include": "source.cs#class-or-struct-members" }]
+    },
+    "line-directive": {
+      "match": "(@)(using|namespace)\\s+([\\w.]+)\\s*(;)?",
+      "captures": {
+        "1": { "name": "keyword.control.nwui.transition" },
+        "2": { "name": "keyword.control.nwui.directive" },
+        "3": { "name": "entity.name.type.namespace.cs" },
+        "4": { "name": "punctuation.terminator.statement.cs" }
+      }
+    },
+    "prop-directive": {
+      "match": "(@)(prop)\\s+(.+?)\\s+([A-Za-z_]\\w*)\\s*(?:(=)\\s*(.*?))?\\s*(;)?\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.nwui.transition" },
+        "2": { "name": "keyword.control.nwui.directive" },
+        "3": { "name": "meta.embedded.expression.csharp", "patterns": [{ "include": "source.cs#type" }] },
+        "4": { "name": "entity.name.variable.property.cs" },
+        "5": { "name": "keyword.operator.assignment.cs" },
+        "6": { "name": "meta.embedded.expression.csharp", "patterns": [{ "include": "source.cs#expression" }] },
+        "7": { "name": "punctuation.terminator.statement.cs" }
+      }
+    },
+    "if": {
+      "begin": "(@)(if)\\s*(\\()",
+      "end": "(\\))\\s*(\\{)?",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.nwui.transition" },
+        "2": { "name": "keyword.control.conditional.if.cs" },
+        "3": { "name": "punctuation.parenthesis.open.cs" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.parenthesis.close.cs" },
+        "2": { "name": "punctuation.section.block.begin.nwui" }
+      },
+      "contentName": "meta.embedded.expression.csharp source.cs",
+      "patterns": [{ "include": "#csharp-expression" }]
+    },
+    "else": {
+      "patterns": [
+        {
+          "begin": "(?<=\\})\\s*(else)\\s+(if)\\s*(\\()",
+          "end": "(\\))\\s*(\\{)?",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.conditional.else.cs" },
+            "2": { "name": "keyword.control.conditional.if.cs" },
+            "3": { "name": "punctuation.parenthesis.open.cs" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.parenthesis.close.cs" },
+            "2": { "name": "punctuation.section.block.begin.nwui" }
+          },
+          "contentName": "meta.embedded.expression.csharp source.cs",
+          "patterns": [{ "include": "#csharp-expression" }]
+        },
+        {
+          "match": "(?<=\\})\\s*(else)\\s*(\\{)",
+          "captures": {
+            "1": { "name": "keyword.control.conditional.else.cs" },
+            "2": { "name": "punctuation.section.block.begin.nwui" }
+          }
+        }
+      ]
+    },
+    "foreach": {
+      "begin": "(@)(foreach)\\s*(\\()",
+      "end": "(\\))\\s*(\\{)?",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.nwui.transition" },
+        "2": { "name": "keyword.control.loop.foreach.cs" },
+        "3": { "name": "punctuation.parenthesis.open.cs" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.parenthesis.close.cs" },
+        "2": { "name": "punctuation.section.block.begin.nwui" }
+      },
+      "contentName": "meta.embedded.expression.csharp source.cs",
+      "patterns": [
+        {
+          "match": "\\G\\s*(?:(var)|(.+?))\\s+([A-Za-z_]\\w*)\\s+(in)\\b",
+          "captures": {
+            "1": { "name": "storage.type.var.cs" },
+            "2": { "patterns": [{ "include": "source.cs#type" }] },
+            "3": { "name": "entity.name.variable.local.cs" },
+            "4": { "name": "keyword.control.loop.in.cs" }
+          }
+        },
+        { "include": "#csharp-expression" }
+      ]
+    },
+    "render": {
+      "begin": "(@)(render)\\s*(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.nwui.transition" },
+        "2": { "name": "keyword.control.nwui.directive" },
+        "3": { "name": "punctuation.parenthesis.open.cs" }
+      },
+      "endCaptures": { "0": { "name": "punctuation.parenthesis.close.cs" } },
+      "contentName": "meta.embedded.expression.csharp source.cs",
+      "patterns": [{ "include": "#csharp-expression" }]
+    },
+    "block-close": {
+      "match": "^\\s*(\\})",
+      "captures": { "1": { "name": "punctuation.section.block.end.nwui" } }
+    },
+    "explicit-expression": {
+      "begin": "(@)(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.nwui.transition" },
+        "2": { "name": "punctuation.parenthesis.open.cs" }
+      },
+      "endCaptures": { "0": { "name": "punctuation.parenthesis.close.cs" } },
+      "contentName": "meta.embedded.expression.csharp source.cs",
+      "patterns": [{ "include": "#csharp-expression" }]
+    },
+    "implicit-expression": {
+      "match": "(?<![\\w.])(@)([A-Za-z_]\\w*(?:(?:\\?\\.|\\.)[A-Za-z_]\\w*|\\((?:[^()]|\\([^()]*\\))*\\)|\\[[^\\]]*\\])*)",
+      "captures": {
+        "1": { "name": "keyword.control.nwui.transition" },
+        "2": { "name": "meta.embedded.expression.csharp source.cs", "patterns": [{ "include": "source.cs#expression" }] }
+      }
+    },
+    "csharp-expression": {
+      "patterns": [
+        { "include": "source.cs#expression" },
+        { "include": "#csharp-parens" }
+      ]
+    },
+    "csharp-parens": {
+      "begin": "\\(",
+      "end": "\\)",
+      "beginCaptures": { "0": { "name": "punctuation.parenthesis.open.cs" } },
+      "endCaptures": { "0": { "name": "punctuation.parenthesis.close.cs" } },
+      "patterns": [{ "include": "#csharp-expression" }]
+    },
+    "directive-attribute": {
+      "patterns": [
+        {
+          "match": "(@)(on[A-Za-z]+|bind|ref|key)(?:(:)([A-Za-z]+))?\\s*(=)\\s*(?:(\")([^\"]*)(\")|(')([^']*)('))",
+          "captures": {
+            "1": { "name": "keyword.control.nwui.transition" },
+            "2": { "name": "entity.other.attribute-name.directive.nwui" },
+            "3": { "name": "punctuation.separator.key-value.nwui" },
+            "4": { "name": "entity.other.attribute-name.modifier.nwui" },
+            "5": { "name": "punctuation.separator.key-value.html" },
+            "6": { "name": "punctuation.definition.string.begin.html" },
+            "7": { "name": "meta.embedded.expression.csharp source.cs", "patterns": [{ "include": "#csharp-expression" }] },
+            "8": { "name": "punctuation.definition.string.end.html" },
+            "9": { "name": "punctuation.definition.string.begin.html" },
+            "10": { "name": "meta.embedded.expression.csharp source.cs", "patterns": [{ "include": "#csharp-expression" }] },
+            "11": { "name": "punctuation.definition.string.end.html" }
+          }
+        },
+        {
+          "match": "(@)(on[A-Za-z]+|bind|ref|key)(?:(:)([A-Za-z]+))?",
+          "captures": {
+            "1": { "name": "keyword.control.nwui.transition" },
+            "2": { "name": "entity.other.attribute-name.directive.nwui" },
+            "3": { "name": "punctuation.separator.key-value.nwui" },
+            "4": { "name": "entity.other.attribute-name.modifier.nwui" }
+          }
+        }
+      ]
+    },
+    "component-tag": {
+      "name": "meta.tag.component.nwui",
+      "begin": "(</?)([A-Z][\\w.]*)(?=[\\s/>])",
+      "end": "/?>",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.type.class.component.nwui" }
+      },
+      "endCaptures": { "0": { "name": "punctuation.definition.tag.end.html" } },
+      "patterns": [
+        { "include": "#directive-attribute" },
+        {
+          "match": "[A-Za-z_][\\w.:-]*",
+          "name": "entity.other.attribute-name.html"
+        },
+        { "match": "=", "name": "punctuation.separator.key-value.html" },
+        {
+          "name": "string.quoted.double.html",
+          "begin": "\"",
+          "end": "\"",
+          "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.html" } },
+          "endCaptures": { "0": { "name": "punctuation.definition.string.end.html" } },
+          "patterns": [
+            { "include": "#escape" },
+            { "include": "#explicit-expression" },
+            { "include": "#implicit-expression" },
+            { "include": "text.html.basic#character-reference" }
+          ]
+        },
+        {
+          "name": "string.quoted.single.html",
+          "begin": "'",
+          "end": "'",
+          "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.html" } },
+          "endCaptures": { "0": { "name": "punctuation.definition.string.end.html" } },
+          "patterns": [
+            { "include": "#escape" },
+            { "include": "#explicit-expression" },
+            { "include": "#implicit-expression" }
+          ]
+        }
+      ]
+    }
+  }
+}

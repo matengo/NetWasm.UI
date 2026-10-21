@@ -32,6 +32,10 @@ jobs:
       - name: Unit tests
         run: dotnet test tests/NetWasm.UI.Tests --no-build
 
+      - name: .nwui grammar tests
+        working-directory: tools/vscode-nwui
+        run: npm ci && npm test
+
       - name: Install Chromium for Playwright
         run: pwsh tests/NetWasm.UI.E2E/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
 

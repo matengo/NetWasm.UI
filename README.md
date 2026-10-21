@@ -110,6 +110,7 @@ Ul(Each(items, i => i.Id, item =>
 | `tests/NetWasm.UI.Tests`     | xunit tests running against an in-memory `FakeDomHost` decoder.       |
 | `tests/NetWasm.UI.E2E`       | Playwright (.NET) browser tests: publish + serve `samples/Counter`, drive it in Chromium. |
 | `tools/DevServer`            | Kestrel dev server: publishes the app, serves it with Brotli/gzip and correct MIME types, watches sources and reloads the browser. |
+| `tools/vscode-nwui`          | VS Code extension: `.nwui` syntax highlighting (TextMate grammar embedding HTML and C#). |
 
 ## Getting started
 
@@ -324,20 +325,39 @@ the app's `.csproj` (see `samples/Counter/Counter.csproj`):
   position in the `.nwui` file. User C# is emitted under `#line`, so C# errors point at the template line and column, e.g. `CounterView.nwui(3,69): error CS0103`.
 - The dev server watches `.nwui` files like `.cs` files.
 
+### Editor support
+
+`tools/vscode-nwui` is a small VS Code extension that highlights `.nwui` files. It uses VS Code's
+own HTML and C# grammars, so markup, `@expressions`, `@if`/`@foreach`, directive attributes
+(`@onclick="…"`), components, `@prop` and `@code { … }` get their normal colors. It also sets up
+`@* *@` comments, bracket matching and auto-closing. Install it:
+
+```powershell
+cd tools/vscode-nwui
+npm install
+npm run package                     # → nwui.vsix
+code --install-extension nwui.vsix
+npm test                            # grammar tests (vscode-textmate + the real HTML/C# grammars)
+```
+
+The extension only colors the code. There is no IntelliSense or go-to-definition inside templates yet;
+C# errors still show up in the build and point at the `.nwui` line.
+
 ## Known limitations
 
 - NetWasm 0.10 (`netwasm0.1`) has no `System.Linq`, reflection or `async`. Write plain loops.
 - Globals (`Scheduler`, `Renderer`, tracker, `Router.Current`) mean exactly one app per module instance.
 - No base-path/hash routing, no SSR/hydration.
-- `.nwui` has no editor support yet (no syntax highlighting/IntelliSense inside templates);
-  only `@if`/`@foreach` control flow, slots take no parameters (no `Slot<T>` yet).
+- `.nwui` editor support is syntax highlighting only (VS Code, `tools/vscode-nwui`), with no
+  IntelliSense inside templates. Control flow is only `@if`/`@foreach`, and slots take no
+  parameters (no `Slot<T>` yet).
 - Pages are rebuilt on navigation; keep state that should survive in a store provided via context
   (see `samples/Counter/AppState.cs`).
 
 ## Roadmap ideas
 
-- Templates: parameterized slots (`Slot<T>`), `@switch`, a TextMate grammar / VS Code extension
-  for `.nwui`, and a NuGet package that wires the generator up automatically.
+- Templates: parameterized slots (`Slot<T>`), `@switch`, a language server for `.nwui`
+  (IntelliSense via the generated C#), and a NuGet package that wires the generator up automatically.
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
 - `<Suspense>`-style async boundaries once NetWasm supports async interop; nested/layout routes.
 - Wasm size work: strip unused `Html` helpers, measure per-feature cost.
