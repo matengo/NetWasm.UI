@@ -16,7 +16,7 @@ public sealed class BrowserDomHost : IDomHost
     private static extern void ApplyBatchJs(byte[] ops);
 
     [JSImport("subscribe", Module)]
-    private static extern JSSubscription SubscribeJs(Action<int, string> dispatch);
+    private static extern JSSubscription SubscribeJs(Action<int, byte[]> dispatch);
 
     private JSSubscription? subscription;
 

@@ -32,4 +32,6 @@ public enum ListenerFlags : byte
     None = 0,
     PreventDefault = 1,
     StopPropagation = 2,
+    /// <summary>Calls preventDefault only for an unmodified primary-button click (lets ctrl/middle-click open new tabs).</summary>
+    PreventDefaultPlainClick = 4,
 }

@@ -16,11 +16,14 @@ public abstract class RendererTest : IDisposable
         Renderer.Initialize(Dom);
     }
 
-    /// <summary>Simulates the browser dispatching an event to a handler.</summary>
-    protected void Fire(FakeDomHost.FakeNode node, string eventName, string payload = "") =>
-        Renderer.Dispatch(Dom.HandlerFor(node, eventName), payload);
+    /// <summary>Simulates the browser dispatching an event to a handler, going through the binary payload path.</summary>
+    protected void Fire(FakeDomHost.FakeNode node, string eventName, string value = "") =>
+        Fire(node, new DomEvent(eventName, value));
 
-    public void Dispose()
+    protected void Fire(FakeDomHost.FakeNode node, DomEvent e) =>
+        Renderer.Dispatch(Dom.HandlerFor(node, e.Type), e.Encode());
+
+    public virtual void Dispose()
     {
         Renderer.Reset();
         Scheduler.Reset();

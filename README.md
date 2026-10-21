@@ -19,8 +19,12 @@ fit that model. NetWasm.UI instead uses:
   (`Func<T>` / signals) create targeted effects on single text nodes, attributes or properties.
 - **A binary op batch** – all DOM mutations in a tick are encoded into one `byte[]` and applied
   by a ~200-line JS decoder (`dom.mjs`) in a single call.
-- **Events** flow back through one JS→Wasm callback (`dispatch(handlerId, payload)`), wrapped in
+- **Events** flow back through one JS→Wasm callback (`dispatch(handlerId, payload)`) carrying a
+  small binary `DomEvent` record (modifiers, button, clientX/Y, key, value, checked), wrapped in
   a scheduler batch, so a click that touches ten signals still yields one `applyBatch`.
+- **Routing** – `Routes`/`Route`/`Link`/`NavLink` over the History API; patterns like
+  `/todos/{id}` and `/files/{*path}`, plain clicks are intercepted, ctrl/middle-click and the
+  back button behave like normal links.
 
 ### Sample sizes (Counter + TodoList demo, Release)
 
@@ -158,12 +162,33 @@ Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs` and `FakeDomHos
 | SetText, SetAttribute, RemoveAttribute, SetProperty, SetBoolProperty | id, … | |
 | AppendChild, InsertBefore | parent/reference, child | `InsertBefore` uses `reference.parentNode` |
 | Remove / Release | id | `Remove` detaches but keeps the handle; `Release` drops it and its listeners |
-| AddListener / RemoveListener | id, event, handlerId, flags | flags: 1 = preventDefault, 2 = stopPropagation |
+| AddListener / RemoveListener | id, event, handlerId, flags | flags: 1 = preventDefault, 2 = stopPropagation, 4 = preventDefault only for a plain primary click |
 | Mount | id, selector | `document.querySelector(selector).appendChild` |
 | Focus | id | |
 
-Event payload convention (JS side): `input`/`change` → `target.value` (checkbox →
-`"true"/"false"`), key events → `event.key`, otherwise `""`.
+Event payload (JS → Wasm, `DomEvent.Decode`): `u8 flags, i32 button, i32 clientX, i32 clientY,
+str key, str value` where flags = ctrl 1 | shift 2 | alt 4 | meta 8 | checked 16 | repeat 32.
+An empty payload means "plain event, no data". `DomEvent.Encode()` is the C# reference encoder
+used by tests; `payloadFor` in `dom.mjs` is the production encoder.
+
+### Routing
+
+```csharp
+Routes(
+    NotFound,                                      // optional fallback
+    Route("/", Home),
+    Route("/todos/{id}", p => new TodoPage(p.GetInt("id")).Render()),
+    Route("/files/{*path}", p => Pre(p.Get("path"))))
+```
+
+- `Router.Install(IHistory)` is done by `BrowserApp.Start`; tests use `MemoryHistory`.
+- `Router.Current.Path` is a signal (includes query/hash); `Navigate(path, replace)`;
+  `IsActive(href, exact)` gives prefix-based active state used by `NavLink`.
+- `Routes` rebuilds a page in a fresh `Scope` only when the matched route or its parameters
+  change – a hash-only change does not rebuild.
+- `Link` uses listener flag 4, so ctrl/shift/meta/middle clicks reach the browser untouched.
+- The dev server serves `index.html` for extension-less paths; production hosts need the same
+  SPA fallback, and `index.html`/`app.mjs` must use absolute asset URLs (`/browser/...`).
 
 ### Reactivity
 
@@ -177,16 +202,15 @@ Event payload convention (JS side): `input`/`change` → `target.value` (checkbo
 ## Known limitations
 
 - NetWasm 0.10 (`netwasm0.1`) has no `System.Linq`, reflection or `async`. Write plain loops.
-- Globals (`Scheduler`, `Renderer`, tracker) mean exactly one app per module instance.
-- Event payloads are strings only; no `DomEvent` property bag yet (clientX, modifiers, …).
-- No routing, no SSR/hydration, no Razor syntax – components are built with the C# `Html` API.
+- Globals (`Scheduler`, `Renderer`, tracker, `Router.Current`) mean exactly one app per module instance.
+- No base-path/hash routing, no SSR/hydration, no Razor syntax – components are built with the C# `Html` API.
+- Pages are rebuilt on navigation; keep state that should survive in a long-lived component or store.
 
 ## Roadmap ideas
 
 - Razor-like syntax via a source generator that emits `Html` builder calls (no runtime cost).
-- Richer event payloads (structured binary payload instead of a single string).
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
-- Router, `<Suspense>`-style async boundaries once NetWasm supports async interop.
+- `<Suspense>`-style async boundaries once NetWasm supports async interop; nested/layout routes.
 - Wasm size work: strip unused `Html` helpers, measure per-feature cost.
 - Dev loop: snapshot/restore signal state across live reloads, CSS swap without reload, faster
   incremental NetWasm publish.

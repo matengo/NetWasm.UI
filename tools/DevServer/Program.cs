@@ -64,13 +64,18 @@ contentTypes.Mappings[".mjs"] = "text/javascript";
 contentTypes.Mappings[".mts"] = "text/typescript";
 contentTypes.Mappings[".wasm"] = "application/wasm";
 
-// Serve HTML ourselves so the reload client can be injected.
+// Serve HTML ourselves so the reload client can be injected. Extension-less paths that do not
+// exist on disk fall back to index.html (SPA routing).
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? "/";
     if (path.EndsWith('/'))
     {
         path += "index.html";
+    }
+    else if (!Path.HasExtension(path) && !path.StartsWith("/__netwasm_ui/", StringComparison.Ordinal))
+    {
+        path = "/index.html";
     }
 
     if (path.EndsWith(".html", StringComparison.OrdinalIgnoreCase))

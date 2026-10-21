@@ -141,6 +141,33 @@ public static class Html
         where TKey : notnull =>
         new(() => items.Value, key, render);
 
+    // ---- routing ----
+
+    /// <summary>An in-app link: renders <c>&lt;a href&gt;</c> and routes plain clicks through <see cref="Routing.Router.Current"/>.
+    /// Modified/middle clicks fall through to the browser so "open in new tab" keeps working.</summary>
+    public static Element Link(string href, params Content[] content)
+    {
+        var a = new Element("a", Href(href), On("click", e =>
+        {
+            if (e.IsPlainClick)
+            {
+                Routing.Router.Current?.Navigate(href);
+            }
+        }, ListenerFlags.PreventDefaultPlainClick));
+        return a.Add(content);
+    }
+
+    /// <summary>A <see cref="Link"/> that carries <paramref name="activeClass"/> while its route is active.</summary>
+    public static Element NavLink(string href, string activeClass, params Content[] content) =>
+        Link(href, Class(() => Routing.Router.Current is { } r && r.IsActive(href) ? activeClass : null)).Add(content);
+
+    public static Routing.Route Route(string pattern, Func<Routing.RouteParams, Node> render) => new(pattern, render);
+    public static Routing.Route Route(string pattern, Func<Node> render) => new(pattern, _ => render());
+
+    /// <summary>Renders the first matching route; <paramref name="notFound"/> when none matches.</summary>
+    public static Routing.Routes Routes(Func<Node>? notFound, params Routing.Route[] routes) => new(routes, notFound);
+    public static Routing.Routes Routes(params Routing.Route[] routes) => new(routes);
+
     /// <summary>Spreads a content array (e.g. from <see cref="Bind(Signal{string})"/>) into an element.</summary>
     public static Content Spread(params Content[] content) => Content.Of(new SpreadContent(content));
 

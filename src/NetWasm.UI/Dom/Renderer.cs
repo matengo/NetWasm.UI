@@ -194,14 +194,24 @@ public static class Renderer
     /// Entry point for events coming from the host. Runs the handler inside a batch so all
     /// resulting DOM ops are pushed in a single <see cref="IDomHost.ApplyBatch"/> call.
     /// </summary>
-    public static void Dispatch(int handlerId, string payload)
+    public static void Dispatch(int handlerId, byte[] payload)
     {
         if (!handlers.TryGetValue(handlerId, out var listener))
         {
             return;
         }
 
-        Scheduler.Batch(() => listener.Handler(new DomEvent(listener.EventName, payload)));
+        var e = DomEvent.Decode(listener.EventName, payload);
+        Scheduler.Batch(() => listener.Handler(e));
+    }
+
+    /// <summary>Dispatches an already-decoded event (tests, fake hosts).</summary>
+    public static void Dispatch(int handlerId, DomEvent e)
+    {
+        if (handlers.TryGetValue(handlerId, out var listener))
+        {
+            Scheduler.Batch(() => listener.Handler(e));
+        }
     }
 
     private readonly struct Listener
