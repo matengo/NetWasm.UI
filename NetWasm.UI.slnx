@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/Counter/Counter.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/NetWasm.UI.Browser/NetWasm.UI.Browser.csproj" />
+    <Project Path="src/NetWasm.UI/NetWasm.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NetWasm.UI.Tests/NetWasm.UI.Tests.csproj" />
+  </Folder>
+</Solution>

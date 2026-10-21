@@ -1,0 +1,13 @@
+<Project Sdk="NetWasm.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>NetWasm.UI.Browser</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NetWasm.UI\NetWasm.UI.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dom.mjs" />
+  </ItemGroup>
+</Project>
