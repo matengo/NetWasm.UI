@@ -52,6 +52,12 @@ public sealed class TextNode : Node
         var id = Id;
         _ = new Effect(() => Renderer.SetText(id, text()));
     }
+
+    /// <summary>Takes over a node the host already created (a template hole).</summary>
+    internal TextNode(int id, bool adopt)
+        : base(id)
+    {
+    }
 }
 
 /// <summary>An invisible marker used by <see cref="Show"/> and <see cref="For{T}"/> to know where to insert.</summary>
@@ -73,6 +79,13 @@ public sealed class Element : Node
         {
             content[i].ApplyTo(this);
         }
+    }
+
+    /// <summary>Takes over a node the host already created (a template hole).</summary>
+    internal Element(int id, string tag)
+        : base(id)
+    {
+        Tag = tag;
     }
 
     public string Tag { get; }

@@ -3,6 +3,9 @@
 Components can be written as `.nwui` files: HTML with Razor-style `@` expressions. A Roslyn
 source generator turns each file into a `partial class` that calls the [C# API](components.md),
 so there is no template engine at runtime and nothing reflection-based for NetWasm to trip over.
+The static HTML of each element subtree becomes a [static template](components.md#static-templates-fast-rows)
+that the browser parses once and clones; only bindings, handlers, `@expr` text and
+components/blocks are set per instance.
 
 ```razor
 @* CounterView.nwui → public partial class CounterView : Component *@

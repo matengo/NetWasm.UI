@@ -13,7 +13,7 @@ public sealed class FakeDomHost : IDomHost
 {
     public sealed class FakeNode
     {
-        public int Id { get; init; }
+        public int Id { get; set; }
         public string Kind { get; init; } = "";   // element | text | anchor
         public string Tag { get; init; } = "";
         public string Text { get; set; } = "";
@@ -86,6 +86,7 @@ public sealed class FakeDomHost : IDomHost
     }
 
     public Dictionary<int, FakeNode> Nodes { get; } = new();
+    private readonly Dictionary<int, FakeTemplate> templates = new();
     public FakeNode Document { get; } = new() { Id = 0, Kind = "element", Tag = "body" };
     public List<(string Op, string Detail)> Log { get; } = new();
     public int BatchCount { get; private set; }
@@ -173,7 +174,17 @@ public sealed class FakeDomHost : IDomHost
                 {
                     var parent = ReadInt(ops, ref pos);
                     var child = ReadInt(ops, ref pos);
-                    Attach(Nodes[parent], Nodes[child], null);
+                    var parentNode = Nodes[parent];
+                    if (parentNode.Kind == "anchor")
+                    {
+                        // Insertion point: like dom.mjs, appending to a comment inserts before it.
+                        Attach(parentNode.Parent ?? throw new InvalidOperationException($"Anchor {parent} has no parent"), Nodes[child], parentNode);
+                    }
+                    else
+                    {
+                        Attach(parentNode, Nodes[child], null);
+                    }
+
                     Log.Add(("AppendChild", $"{parent} <- {child}"));
                     break;
                 }
@@ -230,6 +241,28 @@ public sealed class FakeDomHost : IDomHost
                 {
                     var id = ReadInt(ops, ref pos);
                     Log.Add(("Focus", $"{id}"));
+                    break;
+                }
+                case Op.DefineTemplate:
+                {
+                    var id = ReadInt(ops, ref pos);
+                    var html = ReadString(ops, ref pos);
+                    templates[id] = FakeTemplate.Parse(html);
+                    Log.Add(("DefineTemplate", $"{id} {html}"));
+                    break;
+                }
+                case Op.CloneTemplate:
+                {
+                    var id = ReadInt(ops, ref pos);
+                    var first = ReadInt(ops, ref pos);
+                    var holes = templates[id].Clone();
+                    for (var i = 0; i < holes.Count; i++)
+                    {
+                        holes[i].Id = first + i;
+                        Nodes[first + i] = holes[i];
+                    }
+
+                    Log.Add(("CloneTemplate", $"{id} -> {first}"));
                     break;
                 }
                 default:

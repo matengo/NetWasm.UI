@@ -15,11 +15,23 @@ internal sealed class TemplateEmitter
         "disabled", "checked", "hidden", "readonly", "required", "selected", "multiple", "autofocus", "open",
     };
 
+    private static readonly HashSet<string> VoidTags = new(System.StringComparer.OrdinalIgnoreCase)
+    {
+        "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr",
+    };
+
+    // Elements whose content the HTML parser doesn't treat as markup; their children are added in code.
+    private static readonly HashSet<string> OpaqueTags = new(System.StringComparer.OrdinalIgnoreCase)
+    {
+        "script", "style", "textarea", "title", "template",
+    };
+
     private readonly LineMap lines;
     private readonly string path;
     private readonly ISet<string> reactiveProps;
     private readonly StringBuilder sb = new();
     private readonly List<(string Type, string Name)> refs = new();
+    private readonly List<string> templates = new();
     private bool lineHidden;
 
     private TemplateEmitter(string text, string path, ISet<string> reactiveProps)
@@ -72,6 +84,12 @@ internal sealed class TemplateEmitter
         foreach (var (type, name) in refs)
         {
             header.Append("    private ").Append(type).Append(' ').Append(name).Append(" = null!;\n");
+        }
+
+        for (var i = 0; i < templates.Count; i++)
+        {
+            header.Append("    private static readonly global::NetWasm.UI.Template __nwT").Append(i.ToString(CultureInfo.InvariantCulture))
+                .Append(" = new(").Append(Literal(templates[i])).Append(");\n");
         }
 
         foreach (var p in file.Props)
@@ -153,22 +171,211 @@ internal sealed class TemplateEmitter
         }
     }
 
+    /// <summary>
+    /// A native element becomes a clone of a static <c>Template</c>: literal markup goes into the HTML once,
+    /// and only the dynamic parts (bound attributes, handlers, <c>@expr</c> text, components, blocks) are
+    /// filled in per instance through holes.
+    /// </summary>
     private void EmitElement(TElement el, TAttribute? skip = null)
     {
-        var refName = RefOf(el, "global::NetWasm.UI.Element");
-        if (refName is not null)
+        var html = new StringBuilder();
+        var calls = new List<System.Action>();
+        var holeCount = 0;
+        BuildTemplate(el, skip, isRoot: true, html, calls, ref holeCount);
+
+        var markup = html.ToString();
+        var index = templates.IndexOf(markup);
+        if (index < 0)
         {
-            sb.Append('(').Append(refName).Append(" = ");
+            index = templates.Count;
+            templates.Add(markup);
         }
 
-        sb.Append(H).Append("El(").Append(Literal(el.Tag));
-        EmitAttributes(el, skip);
-        EmitChildren(el.Children);
-        sb.Append(')');
+        sb.Append("__nwT").Append(index.ToString(CultureInfo.InvariantCulture)).Append(".Clone()");
+        foreach (var call in calls)
+        {
+            call();
+        }
+
+        sb.Append(".Root");
+    }
+
+    private void BuildTemplate(TElement el, TAttribute? skip, bool isRoot, StringBuilder html, List<System.Action> calls, ref int holeCount)
+    {
+        var refName = RefOf(el, "global::NetWasm.UI.Element");
+        var dynamic = new TElement(el.Tag);
+        var statics = new List<TAttribute>();
+        foreach (var a in el.Attributes)
+        {
+            if (a == skip || a.Name == "@ref")
+            {
+                continue;
+            }
+
+            // 'value' stays a property (as before) so it also works on <select> and after user edits.
+            if (a.IsDirective || a.Name == "value" || !IsLiteral(a))
+            {
+                dynamic.Attributes.Add(a);
+            }
+            else
+            {
+                statics.Add(a);
+            }
+        }
+
+        var children = Trim(el.Children);
+        var isVoid = VoidTags.Contains(el.Tag);
+        var opaque = OpaqueTags.Contains(el.Tag);
+
+        // Trailing components/blocks are appended to the element itself; earlier ones need an insertion point.
+        var tail = children.Count;
+        if (opaque)
+        {
+            tail = 0;
+        }
+        else
+        {
+            while (tail > 0 && IsInsertable(children[tail - 1]))
+            {
+                tail--;
+            }
+        }
+
+        var needsHole = refName is not null || dynamic.Attributes.Count > 0 || tail < children.Count;
+        var hole = isRoot ? 0 : needsHole ? ++holeCount : -1;
+
+        html.Append('<').Append(el.Tag);
+        if (!isRoot && needsHole)
+        {
+            html.Append(" $");
+        }
+
+        foreach (var a in statics)
+        {
+            html.Append(' ').Append(a.Name);
+            if (a.HasValue)
+            {
+                var value = new StringBuilder();
+                foreach (var seg in a.Segments)
+                {
+                    value.Append(Decode(seg.Text, seg.Start));
+                }
+
+                html.Append("=\"").Append(Escape(value.ToString(), attribute: true)).Append('"');
+            }
+        }
+
+        html.Append('>');
+
         if (refName is not null)
         {
-            sb.Append(')');
+            calls.Add(() => sb.Append(".Ref(").Append(hole.ToString(CultureInfo.InvariantCulture)).Append(", out ").Append(refName).Append(')'));
         }
+
+        if (dynamic.Attributes.Count > 0)
+        {
+            calls.Add(() =>
+            {
+                sb.Append(".With(").Append(hole.ToString(CultureInfo.InvariantCulture));
+                EmitAttributes(dynamic, null);
+                sb.Append(')');
+            });
+        }
+
+        if (isVoid)
+        {
+            return;
+        }
+
+        for (var i = 0; i < tail; i++)
+        {
+            var child = children[i];
+            switch (child)
+            {
+                case TText t:
+                    html.Append(Escape(Decode(t.Raw, t.Start), attribute: false));
+                    break;
+                case TExpr x:
+                {
+                    html.Append("<!--$-->");
+                    var h = ++holeCount;
+                    calls.Add(() =>
+                    {
+                        sb.Append(".Text(").Append(h.ToString(CultureInfo.InvariantCulture)).Append(", () => ");
+                        User(x.Code);
+                        sb.Append(')');
+                    });
+                    break;
+                }
+
+                case TElement e when !e.IsComponent:
+                    BuildTemplate(e, null, isRoot: false, html, calls, ref holeCount);
+                    break;
+                default:
+                {
+                    html.Append("<!--@-->");
+                    var h = ++holeCount;
+                    calls.Add(() =>
+                    {
+                        sb.Append(".With(").Append(h.ToString(CultureInfo.InvariantCulture)).Append(", ");
+                        EmitNode(child, nodePosition: false);
+                        sb.Append(')');
+                    });
+                    break;
+                }
+            }
+        }
+
+        if (tail < children.Count)
+        {
+            calls.Add(() =>
+            {
+                sb.Append(".With(").Append(hole.ToString(CultureInfo.InvariantCulture));
+                for (var i = tail; i < children.Count; i++)
+                {
+                    sb.Append(", ");
+                    EmitNode(children[i], nodePosition: false);
+                }
+
+                sb.Append(')');
+            });
+        }
+
+        html.Append("</").Append(el.Tag).Append('>');
+    }
+
+    private static bool IsInsertable(TNode node) =>
+        node is TRender or TIf or TForeach || node is TElement { IsComponent: true };
+
+    private static bool IsLiteral(TAttribute a)
+    {
+        foreach (var seg in a.Segments)
+        {
+            if (seg.IsCode)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static string Escape(string text, bool attribute)
+    {
+        var b = new StringBuilder(text.Length);
+        foreach (var c in text)
+        {
+            switch (c)
+            {
+                case '&': b.Append("&amp;"); break;
+                case '<': b.Append(attribute ? "<" : "&lt;"); break;
+                case '>': b.Append(attribute ? ">" : "&gt;"); break;
+                case '"': b.Append(attribute ? "&quot;" : "\""); break;
+                default: b.Append(c); break;
+            }
+        }
+
+        return b.ToString();
     }
 
     private void EmitChildren(List<TNode> children)

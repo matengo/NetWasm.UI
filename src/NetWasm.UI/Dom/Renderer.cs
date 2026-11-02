@@ -18,6 +18,9 @@ public static class Renderer
 
     public static bool IsInitialized => host is not null;
 
+    /// <summary>Bumped by <see cref="Reset"/> so templates know they must be defined again for a new host.</summary>
+    internal static int Generation { get; private set; }
+
     /// <summary>Number of batches pushed to the host. Useful for asserting the "one crossing per update" rule.</summary>
     public static int FlushCount { get; private set; }
 
@@ -38,6 +41,7 @@ public static class Renderer
         nextNodeId = 1;
         nextHandlerId = 1;
         FlushCount = 0;
+        Generation++;
     }
 
     /// <summary>Sends the pending ops to the host, if any.</summary>
@@ -80,6 +84,24 @@ public static class Renderer
         batch.Op(Op.CreateAnchor);
         batch.Int(id);
         return id;
+    }
+
+    internal static void DefineTemplate(int templateId, string html)
+    {
+        batch.Op(Op.DefineTemplate);
+        batch.Int(templateId);
+        batch.String(html);
+    }
+
+    /// <summary>Clones a defined template; returns the id of its root, holes get the following ids.</summary>
+    internal static int CloneTemplate(int templateId, int nodeCount)
+    {
+        var first = nextNodeId;
+        nextNodeId += nodeCount;
+        batch.Op(Op.CloneTemplate);
+        batch.Int(templateId);
+        batch.Int(first);
+        return first;
     }
 
     // ---- mutation ----

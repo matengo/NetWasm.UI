@@ -58,9 +58,9 @@ public sealed class CounterView : Component
 
 - The whole demo app (counter, todos, router, nested components) is **140 KB** with Brotli;
   about 40 % of that is NetWasm's JS host.
-- In a [js-framework-benchmark-style comparison](docs/benchmarks.md) it is roughly level with
-  React, 1–2× slower than SolidJS, and 2–10× faster than Blazor WebAssembly with a ~12× smaller
-  download and ~9× faster startup.
+- In a [js-framework-benchmark-style comparison](docs/benchmarks.md) it is level with or faster
+  than React on most cases, 1.1–1.8× SolidJS, and 2–10× faster than Blazor WebAssembly with a
+  ~12× smaller download and ~7× faster startup.
 
 ## Try it
 

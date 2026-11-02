@@ -15,7 +15,7 @@ public enum Op : byte
     RemoveAttribute = 6,  // id, name
     SetProperty = 7,      // id, name, value(string)
     SetBoolProperty = 8,  // id, name, value(bool)
-    AppendChild = 9,      // parent, child
+    AppendChild = 9,      // parent, child      (a comment parent is an insertion point: child goes before it)
     InsertBefore = 10,    // reference, child   (child goes before reference, under reference.parentNode)
     Remove = 11,          // id                 (node.remove(), keeps handle)
     Release = 12,         // id                 (drop handle and its listeners)
@@ -23,6 +23,8 @@ public enum Op : byte
     RemoveListener = 14,  // id, handlerId
     Mount = 15,           // id, selector       (append to document.querySelector(selector))
     Focus = 16,           // id
+    DefineTemplate = 17,  // templateId, html   (parsed once; see Template)
+    CloneTemplate = 18,   // templateId, firstId (root gets firstId, holes firstId+1.. in document order)
 }
 
 /// <summary>Flags for <see cref="Op.AddListener"/>.</summary>

@@ -168,13 +168,13 @@ public partial class TemplateTests : RendererTest
         var cards = Dom.QueryAll("div", Has("card"));
         Assert.Equal(4, cards.Count);
         Assert.Equal(
-            "<div class=\"card\"><h2>Plain</h2><!----><div class=\"body\"><p class=\"msg\">Hello Ada</p>and more</div></div>",
+            "<div class=\"card\"><h2>Plain</h2><!----><!----><div class=\"body\"><p class=\"msg\">Hello Ada</p>and more</div></div>",
             cards[0].ToHtml());
         Assert.Equal(
-            "<div class=\"card\"><h2>Slots</h2><header><em>head Ada</em></header><!----><div class=\"body\"><span><!----></span></div></div>",
+            "<div class=\"card\"><h2>Slots</h2><header><em>head Ada</em></header><!----><!----><div class=\"body\"><span><!----></span></div></div>",
             cards[1].ToHtml());
         Assert.Equal(
-            "<div class=\"card\"><h2>Empty</h2><!----><div class=\"body\"></div></div>",
+            "<div class=\"card\"><h2>Empty</h2><!----><!----><div class=\"body\"></div></div>",
             cards[2].ToHtml());
     }
 
@@ -223,7 +223,7 @@ public partial class TemplateTests : RendererTest
         })), "#app");
 
         Assert.Equal(
-            "<div class=\"card\"><h2>C#</h2><header><strong>h</strong></header><!----><div class=\"body\">a<span>b</span></div></div>",
+            "<div class=\"card\"><h2>C#</h2><header><strong>h</strong></header><!----><!----><div class=\"body\">a<span>b</span></div></div>",
             Dom.Query("div", Has("card"))!.ToHtml());
     }
 
@@ -234,10 +234,10 @@ public partial class TemplateTests : RendererTest
 
         var meters = Dom.QueryAll("div");
         Assert.Equal(
-            "<div class=\"meter low\" data-level=\"2\"><b>Level of Ada</b>: 2<!----><i class=\"snap\">2</i></div>",
+            "<div class=\"meter low\" data-level=\"2\"><b>Level of Ada</b>: 2<!----><!----><i class=\"snap\">2</i></div>",
             meters[0].ToHtml());
         Assert.Equal(
-            "<div class=\"meter low\" data-level=\"1\"><b>fixed</b>: 1<!----><i class=\"snap\">1</i></div>",
+            "<div class=\"meter low\" data-level=\"1\"><b>fixed</b>: 1<!----><!----><i class=\"snap\">1</i></div>",
             meters[1].ToHtml());
         Assert.Equal(new[] { "<span>Ada</span>", "<span>literal</span>" }, Dom.QueryAll("span").Where(s => s.Attributes.Count == 0).Select(s => s.ToHtml()));
         Assert.Equal("<span class=\"badge\">plain: 2</span>", Dom.Query("span", Has("badge"))!.ToHtml());
@@ -253,7 +253,7 @@ public partial class TemplateTests : RendererTest
         host.NameSignal.Value = "Grace";
 
         Assert.Equal(
-            "<div class=\"meter high\" data-level=\"5\"><b>Level of Grace</b>: 5<em>hot</em><!----><i class=\"snap\">2</i></div>",
+            "<div class=\"meter high\" data-level=\"5\"><b>Level of Grace</b>: 5<em>hot</em><!----><!----><i class=\"snap\">2</i></div>",
             Dom.QueryAll("div")[0].ToHtml());
         Assert.Equal("<span>Grace</span>", Dom.QueryAll("span").First(s => s.Attributes.Count == 0).ToHtml());
         Assert.Equal("<span class=\"badge\">plain: 2</span>", Dom.Query("span", Has("badge"))!.ToHtml());
@@ -459,6 +459,32 @@ public partial class TemplateTests : RendererTest
         Assert.Equal("NWUI001", d.Id);
         Assert.Equal("C:\\p\\Bad.nwui", d.Location.GetLineSpan().Path);
         Assert.Equal(1, d.Location.GetLineSpan().StartLinePosition.Line);
+    }
+
+    [Fact]
+    public void Native_elements_compile_to_a_shared_static_template()
+    {
+        const string template =
+            "<ul class=\"a &amp; b\" @onclick=\"Go\">\n" +
+            "  <li title=\"x &quot;y&quot;\">1 &lt; 2 @Count</li>\n" +
+            "  <li><input value=\"v\"><br><Item /> tail</li>\n" +
+            "  @if (Show) {\n    <li>yes</li>\n  }\n" +
+            "</ul>";
+        var result = TemplateCompiler.Compile("C:\\p\\List.nwui", template, "App", "C:\\p\\");
+        Assert.Null(result.Diagnostic?.Message);
+        var source = result.Source!;
+
+        Assert.Contains(
+            "global::NetWasm.UI.Template __nwT0 = new(\"<ul class=\\\"a &amp; b\\\">" +
+            "<li title=\\\"x &quot;y&quot;\\\">1 &lt; 2 <!--$--></li>" +
+            "<li><input $><br><!--@--> tail</li></ul>\");",
+            source);
+        Assert.Contains("global::NetWasm.UI.Template __nwT1 = new(\"<li>yes</li>\");", source);
+        Assert.Contains("__nwT0.Clone().With(0, ", source);
+        Assert.Contains(".Text(1, () => ", source);
+        Assert.Contains(".With(2, ", source);
+        Assert.Contains(".With(3, ", source);
+        Assert.Contains(".Root", source);
     }
 
     private static Func<FakeDomHost.FakeNode, bool> Has(string cls) =>

@@ -67,14 +67,37 @@ Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs` and `FakeDomHos
 |----|----------|------|
 | CreateElement / CreateText / CreateAnchor | id, tag / text / – | anchors are comment nodes used as insertion markers |
 | SetText, SetAttribute, RemoveAttribute, SetProperty, SetBoolProperty | id, … | |
-| AppendChild, InsertBefore | parent/reference, child | `InsertBefore` uses `reference.parentNode` |
+| AppendChild, InsertBefore | parent/reference, child | `InsertBefore` uses `reference.parentNode`; appending to a comment inserts before it (template insertion points) |
 | Remove / Release | id | `Remove` detaches but keeps the handle; `Release` drops it and its listeners |
 | AddListener / RemoveListener | id, event, handlerId, flags | flags: 1 = preventDefault, 2 = stopPropagation, 4 = preventDefault only for a plain primary click |
 | Mount | id, selector | `document.querySelector(selector).appendChild` |
 | Focus | id | |
+| DefineTemplate | templateId, html | parses the HTML into a `<template>` once and records the paths to its holes |
+| CloneTemplate | templateId, firstId | clones it; the root gets `firstId`, hole *i* gets `firstId + i` |
 
 Node ids are allocated in C#; `dom.mjs` keeps an id → node table and a per-node list of handlers
 so releasing a node also drops its listeners.
+
+## Static templates
+
+`Template` (in `Template.cs`) scans its HTML for holes in C# without parsing it into nodes:
+the root element, elements with a bare `$` attribute, `<!--$-->` (becomes an empty text node) and
+`<!--@-->` (stays a comment and is used as an insertion point). `dom.mjs` finds the same holes
+in the parsed `<template>`, so both sides agree on the numbering. A template is defined lazily
+the first time it is cloned in a renderer generation; `Clone()` then reserves consecutive ids
+and emits one `CloneTemplate` op. The generator turns every native element subtree of a
+`.nwui` file into a static template, so only bound attributes, handlers, `@expr` text and
+components/blocks cost ops per instance.
+
+## Event delegation
+
+Bubbling events in a fixed set (`click`, `dblclick`, `input`, `change`, `submit`, `keydown`,
+`keyup`, pointer/mouse up/down, `focusin`/`focusout`, `contextmenu`, `beforeinput`) are not
+attached per element. `AddListener` stores `[handlerId, flags]` on the node (`node.$$nw[type]`)
+and `dom.mjs` adds one listener per type on `document` the first time it is
+needed. On an event it walks `parentNode` from the target, applies each handler's flags, builds
+the payload once and calls `dispatch`; `stopPropagation` ends the walk. Other events use a
+direct listener. Delegated handlers run after native listeners on ancestors.
 
 ## Event payload
 
@@ -91,8 +114,8 @@ used by tests; `payloadFor` in `dom.mjs` is the production encoder.
 ## Templates
 
 The generator parses `.nwui` into a small tree (elements, text, `@expr`, `@if`, `@foreach`,
-components, slots) and emits `Html`/`TemplateRuntime` calls into a `partial class` with a
-`Build()` override. User C# is emitted under `#line` directives so compiler errors point at the
+components, slots) and emits `Template`/`Html`/`TemplateRuntime` calls into a `partial class` with a
+`Build()` override. Native elements become static templates (see above). User C# is emitted under `#line` directives so compiler errors point at the
 template. See [Templates](templates.md).
 
 ## Globals

@@ -34,14 +34,20 @@ public sealed class BenchApp : Component
     private static Element Btn(string id, string text, Action action) =>
         Button(Type("button"), Id(id), OnClick(action), text);
 
+    private static readonly Template RowTemplate = new(
+        "<tr><td class=\"col-md-1\"><!--$--></td><td class=\"col-md-4\"><a $><!--$--></a></td>" +
+        "<td class=\"col-md-1\"><a $><span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"></span></a></td><td class=\"col-md-6\"></td></tr>");
+
     private Node RowView(Row row)
     {
         var id = row.Id;
-        return Tr(Class(() => isSelected.Is(id) ? "danger" : null),
-            Td(Class("col-md-1"), id.ToString()),
-            Td(Class("col-md-4"), A(OnClick(() => selected.Value = id), Text(() => row.Label.Value))),
-            Td(Class("col-md-1"), A(OnClick(() => Remove(id)), Span(Class("glyphicon glyphicon-remove"), Attr("aria-hidden", "true")))),
-            Td(Class("col-md-6")));
+        return RowTemplate.Clone()
+            .With(0, Class(() => isSelected.Is(id) ? "danger" : null))
+            .Text(1, id.ToString())
+            .With(2, OnClick(() => selected.Value = id))
+            .Text(3, () => row.Label.Value)
+            .With(4, OnClick(() => Remove(id)))
+            .Root;
     }
 
     private void Add()

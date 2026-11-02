@@ -56,3 +56,16 @@ First run (Oz, script + layout) before the fixes: select row 40.8 ms, clear 119.
 - `dom.mjs` scanned every listener for each released node; it now keeps a per-node handler list.
 - `Each` row scopes were registered with (and never removed from) the owner scope.
 - Reactive attributes emitted an op on every re-run; they now skip unchanged values.
+
+### Performance (template cloning and event delegation)
+
+- `Template`: static HTML with holes (`<tag $>`, `<!--$-->`, `<!--@-->`) that the browser parses
+  once and clones. New ops `DefineTemplate` and `CloneTemplate`; appending to a comment inserts
+  before it, so any content can go into an insertion point.
+- The `.nwui` generator turns every native element subtree into a static template; only bound
+  attributes, handlers, `@expr` text and components/blocks are set per instance.
+- Common bubbling events are delegated to one `document` listener per type.
+- The benchmark row uses a `Template`. Creating 1,000 rows sends ~95 KB of ops instead of
+  ~440 KB. Script + layout (Oz): create 1,000 rows 95.2 → 79.0 ms, replace 106.1 → 74.1,
+  create 10,000 rows 1050.4 → 773.8, select 11.3 → 3.9, clear 15.8 → 12.5. The Wasm grows by
+  ~5 KB raw (~1 KB Brotli) for the Counter sample.

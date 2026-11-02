@@ -95,6 +95,11 @@ NetWasm compiles a closed world ahead of time, so code size follows what is *rea
 - **Generic code is not shared.** Each `For<T, TKey>` used to carry its own `Dictionary`,
   `HashSet` and diff (~30 KB raw each); the diff now lives in a non-generic `KeyedList` over boxed
   keys.
+- **Avoid culture-aware and case-insensitive string APIs.** `ToLowerInvariant`,
+  `char.IsWhiteSpace`/`IsLetter` and any `IndexOf(string, …, StringComparison)` (its switch
+  includes the `OrdinalIgnoreCase` path) pull in Unicode casing/category tables. A first version
+  of the `Template` scanner grew the benchmark Wasm by ~110 KB raw; ASCII loops brought that down
+  to ~12 KB.
 - **Prefer `NetWasm.UI.Routing.Url.Encode/Decode`** over `Uri.EscapeDataString`/
   `UnescapeDataString` (~40 KB raw).
 - **`event`s with `+=`** pull in multicast delegates; the framework keeps handlers in a `List`.

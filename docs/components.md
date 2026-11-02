@@ -130,6 +130,48 @@ Ul(Each(items, i => i.Id, item =>
 - To change a list, assign a new list to the signal (`items.Value = newList`) or mutate and call
   `items.Touch()`.
 
+## Static templates (fast rows)
+
+`Div(…)`, `Td(…)` and friends send one op per element, attribute and text. For markup that is
+created many times (list rows, cards), parse the static part once with a `Template` and clone it:
+
+```csharp
+static readonly Template RowTemplate = new(
+    "<tr><td class=\"col-md-1\"><!--$--></td>" +
+    "<td class=\"col-md-4\"><a $><!--$--></a></td>" +
+    "<td><a $><span class=\"remove\">×</span></a></td><!--@--></tr>");
+
+Node Row(Item item) => RowTemplate.Clone()
+    .With(0, Class(() => selected.Value == item.Id ? "danger" : null))   // hole 0 = root
+    .Text(1, item.Id.ToString())                                          // <!--$-->
+    .With(2, OnClick(() => Select(item)))                                // <a $>
+    .Text(3, () => item.Label.Value)                                     // reactive text
+    .With(4, OnClick(() => Remove(item)))
+    .With(5, When(() => item.Open.Value, () => Td("details")))          // <!--@-->
+    .Root;
+```
+
+Holes are numbered in document order; the root element is always hole 0:
+
+| Marker | Hole | Fill with |
+|---|---|---|
+| root element, or an element with a bare `$` attribute | element | `With(i, attrs, events, children…)`, `Ref(i, out el)`, `Element(i)` |
+| `<!--$-->` | text node | `Text(i, "…")`, `Text(i, () => …)`, `Text(i, () => number)` |
+| `<!--@-->` | insertion point | `With(i, …)`: content is inserted before the marker (`When`, `Each`, components, nodes) |
+
+The HTML must have one root element. Whitespace-only text that contains a line break is
+dropped, as in templates. The template is sent to the browser once and then cloned with
+`cloneNode`, so creating a row costs one op plus one per hole instead of one per node.
+`.nwui` templates do this automatically.
+
+## Events and delegation
+
+Common bubbling events (`click`, `input`, `change`, `keydown`, `submit`, pointer/mouse up/down,
+`focusin`/`focusout`, …) are delegated: `dom.mjs` has one listener per event type on `document`
+and walks up from the target. `StopPropagation` stops that walk. Because the delegated handler
+runs at the document, a native listener you add yourself on an ancestor runs **before** it.
+Other events (`blur`, `focus`, `scroll`, `mouseenter`, …) get a listener on the element.
+
 ## Props
 
 Plain properties are read once when the parent builds:

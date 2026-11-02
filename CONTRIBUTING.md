@@ -47,7 +47,10 @@ reactive core, the renderer or `dom.mjs`.
 
 - `netwasm0.1` has no `System.Linq`, reflection or `async`. Write plain loops.
 - Watch the Wasm size: avoid interpolated strings with non-string holes, `IFormattable`, new
-  generic instantiations in the core and multicast delegates. See
+  generic instantiations in the core and multicast delegates. Avoid culture-aware or
+  case-insensitive string APIs (`ToLowerInvariant`, `StringComparison.OrdinalIgnoreCase`,
+  `char.IsWhiteSpace`/`IsLetter`, even `IndexOf(string, StringComparison)`): they pull in Unicode
+  tables (~100 KB raw). Use ASCII loops instead (see `Template.Scan`). See
   [Keeping the Wasm small](docs/deployment.md#keeping-the-wasm-small). The CI size table shows
   the effect of a change.
 - Inside a `catch` block, do not branch before the exception is used (for example
@@ -106,9 +109,8 @@ AOT) and is feedback for the NetWasm team rather than something this repository 
   `dotnet new` template; a public API baseline in CI.
 - **Templates:** parameterized slots (`Slot<T>`), `@switch`, a language server for `.nwui`
   (IntelliSense via the generated C#).
-- **Rendering speed** (see [Benchmarks](docs/benchmarks.md#still-open)): clone prebuilt
-  `<template>`s for static subtrees, delegate events at the root, and push-pull `Computed` to
-  avoid glitchy eager recomputes.
+- **Rendering speed** (see [Benchmarks](docs/benchmarks.md#still-open)): push-pull `Computed` to
+  avoid glitchy eager recomputes; cheaper per-row Wasm work (fewer allocations per effect).
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
 - `<Suspense>`-style async boundaries once NetWasm supports async interop; nested/layout routes;
   base-path routing.
