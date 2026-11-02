@@ -63,13 +63,9 @@ public sealed class Template
         }
 
         var first = Renderer.CloneTemplate(Id, kinds.Length);
-        var nodes = new Node[kinds.Length];
-        for (var i = 0; i < nodes.Length; i++)
-        {
-            nodes[i] = kinds[i] == TextHole ? new TextNode(first + i, adopt: true) : new Element(first + i, tags[i]);
-        }
-
-        return new TemplateInstance(nodes, kinds);
+        var instance = new TemplateInstance(first, kinds, tags);
+        Scope.Current?.Register(instance);
+        return instance;
     }
 
     /// <summary>
@@ -309,34 +305,45 @@ public sealed class Template
     internal byte KindOf(int hole) => kinds[hole];
 }
 
-/// <summary>A cloned <see cref="Template"/>: handles to its holes. Hole 0 is <see cref="Root"/>.</summary>
-public sealed class TemplateInstance
+/// <summary>
+/// A cloned <see cref="Template"/>: handles to its holes. Hole 0 is <see cref="Root"/>. Owned by the scope it
+/// was cloned in, which releases all its nodes at once.
+/// </summary>
+public sealed class TemplateInstance : IDisposable
 {
-    private readonly Node[] nodes;
+    // Hole i has node id first + i. Element handles are created on demand; text holes never need one.
+    private readonly int first;
     private readonly byte[] kinds;
+    private readonly string[] tags;
+    private Element? root;
 
-    internal TemplateInstance(Node[] nodes, byte[] kinds)
+    internal TemplateInstance(int first, byte[] kinds, string[] tags)
     {
-        this.nodes = nodes;
+        this.first = first;
         this.kinds = kinds;
+        this.tags = tags;
     }
 
     /// <summary>The root element (hole 0).</summary>
-    public Element Root => (Element)nodes[0];
+    public Element Root => root ??= new Element(first, tags[0]);
 
     /// <summary>The element marked with <c>$</c> at <paramref name="hole"/>.</summary>
-    public Element Element(int hole) => (Element)Expect(hole, Template.ElementHole, "an element ('<tag $>')");
+    public Element Element(int hole)
+    {
+        Expect(hole, Template.ElementHole, "an element ('<tag $>')");
+        return hole == 0 ? Root : new Element(first + hole, tags[hole]);
+    }
 
     /// <summary>Adds attributes, listeners or children to an element hole, or inserts content at a <c>&lt;!--@--&gt;</c> hole.</summary>
     public TemplateInstance With(int hole, params Content[] content)
     {
-        if (hole < 0 || hole >= nodes.Length || kinds[hole] == Template.TextHole)
+        if (hole < 0 || hole >= kinds.Length || kinds[hole] == Template.TextHole)
         {
             throw new ArgumentOutOfRangeException(nameof(hole), "Hole " + hole.ToString() + " is not an element or insertion point.");
         }
 
         // An insertion point is a comment; the host turns "append to it" into "insert before it".
-        var target = (Element)nodes[hole];
+        var target = hole == 0 ? Root : new Element(first + hole, tags[hole]);
         for (var i = 0; i < content.Length; i++)
         {
             content[i].ApplyTo(target);
@@ -348,15 +355,14 @@ public sealed class TemplateInstance
     /// <summary>Sets the text of a <c>&lt;!--$--&gt;</c> hole.</summary>
     public TemplateInstance Text(int hole, string text)
     {
-        Renderer.SetText(Expect(hole, Template.TextHole, "a text hole ('<!--$-->')").Id, text);
+        Renderer.SetText(Expect(hole, Template.TextHole, "a text hole ('<!--$-->')"), text);
         return this;
     }
 
     /// <summary>Binds a <c>&lt;!--$--&gt;</c> hole to reactive text.</summary>
     public TemplateInstance Text(int hole, Func<string> text)
     {
-        var id = Expect(hole, Template.TextHole, "a text hole ('<!--$-->')").Id;
-        _ = new Effect(() => Renderer.SetText(id, text()));
+        _ = new TextBinding(Expect(hole, Template.TextHole, "a text hole ('<!--$-->')"), text);
         return this;
     }
 
@@ -371,13 +377,23 @@ public sealed class TemplateInstance
         return this;
     }
 
-    private Node Expect(int hole, byte kind, string what)
+    /// <summary>Releases the host nodes of all holes. Called by the owning scope.</summary>
+    public void Dispose()
     {
-        if (hole < 0 || hole >= nodes.Length || kinds[hole] != kind)
+        for (var i = 0; i < kinds.Length; i++)
+        {
+            Renderer.Release(first + i);
+        }
+    }
+
+    /// <summary>Returns the node id of <paramref name="hole"/> after checking its kind.</summary>
+    private int Expect(int hole, byte kind, string what)
+    {
+        if (hole < 0 || hole >= kinds.Length || kinds[hole] != kind)
         {
             throw new ArgumentOutOfRangeException(nameof(hole), "Hole " + hole.ToString() + " is not " + what + ".");
         }
 
-        return nodes[hole];
+        return first + hole;
     }
 }

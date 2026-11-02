@@ -69,3 +69,18 @@ First run (Oz, script + layout) before the fixes: select row 40.8 ms, clear 119.
   ~440 KB. Script + layout (Oz): create 1,000 rows 95.2 → 79.0 ms, replace 106.1 → 74.1,
   create 10,000 rows 1050.4 → 773.8, select 11.3 → 3.9, clear 15.8 → 12.5. The Wasm grows by
   ~5 KB raw (~1 KB Brotli) for the Counter sample.
+
+### Performance (fewer allocations per row)
+
+- Signal/computation links keep the first link inline and only allocate an array from the second.
+  A signal with one observer notifies it without a snapshot copy.
+- Reactive text and attributes are `Effect` subclasses (`TextBinding`, `AttrBinding`) instead of
+  an effect plus closures. `Effect` can be subclassed internally.
+- `Attr.Static`/`Attr.Dynamic` and `OnClick(Action)` no longer wrap the callback in a closure;
+  the renderer stores the `Listener` itself.
+- `TemplateInstance` creates hole handles lazily and frees all hole ids in one dispose; scopes
+  keep owned items in an array.
+- `For`/`Each` skips the common prefix and suffix before diffing, so append, remove and swap only
+  diff the changed keys. Duplicate keys are still rejected before the DOM is touched.
+- Oz script time: create 10,000 rows ~420 → 271 ms, append 1,000 rows 53.6 → 45.1, reactive
+  `deep` 33.4 → 14.2, `broad` 68.0 → 37.9, `create` 54.3 → 19.3. Download size unchanged.

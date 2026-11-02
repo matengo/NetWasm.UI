@@ -12,7 +12,7 @@ public static class Renderer
 {
     private static IDomHost? host;
     private static readonly BatchWriter batch = new();
-    private static readonly Dictionary<int, Listener> handlers = new();
+    private static readonly Dictionary<int, UI.Listener> handlers = new();
     private static int nextNodeId = 1;
     private static int nextHandlerId = 1;
 
@@ -189,11 +189,17 @@ public static class Renderer
 
     public static int AddListener(int id, string eventName, Action<DomEvent> handler, ListenerFlags flags)
     {
+        var listener = new UI.Listener(eventName, handler, flags) { Owner = Tracker.CurrentOwner };
+        return AddListener(id, listener, flags);
+    }
+
+    internal static int AddListener(int id, UI.Listener listener, ListenerFlags flags)
+    {
         var handlerId = nextHandlerId++;
-        handlers[handlerId] = new Listener(eventName, handler, Tracker.CurrentOwner);
+        handlers[handlerId] = listener;
         batch.Op(Op.AddListener);
         batch.Int(id);
-        batch.String(eventName);
+        batch.String(listener.EventName);
         batch.Int(handlerId);
         batch.Byte((byte)flags);
         return handlerId;
@@ -237,29 +243,15 @@ public static class Renderer
 
     // Errors go to the nearest ErrorBoundary around the element (or App.OnError) inside the batch,
     // so the DOM ops queued before the throw still reach the host.
-    private static void Invoke(Listener listener, DomEvent e) => Scheduler.Batch(() =>
+    private static void Invoke(UI.Listener listener, DomEvent e) => Scheduler.Batch(() =>
     {
         try
         {
-            listener.Handler(e);
+            listener.Invoke(e);
         }
         catch (Exception ex)
         {
             ErrorHandling.Report(ex, listener.Owner);
         }
     });
-
-    private readonly struct Listener
-    {
-        public Listener(string eventName, Action<DomEvent> handler, Scope? owner)
-        {
-            EventName = eventName;
-            Handler = handler;
-            Owner = owner;
-        }
-
-        public string EventName { get; }
-        public Action<DomEvent> Handler { get; }
-        public Scope? Owner { get; }
-    }
 }

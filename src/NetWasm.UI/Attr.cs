@@ -7,43 +7,42 @@ namespace NetWasm.UI;
 /// <summary>An attribute or property applied to an element, optionally reactive.</summary>
 public sealed class Attr : IContent
 {
-    private readonly Action<Element> apply;
+    private readonly Action<Element>? apply;
+    private readonly string? name;
+    private readonly string? value;
+    private readonly Func<string?>? dynamic;
 
     private Attr(Action<Element> apply)
     {
         this.apply = apply;
     }
 
-    void IContent.ApplyTo(Element parent) => apply(parent);
+    private Attr(string name, string? value, Func<string?>? dynamic)
+    {
+        this.name = name;
+        this.value = value;
+        this.dynamic = dynamic;
+    }
 
-    public static Attr Static(string name, string value) =>
-        new(e => Renderer.SetAttribute(e.Id, name, value));
-
-    public static Attr Dynamic(string name, Func<string?> value) =>
-        new(e =>
+    void IContent.ApplyTo(Element parent)
+    {
+        if (apply is not null)
         {
-            var id = e.Id;
-            string? last = null;
-            _ = new Effect(() =>
-            {
-                // Only touch the DOM when the value changed; a fresh element has no attribute yet.
-                var v = value();
-                if (v == last)
-                {
-                    return;
-                }
+            apply(parent);
+        }
+        else if (dynamic is not null)
+        {
+            _ = new AttrBinding(parent.Id, name!, dynamic);
+        }
+        else
+        {
+            Renderer.SetAttribute(parent.Id, name!, value!);
+        }
+    }
 
-                last = v;
-                if (v is null)
-                {
-                    Renderer.RemoveAttribute(id, name);
-                }
-                else
-                {
-                    Renderer.SetAttribute(id, name, v);
-                }
-            });
-        });
+    public static Attr Static(string name, string value) => new(name, value, null);
+
+    public static Attr Dynamic(string name, Func<string?> value) => new(name, null, value);
 
     /// <summary>Boolean attribute such as <c>disabled</c>: present when true, absent when false.</summary>
     public static Attr Toggle(string name, Func<bool> value) =>
@@ -68,24 +67,50 @@ public sealed class Attr : IContent
 /// <summary>An event listener. Registered with the owning scope so it is removed when the subtree goes away.</summary>
 public sealed class Listener : IContent, IDisposable
 {
-    private readonly string eventName;
-    private readonly Action<DomEvent> handler;
+    private readonly Action<DomEvent>? handler;
+    private readonly Action? simple;
     private readonly ListenerFlags flags;
     private int handlerId;
 
     public Listener(string eventName, Action<DomEvent> handler, ListenerFlags flags = ListenerFlags.None)
     {
-        this.eventName = eventName;
+        EventName = eventName;
         this.handler = handler;
+        this.flags = flags;
+    }
+
+    /// <summary>A listener that doesn't need the event data (no wrapper delegate).</summary>
+    public Listener(string eventName, Action handler, ListenerFlags flags = ListenerFlags.None)
+    {
+        EventName = eventName;
+        simple = handler;
         this.flags = flags;
     }
 
     public int HandlerId => handlerId;
 
+    internal string EventName { get; }
+
+    /// <summary>The scope that was current when the listener was attached; errors are reported there.</summary>
+    internal Scope? Owner { get; set; }
+
+    internal void Invoke(DomEvent e)
+    {
+        if (simple is not null)
+        {
+            simple();
+        }
+        else
+        {
+            handler!(e);
+        }
+    }
+
     void IContent.ApplyTo(Element parent)
     {
-        handlerId = Renderer.AddListener(parent.Id, eventName, handler, flags);
-        Scope.Current?.Register(this);
+        Owner = Scope.Current;
+        handlerId = Renderer.AddListener(parent.Id, this, flags);
+        Owner?.Register(this);
     }
 
     public void Dispose()

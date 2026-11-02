@@ -69,13 +69,19 @@ Blazor with a ~12× smaller download and ~7× faster startup. The pure-compute r
 `sieve`) vary a lot between runs because Chromium tiers Wasm and JS up at different times
 (Liftoff → TurboFan); treat them as "same ballpark".
 
+After cutting allocations per row (Oz only, A/B on the same machine, script time / script +
+layout): create 1,000 rows 26.3 / 66.4, replace 37.4 / 67.7, create 10,000 rows 271.2 / 622.9
+(script was ~420), append 45.1 / 83.4, partial update 2.9 / 25.1. Reactive: deep 33.4 → 14.2
+(Solid 21.3), broad 68.0 → 37.9 (Solid 34.5), diamond 18.9 → 10.4, create/dispose 54.3 → 19.3
+(Solid 14.5). Download is unchanged (123.2 KB Brotli).
+
 The fixes made after the first run are listed in the [CHANGELOG](../CHANGELOG.md).
 
 ## Still open
 
-- Creating rows still costs ~1.4× Solid with layout and ~3× in script time. The remaining cost is
-  in Wasm: per row a closure, a `TemplateInstance`, node handles and one effect per reactive
-  binding. Fewer allocations per row (e.g. effects without closures) are the next step.
+- Creating rows still costs ~1.2× Solid with layout and ~2–2.5× in script time. Per row there are
+  still the row's closures, a `TemplateInstance` with node handles, one binding per reactive hole,
+  two listeners, a scope and a boxed key.
 - `Computed` recomputes eagerly on every dirty notification, so a diamond recomputes its join
   once per branch (`diamond`). A push-pull model (mark stale, recompute on read) would fix it.
 - `O3` is ~1.5–2× faster than `Oz` on reactive work but makes the Wasm bigger. `Oz` stays the

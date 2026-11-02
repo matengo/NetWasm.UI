@@ -80,55 +80,91 @@ internal sealed class KeyedList : IDisposable
 
     public void Reconcile(object[] newOrder, Func<int, Node> render)
     {
-        var newKeys = new HashSet<object>();
-        for (var i = 0; i < newOrder.Length; i++)
+        // Skip the common prefix and suffix: they stay where they are. Appending, removing one row or
+        // swapping two then only diffs the few keys in between.
+        var oldCount = order.Count;
+        var start = 0;
+        while (start < oldCount && start < newOrder.Length && order[start].Equals(newOrder[start]))
         {
-            if (!newKeys.Add(newOrder[i]))
+            start++;
+        }
+
+        var oldEnd = oldCount;
+        var newEnd = newOrder.Length;
+        while (oldEnd > start && newEnd > start && order[oldEnd - 1].Equals(newOrder[newEnd - 1]))
+        {
+            oldEnd--;
+            newEnd--;
+        }
+
+        // Validate before touching anything. A middle key that exists but is not in the old middle is a
+        // prefix/suffix key, i.e. a duplicate.
+        Dictionary<object, int>? oldIndex = null;
+        if (oldEnd > start)
+        {
+            oldIndex = new Dictionary<object, int>();
+            for (var i = start; i < oldEnd; i++)
             {
-                throw new InvalidOperationException("Duplicate key in For: " + newOrder[i]);
+                oldIndex[order[i]] = i;
             }
         }
 
-        // Remove entries that disappeared.
-        for (var i = 0; i < order.Count; i++)
+        HashSet<object>? newKeys = newEnd - start > 1 || oldIndex is not null ? new HashSet<object>() : null;
+        for (var i = start; i < newEnd; i++)
         {
-            var k = order[i];
-            if (!newKeys.Contains(k))
+            var k = newOrder[i];
+            if ((newKeys is not null && !newKeys.Add(k)) || (entries.ContainsKey(k) && (oldIndex is null || !oldIndex.ContainsKey(k))))
             {
-                var entry = entries[k];
-                entry.Node.Remove();
-                entry.Scope.Dispose();
-                entries.Remove(k);
+                throw DuplicateKey(k);
+            }
+        }
+
+        // Remove entries of the old middle that disappeared.
+        if (oldIndex is not null)
+        {
+            for (var i = start; i < oldEnd; i++)
+            {
+                var k = order[i];
+                if (!newKeys!.Contains(k))
+                {
+                    var entry = entries[k];
+                    entry.Node.Remove();
+                    entry.Scope.Dispose();
+                    entries.Remove(k);
+                }
             }
         }
 
         // Surviving items that form the longest increasing subsequence of old positions keep their
         // relative order and are never moved; everything else is (re)inserted before its successor.
-        var oldIndex = new Dictionary<object, int>();
-        for (var i = 0; i < order.Count; i++)
+        var sequence = new int[newEnd - start];
+        var anySurvivor = false;
+        for (var i = 0; i < sequence.Length; i++)
         {
-            oldIndex[order[i]] = i;
+            if (oldIndex is not null && oldIndex.TryGetValue(newOrder[start + i], out var idx))
+            {
+                sequence[i] = idx;
+                anySurvivor = true;
+            }
+            else
+            {
+                sequence[i] = -1;
+            }
         }
 
-        var sequence = new int[newOrder.Length];
-        for (var i = 0; i < newOrder.Length; i++)
-        {
-            sequence[i] = oldIndex.TryGetValue(newOrder[i], out var idx) ? idx : -1;
-        }
+        var stable = anySurvivor ? LongestIncreasingSubsequence(sequence) : null;
 
-        var stable = LongestIncreasingSubsequence(sequence);
-
-        // Walk the new order backwards so the reference node is always already in position.
-        var referenceId = anchor.Id;
-        for (var i = newOrder.Length - 1; i >= 0; i--)
+        // Walk the middle backwards so the reference node is always already in position.
+        var referenceId = newEnd < newOrder.Length ? entries[newOrder[newEnd]].Node.Id : anchor.Id;
+        for (var i = newEnd - 1; i >= start; i--)
         {
             var k = newOrder[i];
             int nodeId;
 
-            if (entries.TryGetValue(k, out var existing))
+            if (sequence[i - start] >= 0)
             {
-                nodeId = existing.Node.Id;
-                if (!stable[i])
+                nodeId = entries[k].Node.Id;
+                if (!stable![i - start])
                 {
                     Renderer.InsertBefore(referenceId, nodeId);
                 }
@@ -136,8 +172,18 @@ internal sealed class KeyedList : IDisposable
             else
             {
                 var scope = Scope.Detached(owner);
-                var index = i;
-                var node = scope.Run(() => render(index));
+                var previousOwner = Tracker.CurrentOwner;
+                Tracker.CurrentOwner = scope;
+                Node node;
+                try
+                {
+                    node = render(i);
+                }
+                finally
+                {
+                    Tracker.CurrentOwner = previousOwner;
+                }
+
                 entries[k] = new Entry(node, scope);
                 nodeId = node.Id;
                 Renderer.InsertBefore(referenceId, nodeId);
@@ -149,6 +195,10 @@ internal sealed class KeyedList : IDisposable
         order.Clear();
         order.AddRange(newOrder);
     }
+
+    private static InvalidOperationException DuplicateKey(object key) =>
+        new("Duplicate key in For: " + key);
+
     /// <summary>Marks positions belonging to a longest increasing subsequence of non-negative values.</summary>
     private static bool[] LongestIncreasingSubsequence(int[] sequence)
     {

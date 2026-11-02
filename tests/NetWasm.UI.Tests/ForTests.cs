@@ -128,6 +128,54 @@ public class ForTests : RendererTest
         Assert.Throws<InvalidOperationException>(() => App.Mount(v, "#app"));
     }
 
+    [Fact]
+    public void Duplicate_of_an_unchanged_prefix_key_throws_before_touching_the_dom()
+    {
+        var v = new ListView(1, 2, 3);
+        App.Mount(v, "#app");
+        Dom.Log.Clear();
+
+        Assert.Throws<InvalidOperationException>(() => Set(v, 1, 2, 1, 3));
+        Assert.DoesNotContain(Dom.Log, l => l.Op is "Remove" or "InsertBefore" or "CloneTemplate" or "CreateElement");
+    }
+
+    [Fact]
+    public void Swapping_two_rows_moves_only_those()
+    {
+        var v = new ListView(1, 2, 3, 4, 5, 6);
+        App.Mount(v, "#app");
+        Dom.Log.Clear();
+
+        Set(v, 1, 5, 3, 4, 2, 6);
+
+        Assert.Equal("1,5,3,4,2,6", Items(Dom.Html));
+        Assert.Equal(2, Dom.Log.Count(l => l.Op == "InsertBefore"));
+    }
+
+    [Fact]
+    public void Random_updates_keep_dom_order_in_sync()
+    {
+        var random = new Random(1234);
+        var v = new ListView();
+        App.Mount(v, "#app");
+        for (var round = 0; round < 300; round++)
+        {
+            // Mix of keep-prefix, keep-suffix, shuffles, inserts and removals.
+            var pool = Enumerable.Range(0, 12).Where(_ => random.Next(3) > 0).ToList();
+            var next = random.Next(4) switch
+            {
+                0 => pool,
+                1 => pool.OrderBy(_ => random.Next()).ToList(),
+                2 => pool.Take(pool.Count / 2).Concat(pool.Skip(pool.Count / 2).OrderBy(_ => random.Next())).ToList(),
+                _ => pool.Skip(pool.Count / 2).OrderBy(_ => random.Next()).Concat(pool.Take(pool.Count / 2)).ToList(),
+            };
+
+            Set(v, next.ToArray());
+
+            Assert.Equal(string.Join(",", next), Items(Dom.Html));
+        }
+    }
+
     private sealed class Lambda : Component
     {
         private readonly Func<Node> build;

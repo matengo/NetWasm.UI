@@ -97,10 +97,10 @@ public static class Html
         new(eventName, handler, flags);
 
     public static Listener On(string eventName, Action handler, ListenerFlags flags = ListenerFlags.None) =>
-        new(eventName, _ => handler(), flags);
+        new(eventName, handler, flags);
 
     public static Listener OnClick(Action<DomEvent> handler) => new("click", handler);
-    public static Listener OnClick(Action handler) => new("click", _ => handler());
+    public static Listener OnClick(Action handler) => new("click", handler);
     public static Listener OnInput(Action<DomEvent> handler) => new("input", handler);
     public static Listener OnChange(Action<DomEvent> handler) => new("change", handler);
     public static Listener OnKeyDown(Action<DomEvent> handler) => new("keydown", handler);

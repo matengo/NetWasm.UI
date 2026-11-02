@@ -27,6 +27,12 @@ public abstract class Node : IContent, IDisposable
         Scope.Current?.Register(this);
     }
 
+    /// <summary>A handle whose host node is released by someone else (e.g. its <see cref="TemplateInstance"/>).</summary>
+    private protected Node(int id, bool owned)
+    {
+        Id = id;
+    }
+
     public int Id { get; }
 
     void IContent.ApplyTo(Element parent) => Renderer.AppendChild(parent.Id, Id);
@@ -49,14 +55,7 @@ public sealed class TextNode : Node
     public TextNode(Func<string> text)
         : base(Renderer.CreateText(string.Empty))
     {
-        var id = Id;
-        _ = new Effect(() => Renderer.SetText(id, text()));
-    }
-
-    /// <summary>Takes over a node the host already created (a template hole).</summary>
-    internal TextNode(int id, bool adopt)
-        : base(id)
-    {
+        _ = new TextBinding(Id, text);
     }
 }
 
@@ -81,9 +80,9 @@ public sealed class Element : Node
         }
     }
 
-    /// <summary>Takes over a node the host already created (a template hole).</summary>
+    /// <summary>A handle to a template hole; the <see cref="TemplateInstance"/> releases the host node.</summary>
     internal Element(int id, string tag)
-        : base(id)
+        : base(id, owned: true)
     {
         Tag = tag;
     }

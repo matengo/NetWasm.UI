@@ -11,7 +11,8 @@ namespace NetWasm.UI.Reactive;
 /// </summary>
 public sealed class Scope : IDisposable
 {
-    private readonly List<IDisposable> owned = new();
+    private IDisposable[]? owned;
+    private int ownedCount;
     private Dictionary<object, object?>? contexts;
     private bool disposed;
 
@@ -51,7 +52,19 @@ public sealed class Scope : IDisposable
     /// <summary>Receives errors raised inside this scope or its descendants (set by <see cref="ErrorBoundary"/>).</summary>
     internal Action<Exception>? ErrorHandler { get; set; }
 
-    public void Register(IDisposable disposable) => owned.Add(disposable);
+    public void Register(IDisposable disposable)
+    {
+        if (owned is null)
+        {
+            owned = new IDisposable[8];
+        }
+        else if (ownedCount == owned.Length)
+        {
+            Array.Resize(ref owned, ownedCount * 2);
+        }
+
+        owned[ownedCount++] = disposable;
+    }
 
     internal void SetContext(object key, object? value) => (contexts ??= new Dictionary<object, object?>())[key] = value;
 
@@ -108,12 +121,17 @@ public sealed class Scope : IDisposable
 
         disposed = true;
         // Dispose in reverse creation order so children go before parents.
-        for (var i = owned.Count - 1; i >= 0; i--)
+        var list = owned;
+        if (list is not null)
         {
-            owned[i].Dispose();
+            for (var i = ownedCount - 1; i >= 0; i--)
+            {
+                list[i].Dispose();
+            }
         }
 
-        owned.Clear();
+        owned = null;
+        ownedCount = 0;
         contexts = null;
         ErrorHandler = null;
     }

@@ -8,21 +8,29 @@ namespace NetWasm.UI.Reactive;
 /// An exception from the first run propagates to the caller (so a failing build reaches the enclosing
 /// <see cref="ErrorBoundary"/>); exceptions from later runs are reported to the owner scope's boundary.
 /// </summary>
-public sealed class Effect : Computation
+public class Effect : Computation
 {
-    private readonly Action action;
+    private readonly Action? action;
     private readonly Scope? owner;
     private List<Action>? cleanups;
     private bool scheduled;
     private bool started;
 
     public Effect(Action action)
+        : this()
     {
         this.action = action;
-        owner = Tracker.CurrentOwner;
-        owner?.Register(this);
         Run();
     }
+
+    /// <summary>For built-in bindings that override <see cref="Execute"/> instead of wrapping a closure. Call <see cref="Run"/> last in the constructor.</summary>
+    private protected Effect()
+    {
+        owner = Tracker.CurrentOwner;
+        owner?.Register(this);
+    }
+
+    private protected virtual void Execute() => action!();
 
     internal void AddCleanup(Action cleanup) => (cleanups ??= new List<Action>()).Add(cleanup);
 
@@ -80,7 +88,7 @@ public sealed class Effect : Computation
         {
             if (first)
             {
-                action();
+                Execute();
             }
             else
             {
@@ -98,7 +106,7 @@ public sealed class Effect : Computation
     {
         try
         {
-            action();
+            Execute();
         }
         catch (Exception ex)
         {
