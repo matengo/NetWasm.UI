@@ -234,4 +234,23 @@ public sealed class ComponentsTests : PageTest
         await Expect(panel.Locator(".summary")).ToHaveTextAsync("12 m² with 3 extras");
         await Expect(width.Locator(".dec")).ToBeEnabledAsync();
     }
+
+    [Fact]
+    public async Task Error_boundary_shows_fallback_and_retries()
+    {
+        await OpenAsync("/components");
+        var fragile = Page.Locator("#fragile");
+        await fragile.ClickAsync();
+        await fragile.ClickAsync();
+        await Expect(fragile).ToHaveTextAsync("Clicks: 2 (fails on 3)");
+
+        await fragile.ClickAsync();
+        await Expect(Page.Locator(".guarded .error")).ToContainTextAsync("Oops: click number 3 failed");
+        await Expect(fragile).ToHaveCountAsync(0);
+
+        await Page.ClickAsync("#retry");
+        await Expect(fragile).ToHaveTextAsync("Clicks: 3 (fails on 3)");
+        await fragile.ClickAsync();
+        await Expect(fragile).ToHaveTextAsync("Clicks: 4 (fails on 3)");
+    }
 }

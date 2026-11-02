@@ -56,7 +56,7 @@ public sealed class CounterView : Component
 
 ## Size and speed
 
-- The whole demo app (counter, todos, router, nested components) is **137 KB** with Brotli;
+- The whole demo app (counter, todos, router, nested components) is **140 KB** with Brotli;
   about 40 % of that is NetWasm's JS host.
 - In a [js-framework-benchmark-style comparison](docs/benchmarks.md) it is roughly level with
   React, 1–2× slower than SolidJS, and 2–10× faster than Blazor WebAssembly with a ~12× smaller
@@ -77,6 +77,7 @@ dotnet run --project tools/DevServer -- samples/Counter
 - [Components and the C# API](docs/components.md)
 - [Templates (`.nwui`)](docs/templates.md)
 - [Reactivity](docs/reactivity.md): signals, batching, context, lifecycle
+- [Error handling](docs/error-handling.md): `ErrorBoundary` and `App.OnError`
 - [Routing](docs/routing.md)
 - [Publishing and size](docs/deployment.md)
 - [Architecture](docs/architecture.md)
@@ -99,8 +100,8 @@ dotnet run --project tools/DevServer -- samples/Counter
 
 ## Known limitations
 
-No `System.Linq`, reflection or `async` in `netwasm0.1`; one app per Wasm module; no error
-boundary, base-path routing or SSR yet; no hot reload (live reload in 15–20 s); `.nwui` has
+No `System.Linq`, reflection or `async` in `netwasm0.1`; one app per Wasm module; no
+base-path routing or SSR yet; no hot reload (live reload in 15–20 s); `.nwui` has
 syntax highlighting but no IntelliSense. See [Troubleshooting](docs/troubleshooting.md#known-limitations).
 
 ## Contributing

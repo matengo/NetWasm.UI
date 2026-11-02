@@ -19,8 +19,26 @@ public static class App
 
         Scheduler.Batch(() =>
         {
-            var node = root.Render();
-            Renderer.Mount(node.Id, selector);
+            try
+            {
+                var node = root.Render();
+                Renderer.Mount(node.Id, selector);
+            }
+            catch (System.Exception ex)
+            {
+                ErrorHandling.Report(ex, null);
+            }
         });
+    }
+
+    /// <summary>
+    /// Receives errors that no <see cref="ErrorBoundary"/> handled: from effects, event handlers,
+    /// <c>OnMount</c>/<c>OnCleanup</c> callbacks and the initial render. When unset, such an error is
+    /// rethrown after the current update has been flushed to the host (it shows up in the browser console).
+    /// </summary>
+    public static System.Action<System.Exception>? OnError
+    {
+        get => ErrorHandling.Global;
+        set => ErrorHandling.Global = value;
     }
 }

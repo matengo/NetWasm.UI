@@ -16,6 +16,9 @@ NetWasm.UI has no releases yet. This lists what has been built so far.
   `MemoryHistory` for tests.
 - Context and stores (`Context<T>`, `Provide`, `Use`) and lifecycle hooks (`OnMount`,
   `OnCleanup`).
+- Error handling: `ErrorBoundary` with a fallback and `Reset()`, and a global `App.OnError`
+  hook. Errors from builds, effects, event handlers and `OnMount` go to the nearest boundary.
+  Unhandled errors are rethrown after the DOM update has been applied.
 
 ### Templates
 
@@ -23,6 +26,7 @@ NetWasm.UI has no releases yet. This lists what has been built so far.
   `@bind`, `@ref`, `@if`/`else`, keyed `@foreach`, components, `@code`, `#line` mapping for
   C# errors.
 - Child content and named slots (`Slot`, `@render`, `<template slot="…">`).
+- `<ErrorBoundary>` with `<template slot="Fallback" context="error">`.
 - Reactive props: `@prop` and `Prop<T>`.
 - VS Code extension with syntax highlighting (`tools/vscode-nwui`).
 

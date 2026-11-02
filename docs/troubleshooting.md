@@ -51,8 +51,8 @@ new generic instantiations, and `Uri.EscapeDataString`. See
 - NetWasm 0.10 (`netwasm0.1`) has no `System.Linq`, reflection or `async`.
 - `Scheduler`, `Renderer`, the tracker and `Router.Current` are static: one app per Wasm module
   instance.
-- An exception thrown in an event handler or effect is not caught by the framework. There is no
-  error boundary yet.
+- An exception thrown outside the framework (your own `JSImport` callbacks, timers) is not
+  caught by an `ErrorBoundary`. See [Error handling](error-handling.md).
 - No base-path or hash routing, no nested/layout routes, no SSR or hydration.
 - No hot reload: the dev server rebuilds (15–20 s) and reloads the page, and signal state is lost.
 - `.nwui` editor support is syntax highlighting only (VS Code). Control flow is only

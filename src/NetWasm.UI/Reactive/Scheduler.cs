@@ -13,6 +13,7 @@ public static class Scheduler
     private static readonly Queue<Effect> queue = new();
     private static readonly Queue<Action> afterFlush = new();
     private static int depth;
+    private static int flushDepth;
     private static bool flushing;
 
     /// <summary>Raised after queued effects ran. The DOM renderer uses this to push its op batch.</summary>
@@ -64,6 +65,24 @@ public static class Scheduler
             return;
         }
 
+        flushDepth++;
+        try
+        {
+            FlushCore();
+        }
+        finally
+        {
+            flushDepth--;
+        }
+
+        if (flushDepth == 0 && depth == 0)
+        {
+            ErrorHandling.ThrowPending();
+        }
+    }
+
+    private static void FlushCore()
+    {
         flushing = true;
         try
         {
@@ -109,7 +128,9 @@ public static class Scheduler
         queue.Clear();
         afterFlush.Clear();
         depth = 0;
+        flushDepth = 0;
         flushing = false;
         flushed.Clear();
+        ErrorHandling.Reset();
     }
 }

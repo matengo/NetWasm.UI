@@ -3,17 +3,24 @@ using System.Collections.Generic;
 
 namespace NetWasm.UI.Reactive;
 
-/// <summary>Runs a side effect immediately and again whenever a signal read during the previous run changes.</summary>
+/// <summary>
+/// Runs a side effect immediately and again whenever a signal read during the previous run changes.
+/// An exception from the first run propagates to the caller (so a failing build reaches the enclosing
+/// <see cref="ErrorBoundary"/>); exceptions from later runs are reported to the owner scope's boundary.
+/// </summary>
 public sealed class Effect : Computation
 {
     private readonly Action action;
+    private readonly Scope? owner;
     private List<Action>? cleanups;
     private bool scheduled;
+    private bool started;
 
     public Effect(Action action)
     {
         this.action = action;
-        Tracker.CurrentOwner?.Register(this);
+        owner = Tracker.CurrentOwner;
+        owner?.Register(this);
         Run();
     }
 
@@ -30,7 +37,14 @@ public sealed class Effect : Computation
         cleanups = null;
         for (var i = list.Count - 1; i >= 0; i--)
         {
-            Tracker.Untracked(list[i]);
+            try
+            {
+                Tracker.Untracked(list[i]);
+            }
+            catch (Exception ex)
+            {
+                ErrorHandling.Report(ex, null);
+            }
         }
     }
 
@@ -60,14 +74,35 @@ public sealed class Effect : Computation
         Tracker.Current = this;
         // Effects re-run from the scheduler; anything they create must pick its owner explicitly.
         Tracker.CurrentOwner = null;
+        var first = !started;
+        started = true;
         try
         {
-            action();
+            if (first)
+            {
+                action();
+            }
+            else
+            {
+                RunGuarded();
+            }
         }
         finally
         {
             Tracker.Current = previous;
             Tracker.CurrentOwner = previousOwner;
+        }
+    }
+
+    private void RunGuarded()
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            ErrorHandling.Report(ex, owner);
         }
     }
 

@@ -168,7 +168,7 @@ public static class Renderer
     public static int AddListener(int id, string eventName, Action<DomEvent> handler, ListenerFlags flags)
     {
         var handlerId = nextHandlerId++;
-        handlers[handlerId] = new Listener(eventName, handler);
+        handlers[handlerId] = new Listener(eventName, handler, Tracker.CurrentOwner);
         batch.Op(Op.AddListener);
         batch.Int(id);
         batch.String(eventName);
@@ -201,8 +201,7 @@ public static class Renderer
             return;
         }
 
-        var e = DomEvent.Decode(listener.EventName, payload);
-        Scheduler.Batch(() => listener.Handler(e));
+        Invoke(listener, DomEvent.Decode(listener.EventName, payload));
     }
 
     /// <summary>Dispatches an already-decoded event (tests, fake hosts).</summary>
@@ -210,19 +209,35 @@ public static class Renderer
     {
         if (handlers.TryGetValue(handlerId, out var listener))
         {
-            Scheduler.Batch(() => listener.Handler(e));
+            Invoke(listener, e);
         }
     }
 
+    // Errors go to the nearest ErrorBoundary around the element (or App.OnError) inside the batch,
+    // so the DOM ops queued before the throw still reach the host.
+    private static void Invoke(Listener listener, DomEvent e) => Scheduler.Batch(() =>
+    {
+        try
+        {
+            listener.Handler(e);
+        }
+        catch (Exception ex)
+        {
+            ErrorHandling.Report(ex, listener.Owner);
+        }
+    });
+
     private readonly struct Listener
     {
-        public Listener(string eventName, Action<DomEvent> handler)
+        public Listener(string eventName, Action<DomEvent> handler, Scope? owner)
         {
             EventName = eventName;
             Handler = handler;
+            Owner = owner;
         }
 
         public string EventName { get; }
         public Action<DomEvent> Handler { get; }
+        public Scope? Owner { get; }
     }
 }

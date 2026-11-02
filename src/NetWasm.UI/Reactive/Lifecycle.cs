@@ -35,7 +35,14 @@ public static class Lifecycle
         {
             if (scope is null || !scope.IsDisposed)
             {
-                Tracker.Untracked(callback);
+                try
+                {
+                    Tracker.Untracked(callback);
+                }
+                catch (Exception ex)
+                {
+                    ErrorHandling.Report(ex, scope);
+                }
             }
         });
     }
@@ -52,7 +59,14 @@ public static class Lifecycle
             action = null;
             if (a is not null)
             {
-                Tracker.Untracked(a);
+                try
+                {
+                    Tracker.Untracked(a);
+                }
+                catch (Exception ex)
+                {
+                    ErrorHandling.Report(ex, null);
+                }
             }
         }
     }

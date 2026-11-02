@@ -130,6 +130,10 @@ public static class Html
     public static Show When(Func<bool> condition, Func<Node> render, Func<Node>? otherwise = null) =>
         new(condition, render, otherwise);
 
+    /// <summary>Renders <paramref name="content"/>, or <paramref name="fallback"/> once something inside it throws.</summary>
+    public static ErrorBoundary ErrorBoundary(Func<Node> content, Func<BoundaryError, Node> fallback) =>
+        new(content, fallback);
+
     public static For<T, TKey> Each<T, TKey>(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Func<T, Node> render)
         where TKey : notnull =>
         new(items, key, render);

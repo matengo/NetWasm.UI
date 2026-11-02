@@ -393,6 +393,17 @@ internal sealed class TemplateEmitter
             return;
         }
 
+        if (el.Tag == "ErrorBoundary")
+        {
+            if (nodePosition)
+            {
+                throw Structure("<ErrorBoundary> cannot be the only content of a template or block; wrap it in an element.", el.Start, el.Tag.Length + 1);
+            }
+
+            EmitErrorBoundary(el);
+            return;
+        }
+
         var slots = SlotsOf(el);
         var refName = RefOf(el, el.Tag);
         if (refName is not null)
@@ -583,6 +594,80 @@ internal sealed class TemplateEmitter
         sb.Append('(');
         EmitInterpolated(a.Segments);
         sb.Append(" ?? \"\")");
+    }
+
+    /// <summary>
+    /// <c>&lt;ErrorBoundary&gt;content&lt;template slot="Fallback" context="error"&gt;…&lt;/template&gt;&lt;/ErrorBoundary&gt;</c>
+    /// becomes <c>Html.ErrorBoundary(() =&gt; content, (BoundaryError error) =&gt; fallback)</c>.
+    /// </summary>
+    private void EmitErrorBoundary(TElement el)
+    {
+        if (el.Attributes.Count > 0)
+        {
+            var a = el.Attributes[0];
+            throw Unsupported($"'{a.Name}' is not supported on <ErrorBoundary>.", a.Start, a.Name.Length);
+        }
+
+        TElement? fallback = null;
+        var context = "error";
+        var content = new List<TNode>();
+        foreach (var child in Trim(el.Children))
+        {
+            if (child is not TElement { Tag: "template" } t)
+            {
+                content.Add(child);
+                continue;
+            }
+
+            TAttribute? slot = null;
+            foreach (var a in t.Attributes)
+            {
+                if (a.Name == "slot")
+                {
+                    slot = a;
+                }
+                else if (a.Name == "context" && a.HasValue && a.Segments.Count == 1 && !a.Segments[0].IsCode)
+                {
+                    context = a.Segments[0].Text.Trim();
+                    if (context.Length == 0 || !CSharpScanner.IsIdentStart(context[0]) || CSharpScanner.ScanIdent(context, 0) != context.Length)
+                    {
+                        throw Parse($"'{context}' is not a valid name; use e.g. context=\"error\".", a.Segments[0].Start, System.Math.Max(1, a.Segments[0].Text.Length));
+                    }
+                }
+                else
+                {
+                    throw Unsupported($"'{a.Name}' is not supported here; use <template slot=\"Fallback\" context=\"error\">.", a.Start, a.Name.Length);
+                }
+            }
+
+            if (slot is null || !slot.HasValue || slot.Segments.Count != 1 || slot.Segments[0].IsCode || slot.Segments[0].Text.Trim() != "Fallback")
+            {
+                throw Structure("<ErrorBoundary> only takes a <template slot=\"Fallback\">.", t.Start, t.Tag.Length + 1);
+            }
+
+            if (fallback is not null)
+            {
+                throw Structure("Slot 'Fallback' is given more than once.", t.Start, t.Tag.Length + 1);
+            }
+
+            fallback = t;
+        }
+
+        if (fallback is null)
+        {
+            throw Structure("<ErrorBoundary> needs a <template slot=\"Fallback\" context=\"error\"> to show when something fails.", el.Start, el.Tag.Length + 1);
+        }
+
+        var body = SingleRoot(content, "<ErrorBoundary> content", el.Start)
+            ?? throw Structure("<ErrorBoundary> must contain exactly one root node besides the Fallback template.", el.Start, el.Tag.Length + 1);
+        var fallbackBody = SingleRoot(fallback.Children, "The Fallback template", fallback.Start)
+            ?? throw Structure("The Fallback template must contain exactly one root node.", fallback.Start, fallback.Tag.Length + 1);
+
+        sb.Append(H).Append("ErrorBoundary(() => ");
+        EmitNode(body, nodePosition: true);
+        sb.Append(", (global::NetWasm.UI.BoundaryError ").Append(context).Append(") => ");
+        EmitNode(fallbackBody, nodePosition: true);
+        sb.Append(')');
     }
 
     private void EmitLink(TElement el, TAttribute? skip)

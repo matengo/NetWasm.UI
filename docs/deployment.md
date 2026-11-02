@@ -25,10 +25,10 @@ The whole demo app (counter, todos, router, `/components`), Release:
 
 | Artifact | Raw | Brotli | Gzip |
 |---|---:|---:|---:|
-| `Counter.wasm` | 463 KB | 77 KB | 102 KB |
+| `Counter.wasm` | 481 KB | 80 KB | 106 KB |
 | `netwasm.page.mjs` host | 308 KB | 58 KB | 69 KB |
 | HTML + small JS modules | 10 KB | 2.5 KB | 3 KB |
-| **Whole page** | **780 KB** | **137 KB** | **174 KB** |
+| **Whole page** | **798 KB** | **140 KB** | **178 KB** |
 
 About 40 % is NetWasm's own JS host, not application code. See [Benchmarks](benchmarks.md) for
 a comparison with SolidJS, React and Blazor.

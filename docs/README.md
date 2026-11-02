@@ -6,6 +6,7 @@
 | [Components and the C# API](components.md) | `Component`, elements, attributes, events, binding, `When`/`Each`, props and slots |
 | [Templates (`.nwui`)](templates.md) | The Razor-like template syntax, the source generator and editor support |
 | [Reactivity](reactivity.md) | `Signal`, `Computed`, `Effect`, `Selector`, batching, scopes, context and lifecycle |
+| [Error handling](error-handling.md) | `ErrorBoundary`, `App.OnError`, where exceptions go |
 | [Routing](routing.md) | `Routes`, `Route`, `Link`, `NavLink`, route parameters |
 | [Publishing and size](deployment.md) | Release builds, what to deploy, hosting, caching, keeping the Wasm small |
 | [Architecture](architecture.md) | How rendering works: the binary op batch, `dom.mjs`, events |

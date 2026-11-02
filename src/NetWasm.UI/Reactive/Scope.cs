@@ -48,6 +48,9 @@ public sealed class Scope : IDisposable
 
     public bool IsDisposed => disposed;
 
+    /// <summary>Receives errors raised inside this scope or its descendants (set by <see cref="ErrorBoundary"/>).</summary>
+    internal Action<Exception>? ErrorHandler { get; set; }
+
     public void Register(IDisposable disposable) => owned.Add(disposable);
 
     internal void SetContext(object key, object? value) => (contexts ??= new Dictionary<object, object?>())[key] = value;
@@ -112,5 +115,6 @@ public sealed class Scope : IDisposable
 
         owned.Clear();
         contexts = null;
+        ErrorHandler = null;
     }
 }

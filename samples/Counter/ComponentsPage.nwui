@@ -7,4 +7,26 @@
         <RoomRazor />
         <RoomCode />
     </div>
+    <section class="guarded">
+        <h3>Error boundary</h3>
+        <ErrorBoundary>
+            <button id="fragile" @onclick="() => Hit()">Clicks: @Hits (fails on 3)</button>
+            <template slot="Fallback" context="error">
+                <p class="error">Oops: @error.Message <button id="retry" @onclick="() => error.Reset()">Retry</button></p>
+            </template>
+        </ErrorBoundary>
+    </section>
 </Page>
+
+@code {
+    private Signal<int> Hits { get; } = new(0);
+
+    private void Hit()
+    {
+        Hits.Value++;
+        if (Hits.Value == 3)
+        {
+            throw new System.InvalidOperationException("click number 3 failed");
+        }
+    }
+}

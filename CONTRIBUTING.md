@@ -50,6 +50,10 @@ reactive core, the renderer or `dom.mjs`.
   generic instantiations in the core and multicast delegates. See
   [Keeping the Wasm small](docs/deployment.md#keeping-the-wasm-small). The CI size table shows
   the effect of a change.
+- Inside a `catch` block, do not branch before the exception is used (for example
+  `catch (Exception ex) { if (x) throw; Report(ex); }`). In Release, Roslyn keeps `ex` on the
+  IL stack and the NetWasm compiler fails with `NW1002: evaluation stack is not empty at control
+  transfer`. Pick the path before the `try` instead (see `Effect.Run`).
 - Update the docs in `docs/` and the [CHANGELOG](CHANGELOG.md) with user-visible changes.
 
 ## The dev server
@@ -99,7 +103,7 @@ AOT) and is feedback for the NetWasm team rather than something this repository 
 ## Roadmap ideas
 
 - **Production readiness:** NuGet packages (with the generator wired up automatically) and a
-  `dotnet new` template; an error boundary and a global error hook; a public API baseline in CI.
+  `dotnet new` template; a public API baseline in CI.
 - **Templates:** parameterized slots (`Slot<T>`), `@switch`, a language server for `.nwui`
   (IntelliSense via the generated C#).
 - **Rendering speed** (see [Benchmarks](docs/benchmarks.md#still-open)): clone prebuilt

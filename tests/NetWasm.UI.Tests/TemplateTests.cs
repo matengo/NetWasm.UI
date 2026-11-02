@@ -147,6 +147,20 @@ public partial class TemplateTests : RendererTest
     }
 
     [Fact]
+    public void ErrorBoundary_in_template_shows_fallback_and_retries()
+    {
+        App.Mount(new Guarded(), "#app");
+        Fire(Dom.Query("button")!, "click");
+        Assert.Equal("<main><button class=\"boom\">Count: 1</button><!----></main>", Dom.Html);
+
+        Fire(Dom.Query("button")!, "click");
+        Assert.Equal("<main><p class=\"failed\">Failed: boom 2 <button class=\"retry\">Retry</button></p><!----></main>", Dom.Html);
+
+        Fire(Dom.Query("button")!, "click");
+        Assert.Equal("<main><button class=\"boom\">Count: 2</button><!----></main>", Dom.Html);
+    }
+
+    [Fact]
     public void Card_renders_child_content_and_named_slots()
     {
         App.Mount(new CardHost(), "#app");
@@ -290,6 +304,12 @@ public partial class TemplateTests : RendererTest
     [InlineData("<div><Foo><template slot=\"1a\"></template></Foo></div>", "NWUI001", "not a valid slot name")]
     [InlineData("<div><Foo><template slot=\"A\"></template><template slot=\"A\"></template></Foo></div>", "NWUI002", "more than once")]
     [InlineData("<div><Foo><template slot=\"ChildContent\"></template>x</Foo></div>", "NWUI002", "loose child content")]
+    [InlineData("<div><ErrorBoundary><p></p></ErrorBoundary></div>", "NWUI002", "needs a <template slot=\"Fallback\"")]
+    [InlineData("<div><ErrorBoundary><p></p><b></b><template slot=\"Fallback\"><i></i></template></ErrorBoundary></div>", "NWUI002", "exactly one root")]
+    [InlineData("<div><ErrorBoundary><p></p><template slot=\"Other\"><i></i></template></ErrorBoundary></div>", "NWUI002", "only takes a <template slot=\"Fallback\">")]
+    [InlineData("<div><ErrorBoundary><p></p><template slot=\"Fallback\" context=\"1x\"><i></i></template></ErrorBoundary></div>", "NWUI001", "not a valid name")]
+    [InlineData("<div><ErrorBoundary x=\"1\"><p></p><template slot=\"Fallback\"><i></i></template></ErrorBoundary></div>", "NWUI003", "not supported on <ErrorBoundary>")]
+    [InlineData("<ErrorBoundary><p></p><template slot=\"Fallback\"><i></i></template></ErrorBoundary>", "NWUI002", "wrap it in an element")]
     [InlineData("<div>@if (x) { <a></a><b></b> }</div>", "NWUI002", "exactly one root")]
     [InlineData("<div @onclick:preventDefault></div>", "NWUI002", "without an '@onclick' handler")]
     [InlineData("@if (x) { <a></a> }", "NWUI002", "wrap it in an element")]

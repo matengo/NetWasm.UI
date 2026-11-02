@@ -59,6 +59,7 @@ The dev server watches `.nwui` files like `.cs` files.
 | `<Card>…</Card>` | `new Card { ChildContent = new Slot(() => …) }`; place it inside `Card` with `@render(ChildContent)` |
 | `<Card><template slot="Header">…</template>…</Card>` | a named slot: `Header = new Slot(() => …)`; the rest still goes to `ChildContent` |
 | `<Link href="/x">…</Link>`, `<NavLink href="/x" activeClass="on">…</NavLink>` | `Html.Link` / `Html.NavLink` |
+| `<ErrorBoundary>…<template slot="Fallback" context="error">…</template></ErrorBoundary>` | `Html.ErrorBoundary(() => …, (BoundaryError error) => …)`; see [Error handling](error-handling.md) |
 | `@code { … }`, `@using X`, `@namespace X` | class members, usings, namespace |
 | `@prop int Level = 1;` | a reactive prop: `public Prop<int> Level { get; set; } = 1;` |
 | `@* … *@`, `<!-- … -->`, `@@`, `&amp; &times; &minus; &#65;` | comments, a literal `@`, decoded entities (common named ones plus numeric; an unknown `&name;` is an error) |

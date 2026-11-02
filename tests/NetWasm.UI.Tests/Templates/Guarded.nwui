@@ -1,0 +1,22 @@
+@* An error boundary in a template: the button throws, the fallback offers a retry. *@
+<main>
+    <ErrorBoundary>
+        <button class="boom" @onclick="() => Explode()">Count: @Count</button>
+        <template slot="Fallback" context="error">
+            <p class="failed">Failed: @error.Message <button class="retry" @onclick="() => error.Reset()">Retry</button></p>
+        </template>
+    </ErrorBoundary>
+</main>
+
+@code {
+    public Signal<int> Count { get; } = new(0);
+
+    private void Explode()
+    {
+        Count.Value++;
+        if (Count.Value == 2)
+        {
+            throw new InvalidOperationException("boom " + Count.Value);
+        }
+    }
+}
