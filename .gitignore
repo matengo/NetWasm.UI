@@ -7,7 +7,6 @@ publish/
 .playwright-mcp/
 TestResults/
 
-.playwright-mcp/
 
 benchmarks/.out/
 benchmarks/solid/node_modules/
