@@ -131,6 +131,7 @@ Ul(Each(items, i => i.Id, item =>
 | `tests/NetWasm.UI.E2E`       | Playwright (.NET) browser tests: publish + serve `samples/Counter`, drive it in Chromium. |
 | `tools/DevServer`            | Kestrel dev server: publishes the app, serves it with Brotli/gzip and correct MIME types, watches sources and reloads the browser. |
 | `tools/vscode-nwui`          | VS Code extension: `.nwui` syntax highlighting (TextMate grammar embedding HTML and C#). |
+| `benchmarks/`                | js-framework-benchmark-style comparison with SolidJS (`NetWasmBench`, `solid`, `Runner`). |
 
 ## Getting started
 
@@ -366,6 +367,62 @@ npm test                            # grammar tests (vscode-textmate + the real 
 
 The extension only colors the code. There is no IntelliSense or go-to-definition inside templates yet;
 C# errors still show up in the build and point at the `.nwui` line.
+
+## Benchmarks
+
+`benchmarks/` compares NetWasm.UI with SolidJS on the same app and the same workloads:
+
+- `NetWasmBench`: the js-framework-benchmark "keyed" table app (create/replace/update/select/swap/
+  remove/clear rows) plus DOM-free workloads (`ReactiveBench.cs`).
+- `solid`: the same app (based on the official keyed Solid implementation, with `createSelector`)
+  and the same workloads in JS, built with Vite.
+- `Runner`: publishes NetWasmBench with `Oz` and `O3`, builds the Solid app, serves all of them
+  with Kestrel and drives Chromium with Playwright.
+
+```powershell
+dotnet run --project benchmarks/Runner -c Release -- --runs 10   # --skip-build, --no-o3, --headed
+```
+
+Method: every DOM case opens a fresh page, runs the setup clicks, forces a GC and then times one
+`element.click()`. Both frameworks update the DOM synchronously inside the click, so *script* is
+the full framework + DOM API cost. *+ layout* adds a forced layout (`document.body.offsetHeight`).
+Paint is not measured. Each case checks the resulting DOM (row count, labels, selected row), and
+each DOM-free workload returns a checksum that has to be identical in both implementations. Rows
+use the same seeded labels in both apps. Values are medians in ms.
+
+Results on a Windows arm64 laptop (Chromium 153, 10 runs, script + layout):
+
+| Case                         | NetWasm.UI Oz | NetWasm.UI O3 | SolidJS | Oz / Solid |
+|------------------------------|--------------:|--------------:|--------:|-----------:|
+| create 1,000 rows            |         108.8 |         109.5 |    51.8 |      2.1× |
+| replace 1,000 rows           |         213.8 |         222.7 |    64.8 |      3.3× |
+| partial update (every 10th)  |          30.4 |          27.5 |    27.6 |      1.1× |
+| select row                   |          40.8 |          30.7 |     3.7 |     11.2× |
+| swap rows                    |           9.4 |          14.8 |     7.9 |      1.2× |
+| remove row                   |          10.1 |          12.2 |     9.0 |      1.1× |
+| create 10,000 rows           |        2369.6 |        1868.7 |   554.3 |      4.3× |
+| append 1,000 rows            |         174.5 |         144.7 |    62.2 |      2.8× |
+| clear 1,000 rows             |         119.9 |         117.9 |    11.5 |     10.4× |
+| reactive: deep (100-chain)   |          32.2 |          21.7 |    21.5 |      1.5× |
+| reactive: broad (1,000 fan-out) |      3509.2 |        3447.6 |    38.7 |     90.7× |
+| reactive: diamond            |          28.1 |          18.0 |     4.7 |      6.0× |
+| reactive: create/dispose 10k |          53.2 |          42.8 |    17.8 |      3.0× |
+| sort 100k strings (no UI)    |         197.3 |         248.9 |   142.3 |      1.4× |
+| sieve 2M (no UI)             |      13–133 |      12–122 | 75–115 |      ≈1× |
+| startup (`__ready`)          |         160.8 |         180.3 |    28.2 |      5.7× |
+
+The pure-compute rows (`sort`, `sieve`) vary a lot between runs because Chromium tiers Wasm and
+JS up at different times (Liftoff → TurboFan). Treat them as "same ballpark".
+
+What the numbers show (and what to fix next):
+
+- Signals keep dependents in a `List` (`Contains` on subscribe, `Remove` on re-track), so many
+  dependents on one signal are O(n²): `broad`, `select row` (every row reads `selected`) and
+  `create 10,000 rows`. Solid uses index-linked arrays, and `createSelector` notifies only two rows.
+- `dom.mjs` `releaseListeners` scans every listener for each released node, so `clear` and
+  `replace` are O(rows × listeners). Solid delegates events to `document`.
+- Fine-grained updates (`partial update`, `swap`, `remove`) are already on par.
+- Startup includes downloading and compiling ~460 KB of Wasm vs. 17 KB of JS.
 
 ## Known limitations
 

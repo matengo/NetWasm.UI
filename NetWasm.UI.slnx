@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/NetWasmBench/NetWasmBench.csproj" />
+    <Project Path="benchmarks/Runner/Runner.csproj" />
+  </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Counter/Counter.csproj" />
   </Folder>

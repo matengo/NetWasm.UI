@@ -8,3 +8,7 @@ publish/
 TestResults/
 
 .playwright-mcp/
+
+benchmarks/.out/
+benchmarks/solid/node_modules/
+benchmarks/solid/dist/
