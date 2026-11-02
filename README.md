@@ -256,11 +256,16 @@ Routes(
 ### Reactivity
 
 - `Signal<T>` stores a value and its subscribers. Writing a changed value marks subscribers dirty.
+  Subscriptions are two-way links that remember their index on both sides (as in Solid), so
+  subscribing and unsubscribing are O(1) even with thousands of readers.
 - `Computed<T>` recomputes eagerly and only propagates if its value changed.
+- `Selector<TKey>` (Solid's `createSelector`): `isSelected.Is(row.Id)` tracks only that key, so
+  changing the selection re-runs two rows instead of all of them.
 - `Effect` re-runs are queued on the `Scheduler`; at batch depth 0 the queue is flushed, then the
   `Renderer` ships one batch to the host.
 - `Scope` owns disposables (effects, nested scopes, components) so `Show`/`For` branches tear
-  down cleanly. Scopes form a tree that context lookups walk.
+  down cleanly. Scopes form a tree that context lookups walk. `For` items get scopes detached from
+  the owner (the list disposes them), so removed rows don't accumulate in the parent scope.
 
 ### Context, stores and lifecycle
 
@@ -390,38 +395,50 @@ Paint is not measured. Each case checks the resulting DOM (row count, labels, se
 each DOM-free workload returns a checksum that has to be identical in both implementations. Rows
 use the same seeded labels in both apps. Values are medians in ms.
 
-Results on a Windows arm64 laptop (Chromium 153, 10 runs, script + layout):
+Results on a Windows arm64 laptop (Chromium 153, 10 runs, script + layout). "Before" is the
+first run, prior to the fixes listed below:
 
-| Case                         | NetWasm.UI Oz | NetWasm.UI O3 | SolidJS | Oz / Solid |
-|------------------------------|--------------:|--------------:|--------:|-----------:|
-| create 1,000 rows            |         108.8 |         109.5 |    51.8 |      2.1× |
-| replace 1,000 rows           |         213.8 |         222.7 |    64.8 |      3.3× |
-| partial update (every 10th)  |          30.4 |          27.5 |    27.6 |      1.1× |
-| select row                   |          40.8 |          30.7 |     3.7 |     11.2× |
-| swap rows                    |           9.4 |          14.8 |     7.9 |      1.2× |
-| remove row                   |          10.1 |          12.2 |     9.0 |      1.1× |
-| create 10,000 rows           |        2369.6 |        1868.7 |   554.3 |      4.3× |
-| append 1,000 rows            |         174.5 |         144.7 |    62.2 |      2.8× |
-| clear 1,000 rows             |         119.9 |         117.9 |    11.5 |     10.4× |
-| reactive: deep (100-chain)   |          32.2 |          21.7 |    21.5 |      1.5× |
-| reactive: broad (1,000 fan-out) |      3509.2 |        3447.6 |    38.7 |     90.7× |
-| reactive: diamond            |          28.1 |          18.0 |     4.7 |      6.0× |
-| reactive: create/dispose 10k |          53.2 |          42.8 |    17.8 |      3.0× |
-| sort 100k strings (no UI)    |         197.3 |         248.9 |   142.3 |      1.4× |
-| sieve 2M (no UI)             |      13–133 |      12–122 | 75–115 |      ≈1× |
-| startup (`__ready`)          |         160.8 |         180.3 |    28.2 |      5.7× |
+| Case                         | Before (Oz) | NetWasm.UI Oz | NetWasm.UI O3 | SolidJS | Oz / Solid |
+|------------------------------|------------:|--------------:|--------------:|--------:|-----------:|
+| create 1,000 rows            |       108.8 |         108.6 |         102.2 |    54.5 |      2.0× |
+| replace 1,000 rows           |       213.8 |         121.0 |         111.1 |    62.6 |      1.9× |
+| partial update (every 10th)  |        30.4 |          28.1 |          27.3 |    28.0 |      1.0× |
+| select row                   |        40.8 |           3.7 |           3.5 |     3.0 |      1.2× |
+| swap rows                    |         9.4 |          10.1 |           9.5 |     8.6 |      1.2× |
+| remove row                   |        10.1 |          10.6 |           7.9 |     7.4 |      1.4× |
+| create 10,000 rows           |      2369.6 |        1238.5 |        1186.8 |   535.7 |      2.3× |
+| append 1,000 rows            |       174.5 |         132.9 |         124.3 |    57.1 |      2.3× |
+| clear 1,000 rows             |       119.9 |          18.8 |          18.6 |    10.0 |      1.9× |
+| reactive: deep (100-chain)   |        32.2 |          35.4 |          19.1 |    20.4 |      1.7× |
+| reactive: broad (1,000 fan-out) |    3509.2 |          71.3 |          39.5 |    40.4 |      1.8× |
+| reactive: diamond            |        28.1 |          20.2 |           8.8 |     4.6 |      4.4× |
+| reactive: create/dispose 10k |        53.2 |          50.3 |          38.8 |    18.4 |      2.7× |
+| sort 100k strings (no UI)    |       197.3 |         189.1 |         185.1 |   150.4 |      1.3× |
+| sieve 2M (no UI)             |      13–133 |        20–130 |        10–120 |  75–115 |       ≈1× |
+| startup (`__ready`)          |       160.8 |         141.2 |         158.4 |    27.5 |      5.1× |
 
 The pure-compute rows (`sort`, `sieve`) vary a lot between runs because Chromium tiers Wasm and
 JS up at different times (Liftoff → TurboFan). Treat them as "same ballpark".
 
-What the numbers show (and what to fix next):
+Fixed after the first run:
 
-- Signals keep dependents in a `List` (`Contains` on subscribe, `Remove` on re-track), so many
-  dependents on one signal are O(n²): `broad`, `select row` (every row reads `selected`) and
-  `create 10,000 rows`. Solid uses index-linked arrays, and `createSelector` notifies only two rows.
-- `dom.mjs` `releaseListeners` scans every listener for each released node, so `clear` and
-  `replace` are O(rows × listeners). Solid delegates events to `document`.
-- Fine-grained updates (`partial update`, `swap`, `remove`) are already on par.
+- Signals kept dependents in a `List` (`Contains` on subscribe, `Remove` on re-track), so many
+  readers of one signal were O(n²) (`broad`, `select row`, `create 10,000 rows`). Links are now
+  index-based (O(1)), and the bench app uses `Selector<int>` like Solid uses `createSelector`.
+- `dom.mjs` scanned every listener for each released node (`clear`, `replace`); it now keeps a
+  per-node handler list.
+- `For` item scopes were registered with (and never removed from) the owner scope.
+- `Attr.Dynamic` emitted an op on every re-run; it now skips unchanged values.
+
+Still open:
+
+- Creating rows costs ~2× Solid. Every node is a `createElement` op plus one op per attribute,
+  text and listener, while Solid clones a prebuilt `<template>` and delegates events. Template
+  cloning for static subtrees and event delegation are the next steps.
+- `Computed` recomputes eagerly on every dirty notification, so a diamond recomputes its join
+  once per branch (`diamond`). A push-pull (mark stale, recompute on read) model would fix it.
+- `O3` is ~1.5–2× faster than `Oz` on reactive work but makes the Wasm bigger. `Oz` stays the
+  default.
 - Startup includes downloading and compiling ~460 KB of Wasm vs. 17 KB of JS.
 
 ## Known limitations
@@ -440,6 +457,8 @@ What the numbers show (and what to fix next):
 - Templates: parameterized slots (`Slot<T>`), `@switch`, a language server for `.nwui`
   (IntelliSense via the generated C#), and a NuGet package that wires the generator up automatically.
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
+- Rendering speed (see Benchmarks): clone prebuilt `<template>`s for static subtrees, delegate
+  events at the root, and push-pull `Computed` to avoid glitchy eager recomputes.
 - `<Suspense>`-style async boundaries once NetWasm supports async interop; nested/layout routes.
 - Wasm size work: a size report in CI per feature; a slimmer JS host for page-only apps (needs NetWasm).
 - Dev loop: snapshot/restore signal state across live reloads, CSS swap without reload, faster

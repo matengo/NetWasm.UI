@@ -23,9 +23,17 @@ public sealed class Attr : IContent
         new(e =>
         {
             var id = e.Id;
+            string? last = null;
             _ = new Effect(() =>
             {
+                // Only touch the DOM when the value changed; a fresh element has no attribute yet.
                 var v = value();
+                if (v == last)
+                {
+                    return;
+                }
+
+                last = v;
                 if (v is null)
                 {
                     Renderer.RemoveAttribute(id, name);

@@ -97,9 +97,17 @@ function payloadFor(e) {
   return out;
 }
 
+// Handler ids per node, so releasing a node only visits its own listeners.
+/** @type {WeakMap<Node, number[]>} */
+const nodeListeners = new WeakMap();
+
 function releaseListeners(node) {
-  for (const [id, l] of listeners) {
-    if (l.node === node) {
+  const ids = nodeListeners.get(node);
+  if (!ids) return;
+  nodeListeners.delete(node);
+  for (const id of ids) {
+    const l = listeners.get(id);
+    if (l && l.node === node) {
       node.removeEventListener(l.event, l.fn);
       listeners.delete(id);
     }
@@ -189,6 +197,9 @@ export function applyBatch(bytes) {
         };
         n.addEventListener(event, fn);
         listeners.set(handlerId, { node: n, event, fn });
+        const ids = nodeListeners.get(n);
+        if (ids) ids.push(handlerId);
+        else nodeListeners.set(n, [handlerId]);
         break;
       }
       case OP.RemoveListener: {

@@ -34,18 +34,26 @@ public static class Scheduler
 
     public static void Batch(Action action)
     {
-        depth++;
+        BeginBatch();
         try
         {
             action();
         }
         finally
         {
-            depth--;
-            if (depth == 0)
-            {
-                Flush();
-            }
+            EndBatch();
+        }
+    }
+
+    // Allocation-free form of Batch for hot paths (every signal write).
+    internal static void BeginBatch() => depth++;
+
+    internal static void EndBatch()
+    {
+        depth--;
+        if (depth == 0)
+        {
+            Flush();
         }
     }
 

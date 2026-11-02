@@ -9,9 +9,9 @@ public interface IReadOnlySignal<out T>
 }
 
 /// <summary>A mutable reactive value. Reads inside an <see cref="Effect"/> or <see cref="Computed{T}"/> register a dependency.</summary>
-public sealed class Signal<T> : IReadOnlySignal<T>, ISource
+public sealed class Signal<T> : IReadOnlySignal<T>
 {
-    private readonly List<Computation> dependents = new();
+    private readonly SourceNode observers = new();
     private readonly IEqualityComparer<T> comparer;
     private T value;
 
@@ -25,13 +25,7 @@ public sealed class Signal<T> : IReadOnlySignal<T>, ISource
     {
         get
         {
-            var current = Tracker.Current;
-            if (current is not null)
-            {
-                AddDependent(current);
-                current.AddSource(this);
-            }
-
+            observers.Track();
             return value;
         }
         set
@@ -56,28 +50,16 @@ public sealed class Signal<T> : IReadOnlySignal<T>, ISource
 
     private void Notify()
     {
-        Scheduler.Batch(() =>
+        Scheduler.BeginBatch();
+        try
         {
-            // Copy because MarkDirty may mutate the dependents list.
-            var snapshot = dependents.ToArray();
-            for (var i = 0; i < snapshot.Length; i++)
-            {
-                snapshot[i].MarkDirty();
-            }
-        });
-    }
-
-    void ISource.AddDependent(Computation dependent) => AddDependent(dependent);
-
-    private void AddDependent(Computation dependent)
-    {
-        if (!dependents.Contains(dependent))
+            observers.Notify();
+        }
+        finally
         {
-            dependents.Add(dependent);
+            Scheduler.EndBatch();
         }
     }
-
-    void ISource.RemoveDependent(Computation dependent) => dependents.Remove(dependent);
 
     /// <summary>The current value, formatted with the invariant culture. Tracked, so <c>@count</c> in a template stays reactive.</summary>
     public override string ToString() => TemplateRuntime.Str(Value) ?? string.Empty;

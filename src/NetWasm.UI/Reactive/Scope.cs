@@ -23,10 +23,24 @@ public sealed class Scope : IDisposable
 
     /// <summary>Creates a scope owned by an explicit parent (or a root scope when <paramref name="parent"/> is null).</summary>
     public Scope(Scope? parent)
+        : this(parent, register: true)
+    {
+    }
+
+    private Scope(Scope? parent, bool register)
     {
         Parent = parent;
-        parent?.Register(this);
+        if (register)
+        {
+            parent?.Register(this);
+        }
     }
+
+    /// <summary>
+    /// A scope that sees <paramref name="parent"/>'s context but is not disposed by it. The caller owns
+    /// its lifetime; used for list items, which come and go long before their parent is disposed.
+    /// </summary>
+    internal static Scope Detached(Scope? parent) => new(parent, register: false);
 
     internal static Scope? Current => Tracker.CurrentOwner;
 

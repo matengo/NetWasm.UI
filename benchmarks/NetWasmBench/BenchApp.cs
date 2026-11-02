@@ -11,9 +11,12 @@ public sealed class BenchApp : Component
 {
     private readonly Signal<IReadOnlyList<Row>> data = new(Array.Empty<Row>());
     private readonly Signal<int> selected = new(0);
+    private Selector<int> isSelected = null!;
 
-    protected override Node Build() =>
-        Div(Class("container"),
+    protected override Node Build()
+    {
+        isSelected = new Selector<int>(selected);
+        return Div(Class("container"),
             Div(Class("jumbotron"),
                 H1("NetWasm.UI keyed"),
                 Div(Class("buttons"),
@@ -26,6 +29,7 @@ public sealed class BenchApp : Component
             Table(Class("table table-hover table-striped test-data"),
                 Tbody(Id("tbody"), Each(data, r => r.Id, RowView))),
             Span(Class("preloadicon glyphicon glyphicon-remove"), Attr("aria-hidden", "true")));
+    }
 
     private static Element Btn(string id, string text, Action action) =>
         Button(Type("button"), Id(id), OnClick(action), text);
@@ -33,7 +37,7 @@ public sealed class BenchApp : Component
     private Node RowView(Row row)
     {
         var id = row.Id;
-        return Tr(Class(() => selected.Value == id ? "danger" : null),
+        return Tr(Class(() => isSelected.Is(id) ? "danger" : null),
             Td(Class("col-md-1"), id.ToString()),
             Td(Class("col-md-4"), A(OnClick(() => selected.Value = id), Text(() => row.Label.Value))),
             Td(Class("col-md-1"), A(OnClick(() => Remove(id)), Span(Class("glyphicon glyphicon-remove"), Attr("aria-hidden", "true")))),

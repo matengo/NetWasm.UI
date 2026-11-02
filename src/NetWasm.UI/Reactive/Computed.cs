@@ -4,10 +4,10 @@ using System.Collections.Generic;
 namespace NetWasm.UI.Reactive;
 
 /// <summary>A lazily evaluated derived value. Recomputes on the next read after a dependency changed.</summary>
-public sealed class Computed<T> : Computation, IReadOnlySignal<T>, ISource
+public sealed class Computed<T> : Computation, IReadOnlySignal<T>
 {
     private readonly Func<T> compute;
-    private readonly List<Computation> dependents = new();
+    private readonly SourceNode observers = new();
     private readonly IEqualityComparer<T> comparer;
     private T value = default!;
     private bool stale = true;
@@ -23,17 +23,7 @@ public sealed class Computed<T> : Computation, IReadOnlySignal<T>, ISource
     {
         get
         {
-            var reader = Tracker.Current;
-            if (reader is not null)
-            {
-                if (!dependents.Contains(reader))
-                {
-                    dependents.Add(reader);
-                }
-
-                reader.AddSource(this);
-            }
-
+            observers.Track();
             if (stale)
             {
                 Recompute();
@@ -75,22 +65,8 @@ public sealed class Computed<T> : Computation, IReadOnlySignal<T>, ISource
             return;
         }
 
-        var snapshot = dependents.ToArray();
-        for (var i = 0; i < snapshot.Length; i++)
-        {
-            snapshot[i].MarkDirty();
-        }
+        observers.Notify();
     }
-
-    void ISource.AddDependent(Computation dependent)
-    {
-        if (!dependents.Contains(dependent))
-        {
-            dependents.Add(dependent);
-        }
-    }
-
-    void ISource.RemoveDependent(Computation dependent) => dependents.Remove(dependent);
 
     /// <summary>The current value, formatted with the invariant culture. Tracked, so <c>@doubled</c> in a template stays reactive.</summary>
     public override string ToString() => TemplateRuntime.Str(Value) ?? string.Empty;

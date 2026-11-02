@@ -48,7 +48,7 @@ public sealed class For<T, TKey> : Fragment
 }
 
 /// <summary>The non-generic part of <see cref="For{T, TKey}"/>: diffs boxed keys and moves DOM nodes.</summary>
-internal sealed class KeyedList
+internal sealed class KeyedList : IDisposable
 {
     private readonly Anchor anchor = new();
     private readonly Scope? owner;
@@ -59,6 +59,23 @@ internal sealed class KeyedList
     {
         this.owner = owner;
         Renderer.AppendChild(parent.Id, anchor.Id);
+        // Item scopes are detached from the owner (so removed items don't pile up in it); the list
+        // disposes whatever items are left when the owner goes away.
+        owner?.Register(this);
+    }
+
+    public void Dispose()
+    {
+        for (var i = order.Count - 1; i >= 0; i--)
+        {
+            if (entries.TryGetValue(order[i], out var entry))
+            {
+                entry.Scope.Dispose();
+            }
+        }
+
+        entries.Clear();
+        order.Clear();
     }
 
     public void Reconcile(object[] newOrder, Func<int, Node> render)
@@ -118,7 +135,7 @@ internal sealed class KeyedList
             }
             else
             {
-                var scope = new Scope(owner);
+                var scope = Scope.Detached(owner);
                 var index = i;
                 var node = scope.Run(() => render(index));
                 entries[k] = new Entry(node, scope);
