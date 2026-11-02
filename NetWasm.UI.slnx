@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/BlazorBench/BlazorBench.csproj" />
     <Project Path="benchmarks/NetWasmBench/NetWasmBench.csproj" />
     <Project Path="benchmarks/Runner/Runner.csproj" />
   </Folder>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Blazor benchmark</title>
+  <base href="./" />
+  <link rel="preload" id="webassembly" />
+  <script type="importmap"></script>
+  <style>
+    /* Shared by both benchmark apps; keep identical so style and layout cost the same. */
+    body { font-family: system-ui, sans-serif; margin: 1rem; color: #222; }
+    .jumbotron { display: flex; align-items: center; gap: 2rem; }
+    .buttons { display: grid; grid-template-columns: repeat(3, 12rem); gap: .3rem; }
+    .test-data { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    .test-data td { border-top: 1px solid #ddd; padding: .2rem .5rem; }
+    .test-data tr.danger { background: #f2dede; }
+    .test-data a { cursor: pointer; color: #337ab7; }
+    .glyphicon-remove::before { content: "\00d7"; }
+    .preloadicon { display: none; }
+  </style>
+</head>
+<body>
+  <div id="main"></div>
+  <script>
+    window.benchReady = () => { window.__ready = performance.now(); };
+    window.bench = {
+      reactive: name => {
+        const c = DotNet.invokeMethod("BlazorBench", "Reactive", name);
+        return c === -1 ? null : c;
+      },
+    };
+  </script>
+  <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+</html>

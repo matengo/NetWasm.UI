@@ -5,13 +5,15 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Playwright;
 
-// Builds the NetWasm.UI and SolidJS benchmark apps, serves them with Kestrel and measures them in Chromium.
-// Usage: dotnet run --project benchmarks/Runner -c Release -- [--runs N] [--skip-build] [--no-o3] [--headed]
+// Builds the NetWasm.UI, SolidJS, React and Blazor benchmark apps, serves them with Kestrel and measures them in Chromium.
+// Usage: dotnet run --project benchmarks/Runner -c Release -- [--runs N] [--skip-build] [--no-o3] [--no-aot] [--headed]
+// --no-aot skips Blazor AOT, which needs the wasm-tools workload and takes minutes to build.
 
 var runs = 10;
 var skipBuild = false;
 var headed = false;
 var withO3 = true;
+var withAot = true;
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
@@ -20,6 +22,7 @@ for (var i = 0; i < args.Length; i++)
         case "--skip-build": skipBuild = true; break;
         case "--headed": headed = true; break;
         case "--no-o3": withO3 = false; break;
+        case "--no-aot": withAot = false; break;
         default: Console.Error.WriteLine("Unknown option: " + args[i]); return 1;
     }
 }
@@ -37,6 +40,14 @@ if (withO3)
 }
 
 apps.Add(("SolidJS", "solid", Path.Combine(bench, "solid", "dist")));
+apps.Add(("React", "react", Path.Combine(bench, "react", "dist")));
+apps.Add(("Blazor", "blazor", Path.Combine(outDir, "blazor", "wwwroot")));
+if (withAot)
+{
+    apps.Add(("Blazor (AOT)", "blazor-aot", Path.Combine(outDir, "blazor-aot", "wwwroot")));
+}
+
+var solidIndex = apps.FindIndex(a => a.Path == "solid");
 
 if (!skipBuild)
 {
@@ -47,13 +58,34 @@ if (!skipBuild)
         Run("dotnet", root, "publish", project, "-c", "Release", "-o", apps[1].Dir, "-p:NetWasmOptimization=O3", "--nologo", "-v", "q");
     }
 
-    var solid = Path.Combine(bench, "solid");
-    if (!Directory.Exists(Path.Combine(solid, "node_modules")))
+    foreach (var js in new[] { "solid", "react" })
     {
-        Npm(solid, "ci");
+        var dir = Path.Combine(bench, js);
+        if (!Directory.Exists(Path.Combine(dir, "node_modules")))
+        {
+            Npm(dir, "ci");
+        }
+
+        Npm(dir, "run", "build");
     }
 
-    Npm(solid, "run", "build");
+    var blazor = Path.Combine(bench, "BlazorBench", "BlazorBench.csproj");
+    foreach (var stale in new[] { "blazor", "blazor-aot" })
+    {
+        // publish -o never deletes files, and fingerprinted names would pile up.
+        if (Directory.Exists(Path.Combine(outDir, stale)))
+        {
+            Directory.Delete(Path.Combine(outDir, stale), recursive: true);
+        }
+    }
+
+    Run("dotnet", root, "publish", blazor, "-c", "Release", "-o", Path.Combine(outDir, "blazor"), "--nologo", "-v", "q");
+    if (withAot)
+    {
+        // A separate obj directory, so switching AOT on and off never reuses the other build's native output.
+        Run("dotnet", root, "publish", blazor, "-c", "Release", "-o", Path.Combine(outDir, "blazor-aot"),
+            "-p:RunAOTCompilation=true", @"-p:IntermediateOutputPath=obj\ReleaseAot\", "--nologo", "-v", "q");
+    }
 }
 
 foreach (var app in apps)
@@ -76,7 +108,14 @@ foreach (var app in apps)
 {
     var files = new PhysicalFileProvider(app.Dir);
     web.UseDefaultFiles(new DefaultFilesOptions { FileProvider = files, RequestPath = "/" + app.Path });
-    web.UseStaticFiles(new StaticFileOptions { FileProvider = files, RequestPath = "/" + app.Path, ContentTypeProvider = types });
+    web.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = files,
+        RequestPath = "/" + app.Path,
+        ContentTypeProvider = types,
+        ServeUnknownFileTypes = true,
+        DefaultContentType = "application/octet-stream",
+    });
 }
 
 await web.StartAsync();
@@ -92,10 +131,12 @@ await using var browser = await playwright.Chromium.LaunchAsync(new()
 Console.WriteLine($"Chromium {browser.Version}, {runs} runs per case, median shown.\n");
 
 // Each DOM case: setup clicks, the measured click, and a check that the DOM ended up as expected.
+// Every check is false before the click, so frameworks that render after the event (React, Blazor) are
+// timed until their DOM is done, not until the click returns.
 var ops = new (string Name, string[] Prep, string Click, string Check)[]
 {
     ("create 1,000 rows", [.. Repeat(5, "#run", "#clear")], "#run", "rows() === 1000"),
-    ("replace 1,000 rows", [.. Repeat(5, "#run")], "#run", "rows() === 1000"),
+    ("replace 1,000 rows", [.. Repeat(5, "#run")], "#run", "rows() === 1000 && id(1) !== before1"),
     ("partial update (every 10th)", ["#run", .. Repeat(5, "#update")], "#update",
         "label(1).endsWith(' !!!'.repeat(6)) && !label(2).endsWith('!')"),
     ("select row", ["#run"], "tbody tr:nth-child(2) td:nth-child(2) a",
@@ -130,22 +171,28 @@ foreach (var (name, prep, click, check) in ops)
             var page = await OpenAsync(context, apps[a].Path);
             foreach (var p in prep)
             {
-                await page.EvaluateAsync("s => document.querySelector(s).click()", p);
+                // Prep clicks may render asynchronously too; let the event loop settle after each.
+                await page.EvaluateAsync("s => { document.querySelector(s).click(); return new Promise(r => setTimeout(r, 0)); }", p);
             }
 
             var result = await page.EvaluateAsync<double[]>($$"""
                 async sel => {
                   {{Helpers}}
+                  const before1 = rows() >= 1 ? id(1) : 0;
                   const before2 = rows() >= 2 ? id(2) : 0;
                   const el = document.querySelector(sel);
                   window.gc();
                   await new Promise(r => setTimeout(r, 20));
                   const t0 = performance.now();
                   el.click();
+                  // Synchronous renderers pass at once. Others get microtasks first, then macrotasks.
+                  for (let n = 0; !({{check}}); n++) {
+                    if (n > 2000) throw new Error('Check failed: {{check.Replace("'", "\\'")}}');
+                    await (n < 100 ? Promise.resolve() : new Promise(r => setTimeout(r, 0)));
+                  }
                   const t1 = performance.now();
                   document.body.offsetHeight;
                   const t2 = performance.now();
-                  if (!({{check}})) throw new Error('Check failed: {{check.Replace("'", "\\'")}}');
                   return [t1 - t0, t2 - t0];
                 }
                 """, click);
@@ -188,14 +235,21 @@ for (var a = 0; a < apps.Count; a++)
         int? checksum = null;
         for (var r = 0; r < runs + 3; r++)
         {
-            var result = await p.EvaluateAsync<double[]>("""
+            var result = await p.EvaluateAsync<double[]?>("""
                 name => {
                   window.gc();
                   const t0 = performance.now();
                   const c = window.bench.reactive(name);
-                  return [performance.now() - t0, c];
+                  return c === null ? null : [performance.now() - t0, c];
                 }
                 """, workloads[w]);
+            if (result is null)
+            {
+                // Not applicable to this framework (e.g. no signals in React or Blazor).
+                times.Add(double.NaN);
+                break;
+            }
+
             checksum ??= (int)result[1];
             if (checksum != (int)result[1])
             {
@@ -209,10 +263,21 @@ for (var a = 0; a < apps.Count; a++)
         }
 
         reactive[w, a] = Median(times);
-        Checksums.Record(workloads[w], apps[a].Name, checksum!.Value);
+        if (checksum is int c)
+        {
+            Checksums.Record(workloads[w], apps[a].Name, c);
+        }
     }
 
     Console.Write('.');
+}
+
+// What a first visit downloads: every response body, raw and Brotli-compressed (quality 11, as in production).
+var rawKb = new double[apps.Count];
+var brotliKb = new double[apps.Count];
+for (var a = 0; a < apps.Count; a++)
+{
+    (rawKb[a], brotliKb[a]) = await MeasureDownloadAsync(apps[a].Path);
 }
 
 Console.WriteLine("\n");
@@ -233,15 +298,50 @@ for (var w = 0; w < workloads.Length; w++)
 }
 
 AppendRow("startup (`__ready`)", startup);
+AppendRow("download, raw (KB)", rawKb);
+AppendRow("download, Brotli (KB)", brotliKb);
 
-Console.WriteLine("All times in ms (median).\n");
+Console.WriteLine("All times in ms (median). – means not applicable.\n");
 Console.WriteLine(md);
 await web.StopAsync();
 return 0;
 
 void AppendRow(string label, double[] values) =>
-    md.AppendLine($"| {label} | {string.Join(" | ", values.Select(v => v.ToString("0.0", CultureInfo.InvariantCulture)))} | " +
-        $"{(values[0] / values[^1]).ToString("0.00", CultureInfo.InvariantCulture)}× |");
+    md.AppendLine($"| {label} | {string.Join(" | ", values.Select(Format))} | " +
+        $"{(values[0] / values[solidIndex]).ToString("0.00", CultureInfo.InvariantCulture)}× |");
+
+static string Format(double v) => double.IsNaN(v) ? "–" : v.ToString("0.0", CultureInfo.InvariantCulture);
+
+async Task<(double Raw, double Brotli)> MeasureDownloadAsync(string path)
+{
+    await using var context = await browser.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var bodies = new List<Task<byte[]>>();
+    page.Response += (_, response) =>
+    {
+        if (response.Status == 200)
+        {
+            bodies.Add(response.BodyAsync());
+        }
+    };
+    await page.GotoAsync($"{baseUrl}/{path}/");
+    await page.WaitForFunctionAsync("window.__ready !== undefined");
+    await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    long raw = 0, compressed = 0;
+    foreach (var body in await Task.WhenAll(bodies))
+    {
+        raw += body.Length;
+        using var ms = new MemoryStream();
+        using (var brotli = new System.IO.Compression.BrotliStream(ms, System.IO.Compression.CompressionLevel.SmallestSize, leaveOpen: true))
+        {
+            brotli.Write(body);
+        }
+
+        compressed += ms.Length;
+    }
+
+    return (raw / 1024.0, compressed / 1024.0);
+}
 
 async Task<IPage> OpenAsync(IBrowserContext context, string path)
 {

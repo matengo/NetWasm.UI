@@ -131,7 +131,7 @@ Ul(Each(items, i => i.Id, item =>
 | `tests/NetWasm.UI.E2E`       | Playwright (.NET) browser tests: publish + serve `samples/Counter`, drive it in Chromium. |
 | `tools/DevServer`            | Kestrel dev server: publishes the app, serves it with Brotli/gzip and correct MIME types, watches sources and reloads the browser. |
 | `tools/vscode-nwui`          | VS Code extension: `.nwui` syntax highlighting (TextMate grammar embedding HTML and C#). |
-| `benchmarks/`                | js-framework-benchmark-style comparison with SolidJS (`NetWasmBench`, `solid`, `Runner`). |
+| `benchmarks/`                | js-framework-benchmark-style comparison with SolidJS, React and Blazor (`NetWasmBench`, `solid`, `react`, `BlazorBench`, `Runner`). |
 
 ## Getting started
 
@@ -375,51 +375,64 @@ C# errors still show up in the build and point at the `.nwui` line.
 
 ## Benchmarks
 
-`benchmarks/` compares NetWasm.UI with SolidJS on the same app and the same workloads:
+`benchmarks/` compares NetWasm.UI with SolidJS, React and Blazor WebAssembly on the same app:
 
 - `NetWasmBench`: the js-framework-benchmark "keyed" table app (create/replace/update/select/swap/
-  remove/clear rows) plus DOM-free workloads (`ReactiveBench.cs`).
+  remove/clear rows) plus DOM-free workloads (`ReactiveBench.cs`, `PlainBench.cs`).
 - `solid`: the same app (based on the official keyed Solid implementation, with `createSelector`)
   and the same workloads in JS, built with Vite.
-- `Runner`: publishes NetWasmBench with `Oz` and `O3`, builds the Solid app, serves all of them
-  with Kestrel and drives Chromium with Playwright.
+- `react`: the official keyed `react-hooks` implementation (React 19, `memo` rows), built with Vite.
+- `BlazorBench`: the same app in Blazor WebAssembly (.NET 10, row components with `ShouldRender`,
+  `InvariantGlobalization`), published both as default (interpreter) and with `RunAOTCompilation`.
+  It links `Labels.cs` and `PlainBench.cs` from NetWasmBench, so `sort`/`sieve` run the same C#.
+- `Runner`: publishes and builds all apps, serves them with Kestrel and drives Chromium with Playwright.
 
 ```powershell
-dotnet run --project benchmarks/Runner -c Release -- --runs 10   # --skip-build, --no-o3, --headed
+dotnet run --project benchmarks/Runner -c Release -- --runs 10   # --skip-build, --no-o3, --no-aot, --headed
 ```
 
+Blazor AOT needs the `wasm-tools` workload (`dotnet workload install wasm-tools`) and takes a few
+minutes to build; skip it with `--no-aot`.
+
 Method: every DOM case opens a fresh page, runs the setup clicks, forces a GC and then times one
-`element.click()`. Both frameworks update the DOM synchronously inside the click, so *script* is
-the full framework + DOM API cost. *+ layout* adds a forced layout (`document.body.offsetHeight`).
-Paint is not measured. Each case checks the resulting DOM (row count, labels, selected row), and
-each DOM-free workload returns a checksum that has to be identical in both implementations. Rows
-use the same seeded labels in both apps. Values are medians in ms.
+`element.click()` until the DOM check passes (row count, labels, selected row). NetWasm.UI and
+Solid finish inside the click; React and Blazor may render after it, so the runner then waits on
+microtasks/macrotasks until the check passes. *+ layout* adds a forced layout
+(`document.body.offsetHeight`). Paint is not measured. DOM-free workloads return checksums that
+must match across implementations; React and Blazor have no signals, so the reactive workloads
+are "–" for them (React's `sort`/`sieve` would be Solid's JS again). *Download* sums every
+response of a first visit, compressed with Brotli quality 11. Values are medians in ms; cases
+under ~10 ms move by a few ms between runs.
 
-Results on a Windows arm64 laptop (Chromium 153, 10 runs, script + layout). "Before" is the
-first run, prior to the fixes listed below:
+Results on a Windows arm64 laptop (Chromium 153, 10 runs, script + layout):
 
-| Case                         | Before (Oz) | NetWasm.UI Oz | NetWasm.UI O3 | SolidJS | Oz / Solid |
-|------------------------------|------------:|--------------:|--------------:|--------:|-----------:|
-| create 1,000 rows            |       108.8 |         108.6 |         102.2 |    54.5 |      2.0× |
-| replace 1,000 rows           |       213.8 |         121.0 |         111.1 |    62.6 |      1.9× |
-| partial update (every 10th)  |        30.4 |          28.1 |          27.3 |    28.0 |      1.0× |
-| select row                   |        40.8 |           3.7 |           3.5 |     3.0 |      1.2× |
-| swap rows                    |         9.4 |          10.1 |           9.5 |     8.6 |      1.2× |
-| remove row                   |        10.1 |          10.6 |           7.9 |     7.4 |      1.4× |
-| create 10,000 rows           |      2369.6 |        1238.5 |        1186.8 |   535.7 |      2.3× |
-| append 1,000 rows            |       174.5 |         132.9 |         124.3 |    57.1 |      2.3× |
-| clear 1,000 rows             |       119.9 |          18.8 |          18.6 |    10.0 |      1.9× |
-| reactive: deep (100-chain)   |        32.2 |          35.4 |          19.1 |    20.4 |      1.7× |
-| reactive: broad (1,000 fan-out) |    3509.2 |          71.3 |          39.5 |    40.4 |      1.8× |
-| reactive: diamond            |        28.1 |          20.2 |           8.8 |     4.6 |      4.4× |
-| reactive: create/dispose 10k |        53.2 |          50.3 |          38.8 |    18.4 |      2.7× |
-| sort 100k strings (no UI)    |       197.3 |         189.1 |         185.1 |   150.4 |      1.3× |
-| sieve 2M (no UI)             |      13–133 |        20–130 |        10–120 |  75–115 |       ≈1× |
-| startup (`__ready`)          |       160.8 |         141.2 |         158.4 |    27.5 |      5.1× |
+| Case                         | NetWasm.UI Oz | NetWasm.UI O3 | SolidJS |  React | Blazor | Blazor AOT |
+|------------------------------|--------------:|--------------:|--------:|-------:|-------:|-----------:|
+| create 1,000 rows            |          95.2 |          90.6 |    52.6 |   83.2 |  248.6 |      150.8 |
+| replace 1,000 rows           |         106.1 |          97.1 |    68.8 |   98.4 |  297.8 |      176.4 |
+| partial update (every 10th)  |          24.4 |          25.8 |    27.1 |   33.3 |  119.3 |       55.7 |
+| select row                   |          11.3 |           5.1 |     4.1 |   29.3 |   97.4 |       39.2 |
+| swap rows                    |           7.6 |           6.8 |     6.5 |   45.0 |   60.0 |       17.5 |
+| remove row                   |           7.6 |           7.0 |     5.9 |    9.3 |   64.8 |       18.2 |
+| create 10,000 rows           |        1050.4 |         983.7 |   436.3 |  957.1 | 1895.2 |     1483.9 |
+| append 1,000 rows            |         110.2 |         103.5 |    49.7 |   74.8 |  285.4 |      203.8 |
+| clear 1,000 rows             |          15.8 |          15.2 |     9.5 |   14.3 |   47.5 |       16.5 |
+| reactive: deep (100-chain)   |          32.6 |          17.0 |    19.3 |      – |      – |          – |
+| reactive: broad (1,000 fan-out) |       65.7 |          34.5 |    34.9 |      – |      – |          – |
+| reactive: diamond            |          18.5 |           8.2 |     3.9 |      – |      – |          – |
+| reactive: create/dispose 10k |          46.8 |          35.4 |    14.0 |      – |      – |          – |
+| sort 100k strings (no UI)    |         134.4 |         130.7 |   125.8 |      – |  340.7 |       92.5 |
+| sieve 2M (no UI)             |          13.2 |          11.6 |    67.7 |      – |   35.2 |       44.3 |
+| startup (`__ready`)          |         126.3 |         143.9 |    25.5 |   54.8 | 1142.2 |     1241.4 |
+| download, Brotli (KB)        |         120.7 |         139.3 |     6.2 |   58.4 | 1442.8 |     3163.0 |
 
-The pure-compute rows (`sort`, `sieve`) vary a lot between runs because Chromium tiers Wasm and
-JS up at different times (Liftoff → TurboFan). Treat them as "same ballpark".
+In short: NetWasm.UI is roughly level with React (faster at updates, select and swap, slower at
+creating rows), 1–2× Solid, and 2–10× faster than Blazor with a ~12× smaller download and ~9×
+faster startup. The pure-compute rows (`sort`, `sieve`) vary between runs because Chromium tiers
+Wasm and JS up at different times (Liftoff → TurboFan); treat them as "same ballpark".
 
+Before the fixes below (first run, Oz, script + layout): select row 40.8 ms, clear 119.9 ms,
+replace 213.8 ms, create 10,000 rows 2369.6 ms, reactive `broad` 3509.2 ms.
 Fixed after the first run:
 
 - Signals kept dependents in a `List` (`Contains` on subscribe, `Remove` on re-track), so many

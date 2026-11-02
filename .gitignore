@@ -12,3 +12,5 @@ TestResults/
 benchmarks/.out/
 benchmarks/solid/node_modules/
 benchmarks/solid/dist/
+benchmarks/react/node_modules/
+benchmarks/react/dist/

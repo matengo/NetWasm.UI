@@ -1,0 +1,48 @@
+<tr class="@(Selected ? "danger" : "")">
+  <td class="col-md-1">@Row.Id</td>
+  <td class="col-md-4"><a @onclick="SelectRow">@Row.Label</a></td>
+  <td class="col-md-1"><a @onclick="RemoveRow"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a></td>
+  <td class="col-md-6"></td>
+</tr>
+
+@code {
+    private RowData? renderedRow;
+    private string? renderedLabel;
+    private bool renderedSelected;
+
+    [Parameter, EditorRequired]
+    public RowData Row { get; set; } = default!;
+
+    [Parameter]
+    public bool Selected { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnSelect { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnRemove { get; set; }
+
+    private Task SelectRow() => OnSelect.InvokeAsync(Row.Id);
+
+    private Task RemoveRow() => OnRemove.InvokeAsync(Row.Id);
+
+    protected override void OnInitialized() => Remember();
+
+    protected override bool ShouldRender()
+    {
+        if (ReferenceEquals(Row, renderedRow) && Row.Label == renderedLabel && Selected == renderedSelected)
+        {
+            return false;
+        }
+
+        Remember();
+        return true;
+    }
+
+    private void Remember()
+    {
+        renderedRow = Row;
+        renderedLabel = Row.Label;
+        renderedSelected = Selected;
+    }
+}
