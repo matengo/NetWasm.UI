@@ -35,28 +35,32 @@ minutes to build; skip it with `--no-aot`.
 
 ## Results
 
-Windows arm64 laptop, Chromium 153, 10 runs, script + layout, after template cloning and event
-delegation:
+Windows arm64 laptop, Chromium 153, 10 runs, script + layout. The Oz column is from a later run,
+after fewer allocations per row; the other columns are from the run after template cloning and
+event delegation (O3 and Blazor AOT were not re-measured):
 
 | Case                         | NetWasm.UI Oz | NetWasm.UI O3 | SolidJS |  React | Blazor | Blazor AOT |
 |------------------------------|--------------:|--------------:|--------:|-------:|-------:|-----------:|
-| create 1,000 rows            |          79.0 |          78.8 |    55.7 |   72.4 |  391.5 |      142.3 |
-| replace 1,000 rows           |          74.1 |          70.7 |    53.8 |   96.3 |  278.0 |      168.5 |
-| partial update (every 10th)  |          21.3 |          23.2 |    23.5 |   34.7 |   88.7 |       44.5 |
-| select row                   |           3.9 |           4.3 |     5.7 |   20.2 |  100.7 |       47.8 |
-| swap rows                    |           8.7 |          14.9 |     6.3 |   50.1 |   73.6 |       21.9 |
-| remove row                   |           7.8 |           8.9 |     6.4 |   10.5 |   80.3 |       26.0 |
-| create 10,000 rows           |         773.8 |         746.8 |   505.7 | 1030.7 | 2246.8 |     1612.2 |
-| append 1,000 rows            |         100.2 |          86.3 |    54.3 |   78.6 |  294.4 |      223.3 |
-| clear 1,000 rows             |          12.5 |          13.8 |    11.8 |   17.2 |   76.8 |       25.7 |
-| reactive: deep (100-chain)   |          34.1 |          17.3 |    18.7 |      – |      – |          – |
-| reactive: broad (1,000 fan-out) |       67.6 |          36.5 |    36.4 |      – |      – |          – |
-| reactive: diamond            |          19.6 |           9.9 |     5.3 |      – |      – |          – |
-| reactive: create/dispose 10k |          49.9 |          36.1 |    15.2 |      – |      – |          – |
-| sort 100k strings (no UI)    |         247.0 |         219.4 |   132.7 |      – |  653.4 |      105.8 |
-| sieve 2M (no UI)             |          25.8 |         185.8 |   138.2 |      – |   68.8 |       85.3 |
-| startup (`__ready`)          |         156.9 |         166.0 |    27.3 |   60.2 | 1139.3 |     1400.1 |
-| download, Brotli (KB)        |         123.9 |         141.7 |     6.2 |   58.4 | 1442.0 |     3162.4 |
+| create 1,000 rows            |          66.4 |          78.8 |    55.7 |   72.4 |  391.5 |      142.3 |
+| replace 1,000 rows           |          67.7 |          70.7 |    53.8 |   96.3 |  278.0 |      168.5 |
+| partial update (every 10th)  |          25.1 |          23.2 |    23.5 |   34.7 |   88.7 |       44.5 |
+| select row                   |           7.6 |           4.3 |     5.7 |   20.2 |  100.7 |       47.8 |
+| swap rows                    |           9.3 |          14.9 |     6.3 |   50.1 |   73.6 |       21.9 |
+| remove row                   |           8.3 |           8.9 |     6.4 |   10.5 |   80.3 |       26.0 |
+| create 10,000 rows           |         622.9 |         746.8 |   505.7 | 1030.7 | 2246.8 |     1612.2 |
+| append 1,000 rows            |          83.4 |          86.3 |    54.3 |   78.6 |  294.4 |      223.3 |
+| clear 1,000 rows             |          19.2 |          13.8 |    11.8 |   17.2 |   76.8 |       25.7 |
+| reactive: deep (100-chain)   |          14.2 |          17.3 |    18.7 |      – |      – |          – |
+| reactive: broad (1,000 fan-out) |       37.9 |          36.5 |    36.4 |      – |      – |          – |
+| reactive: diamond            |          10.4 |           9.9 |     5.3 |      – |      – |          – |
+| reactive: create/dispose 10k |          19.3 |          36.1 |    15.2 |      – |      – |          – |
+| sort 100k strings (no UI)    |         125.6 |         219.4 |   132.7 |      – |  653.4 |      105.8 |
+| sieve 2M (no UI)             |          76.4 |         185.8 |   138.2 |      – |   68.8 |       85.3 |
+| startup (`__ready`)          |         118.9 |         166.0 |    27.3 |   60.2 | 1139.3 |     1400.1 |
+| download, Brotli (KB)        |         123.2 |         141.7 |     6.2 |   58.4 | 1442.0 |     3162.4 |
+
+Small cases (select, swap, remove, clear) move by several ms between runs; in other runs of the
+same build select measured 4.3–4.4 and clear 14.3–14.6.
 
 Before template cloning (same machine, earlier run): create 1,000 rows 95.2, replace 106.1,
 create 10,000 rows 1050.4, append 110.2, select 11.3, clear 15.8. Script time alone for
