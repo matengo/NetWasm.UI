@@ -34,7 +34,7 @@ folder path (or the namespace given with `@namespace X.Y`). For example, `Pages/
 `MyApp` becomes `MyApp.Pages.Home`; add `using MyApp.Pages;` where you use it from another
 namespace.
 
-The `NetWasm.UI` package contains the generator and feeds it every `*.nwui` file in the
+The `NwUi` package contains the generator and feeds it every `*.nwui` file in the
 project, so there is nothing to set up. Set `<NetWasmUIEnableTemplates>false</NetWasmUIEnableTemplates>`
 to turn it off. The dev server watches `.nwui` files like `.cs` files.
 

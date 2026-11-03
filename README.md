@@ -15,7 +15,7 @@ changed, and every state change crosses the Wasm→JS boundary **at most once**.
 You need the [.NET SDK 10.0.3xx](https://dotnet.microsoft.com/download).
 
 ```shell
-dotnet new install NetWasm.UI.Templates
+dotnet new install NwUi.Templates
 dotnet new netwasm-ui -o MyApp
 cd MyApp
 dotnet nwui-dev            # → http://localhost:8765, rebuilds and reloads on save
@@ -33,14 +33,16 @@ Read [Getting started](docs/getting-started.md) next.
 
 ## Packages
 
-All packages are on nuget.org and are released together with the same version number.
+All packages are on nuget.org and are released together with the same version number. Package IDs
+start with `NwUi` because the `NetWasm.` prefix on nuget.org belongs to the NetWasm toolchain; the
+namespaces are `NetWasm.UI`.
 
 | Package | What it is | Install |
 |---|---|---|
-| [`NetWasm.UI.Browser`](https://www.nuget.org/packages/NetWasm.UI.Browser) | The package an app references: the browser host and the `nwui.dom` module. It brings in `NetWasm.UI`. | `dotnet add package NetWasm.UI.Browser` |
-| [`NetWasm.UI`](https://www.nuget.org/packages/NetWasm.UI) | The core: signals, components, router, forms and the `.nwui` template compiler. | Comes with `NetWasm.UI.Browser`. |
-| [`NetWasm.UI.Templates`](https://www.nuget.org/packages/NetWasm.UI.Templates) | `dotnet new netwasm-ui`. | `dotnet new install NetWasm.UI.Templates` |
-| [`NetWasm.UI.DevServer`](https://www.nuget.org/packages/NetWasm.UI.DevServer) | `dotnet nwui-dev`: publishes, serves (Brotli, SPA fallback) and live-reloads. | In the template. Otherwise `dotnet tool install --local NetWasm.UI.DevServer`. |
+| [`NwUi.Browser`](https://www.nuget.org/packages/NwUi.Browser) | The package an app references: the browser host and the `nwui.dom` module. It brings in `NwUi`. | `dotnet add package NwUi.Browser` |
+| [`NwUi`](https://www.nuget.org/packages/NwUi) | The core: signals, components, router, forms and the `.nwui` template compiler. | Comes with `NwUi.Browser`. |
+| [`NwUi.Templates`](https://www.nuget.org/packages/NwUi.Templates) | `dotnet new netwasm-ui`. | `dotnet new install NwUi.Templates` |
+| [`NwUi.DevServer`](https://www.nuget.org/packages/NwUi.DevServer) | `dotnet nwui-dev`: publishes, serves (Brotli, SPA fallback) and live-reloads. | In the template. Otherwise `dotnet tool install --local NwUi.DevServer`. |
 | VS Code: *NetWasm.UI templates (.nwui)* | Syntax highlighting for `.nwui`. | See below. |
 
 ### VS Code extension
@@ -161,7 +163,7 @@ dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one 
 |------------------------------|----------------------------------------------------------------------|
 | `src/NetWasm.UI`             | Core: reactivity, binary renderer, component/builder API, router, forms. Targets `netwasm0.1`, plus `net10.0` for tests. |
 | `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings and the `dom.mjs` decoder. `netwasm0.1` only. |
-| `src/NetWasm.UI.Generator`   | Roslyn source generator: `*.nwui` templates → `Component` partial classes. Ships inside the `NetWasm.UI` package. |
+| `src/NetWasm.UI.Generator`   | Roslyn source generator: `*.nwui` templates → `Component` partial classes. Ships inside the `NwUi` package. |
 | `samples/Counter`            | Demo app: counter, todos, routing, nested routes, forms and `/components`. |
 | `samples/Fetch`              | `HttpClient` + `System.Text.Json` with `Resource` and `Suspense`.    |
 | `samples/Widgets`            | Several independent apps (Wasm instances) on one page.              |

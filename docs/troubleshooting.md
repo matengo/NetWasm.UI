@@ -50,7 +50,7 @@ cache `browser/*.wasm` because NetWasm file names do not change between builds; 
   start method.
 - `[JSImport]` methods must be `static extern`. A host function used as `JSSubscription` must
   return an object with a `dispose()` method.
-- `nwui.dom` is missing at runtime. The `NetWasm.UI.Browser` package adds `dom.mjs` to apps
+- `nwui.dom` is missing at runtime. The `NwUi.Browser` package adds `dom.mjs` to apps
   with `OutputType` `JsModule` or `Exe`. With `NetWasmUIAddDomModule=false` you must pass your
   own host to `open()`; see [Embedding](embedding.md).
 

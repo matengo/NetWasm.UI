@@ -74,12 +74,12 @@ dotnet pack src/NetWasm.UI -c Release -o $feed
 dotnet pack src/NetWasm.UI.Browser -c Release -o $feed
 dotnet pack tools/DevServer -c Release -o $feed
 dotnet pack templates/NetWasm.UI.Templates -c Release -o $feed
-dotnet new install "$feed\NetWasm.UI.Templates.0.1.0.nupkg"
+dotnet new install "$feed\NwUi.Templates.0.1.0.nupkg"
 dotnet new netwasm-ui -o $env:TEMP\MyApp --skipRestore
 dotnet restore $env:TEMP\MyApp -s $feed -s https://api.nuget.org/v3/index.json
 ```
 
-NuGet caches packages by version. Clear `~/.nuget/packages/netwasm.ui*` before you test a
+NuGet caches packages by version. Clear `~/.nuget/packages/nwui*` before you test a
 rebuilt package with the same version.
 
 ### Releasing
@@ -122,7 +122,7 @@ reactive core, the renderer or `dom.mjs`.
 
 ## The dev server
 
-`tools/DevServer` is packed as the .NET tool `NetWasm.UI.DevServer` (command `nwui-dev`). In
+`tools/DevServer` is packed as the .NET tool `NwUi.DevServer` (command `nwui-dev`). In
 this repository, run it with `dotnet run --project tools/DevServer -- <app>`. It is a Kestrel
 server that publishes the app, serves it with Brotli/gzip and the
 right MIME types, falls back to `index.html` for extension-less paths, watches sources and

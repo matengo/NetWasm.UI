@@ -1,9 +1,9 @@
-# NetWasm.UI.Templates
+# NwUi.Templates
 
 `dotnet new` templates for [NetWasm.UI](https://github.com/matengo/NetWasm.UI).
 
 ```shell
-dotnet new install NetWasm.UI.Templates
+dotnet new install NwUi.Templates
 dotnet new netwasm-ui -o MyApp
 cd MyApp
 dotnet tool restore

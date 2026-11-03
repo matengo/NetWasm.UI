@@ -1,9 +1,9 @@
-# NetWasm.UI.DevServer
+# NwUi.DevServer
 
 Development server for [NetWasm.UI](https://github.com/matengo/NetWasm.UI) apps.
 
 ```shell
-dotnet tool install --local NetWasm.UI.DevServer
+dotnet tool install --local NwUi.DevServer
 dotnet nwui-dev                 # in the app folder; http://localhost:8765
 dotnet nwui-dev --help
 ```

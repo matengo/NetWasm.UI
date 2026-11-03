@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>NetWasm.UI.Templates</PackageId>
+    <PackageId>NwUi.Templates</PackageId>
     <PackageType>Template</PackageType>
     <Description>dotnet new templates for NetWasm.UI: `dotnet new netwasm-ui` creates a routed browser app with a component, a .nwui page and CSS.</Description>
     <PackageTags>$(PackageTags);dotnet-new;templates</PackageTags>

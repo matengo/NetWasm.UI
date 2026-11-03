@@ -20,7 +20,7 @@ instances, give each Wasm instance its own host instead:
    </ItemGroup>
    ```
 
-   `NetWasmUIDomModulePath` points at `dom.mjs` in the `NetWasm.UI.Browser` package. The samples
+   `NetWasmUIDomModulePath` points at `dom.mjs` in the `NwUi.Browser` package. The samples
    in this repository link `src/NetWasm.UI.Browser/dom.mjs` directly instead.
 
 2. Create a host per instance and pass it as the `nwui.dom` import module:

@@ -89,7 +89,7 @@ jobs:
 
   packages:
     # Packs every NuGet package and proves the quickstart: dotnet new netwasm-ui → publish,
-    # restoring NetWasm.UI* only from the freshly packed feed (own package cache, no stale 0.1.0).
+    # restoring NwUi* only from the freshly packed feed (own package cache, no stale 0.1.0).
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -113,7 +113,7 @@ jobs:
         env:
           NUGET_PACKAGES: ${{ runner.temp }}/nuget-template
         run: |
-          dotnet new install "$RUNNER_TEMP"/feed/NetWasm.UI.Templates.*.nupkg
+          dotnet new install "$RUNNER_TEMP"/feed/NwUi.Templates.*.nupkg
           cd "$RUNNER_TEMP"
           dotnet new netwasm-ui -o SmokeApp --skipRestore
           cd SmokeApp

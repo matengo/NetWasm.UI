@@ -14,13 +14,13 @@ real applications. It requires NetWasm.Sdk 0.10.7 and the .NET SDK 10.0.3xx.
 ### Added
 
 - **Packages:**
-  - `NetWasm.UI` and `NetWasm.UI.Browser` on NuGet. The packages set up the source generator,
+  - `NwUi` and `NwUi.Browser` on NuGet. The packages set up the source generator,
     the `*.nwui` files and the `nwui.dom` browser module automatically.
   - Opt-outs: `NetWasmUIEnableTemplates` and `NetWasmUIAddDomModule`.
   - `NetWasmUIDomModulePath`, for apps that create their own DOM hosts.
-- **Template:** `NetWasm.UI.Templates` (`dotnet new netwasm-ui`): an app with a router, a C#
+- **Template:** `NwUi.Templates` (`dotnet new netwasm-ui`): an app with a router, a C#
   component, `.nwui` pages and the dev server as a local tool.
-- **Dev server:** `NetWasm.UI.DevServer` (`dotnet nwui-dev`), the dev server as a .NET tool.
+- **Dev server:** `NwUi.DevServer` (`dotnet nwui-dev`), the dev server as a .NET tool.
 - **Async data:** `Resource<T>` (keyed reloads, cancellation, `Latest`, `Refetch`, `Mutate`)
   and `Suspense` / `<Suspense>`. `samples/Fetch` shows `HttpClient` and `System.Text.Json`.
 - **Forms:**

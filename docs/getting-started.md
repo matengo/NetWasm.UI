@@ -10,7 +10,7 @@
 ## From the template
 
 ```shell
-dotnet new install NetWasm.UI.Templates
+dotnet new install NwUi.Templates
 dotnet new netwasm-ui -o MyApp
 cd MyApp
 dotnet nwui-dev
@@ -21,7 +21,7 @@ The template contains:
 
 | File | What it is |
 |---|---|
-| `MyApp.csproj` | A NetWasm page app that references `NetWasm.UI.Browser`. |
+| `MyApp.csproj` | A NetWasm page app that references `NwUi.Browser`. |
 | `global.json` | Pins the NetWasm SDK. |
 | `.config/dotnet-tools.json` | The `nwui-dev` dev server. |
 | `Program.cs` | The `[JSExport("start")]` entry point. |
@@ -44,7 +44,7 @@ To add NetWasm.UI to an existing NetWasm project, you need the same pieces as th
     <RootNamespace>MyApp</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NetWasm.UI.Browser" Version="0.1.0" />
+    <PackageReference Include="NwUi.Browser" Version="0.1.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="wwwroot\**" CopyToPublishDirectory="PreserveNewest" Link="%(RecursiveDir)%(Filename)%(Extension)" />
@@ -54,7 +54,7 @@ To add NetWasm.UI to an existing NetWasm project, you need the same pieces as th
 
 The packages set up the rest:
 
-- `NetWasm.UI.Browser` adds the `nwui.dom` JavaScript module to the app. Set
+- `NwUi.Browser` adds the `nwui.dom` JavaScript module to the app. Set
   `<NetWasmUIAddDomModule>false</NetWasmUIAddDomModule>` to supply your own module, for example
   a custom `createDomHost` (see [Embedding](embedding.md)).
 - `NetWasm.UI` feeds every `*.nwui` file to the template compiler. Set
@@ -138,7 +138,7 @@ The dev server does the following:
 - reloads the browser after each rebuild;
 - shows build errors as an overlay in the page.
 
-Install it outside the template with `dotnet tool install NetWasm.UI.DevServer`.
+Install it outside the template with `dotnet tool install NwUi.DevServer`.
 
 `dotnet run` from the NetWasm SDK also serves the app, but it has no deep-link fallback, so a
 reload on `/counter` returns 404.
