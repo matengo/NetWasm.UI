@@ -7,13 +7,17 @@ using Microsoft.Playwright;
 
 // Builds the NetWasm.UI, SolidJS, React and Blazor benchmark apps, serves them with Kestrel and measures them in Chromium.
 // Usage: dotnet run --project benchmarks/Runner -c Release -- [--runs N] [--skip-build] [--no-o3] [--no-aot] [--headed]
+//        [--apps netwasm-oz,solid] [--cases create,diamond,startup]
 // --no-aot skips Blazor AOT, which needs the wasm-tools workload and takes minutes to build.
+// --apps and --cases narrow a run for quick iteration: apps by path, cases by any part of their name.
 
 var runs = 10;
 var skipBuild = false;
 var headed = false;
 var withO3 = true;
 var withAot = true;
+string[]? onlyApps = null;
+string[]? onlyCases = null;
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
@@ -23,6 +27,8 @@ for (var i = 0; i < args.Length; i++)
         case "--headed": headed = true; break;
         case "--no-o3": withO3 = false; break;
         case "--no-aot": withAot = false; break;
+        case "--apps": onlyApps = args[++i].Split(','); break;
+        case "--cases": onlyCases = args[++i].Split(','); break;
         default: Console.Error.WriteLine("Unknown option: " + args[i]); return 1;
     }
 }
@@ -47,18 +53,26 @@ if (withAot)
     apps.Add(("Blazor (AOT)", "blazor-aot", Path.Combine(outDir, "blazor-aot", "wwwroot")));
 }
 
+if (onlyApps is not null)
+{
+    apps.RemoveAll(a => !onlyApps.Contains(a.Path));
+}
+
 var solidIndex = apps.FindIndex(a => a.Path == "solid");
+bool Selected(string name) => onlyCases is null || onlyCases.Any(c => name.Contains(c, StringComparison.OrdinalIgnoreCase));
 
 if (!skipBuild)
 {
     var project = Path.Combine(bench, "NetWasmBench", "NetWasmBench.csproj");
-    Run("dotnet", root, "publish", project, "-c", "Release", "-o", apps[0].Dir, "-p:NetWasmOptimization=Oz", "--nologo", "-v", "q");
-    if (withO3)
+    foreach (var (path, opt) in new[] { ("netwasm-oz", "Oz"), ("netwasm-o3", "O3") })
     {
-        Run("dotnet", root, "publish", project, "-c", "Release", "-o", apps[1].Dir, "-p:NetWasmOptimization=O3", "--nologo", "-v", "q");
+        if (apps.Any(a => a.Path == path))
+        {
+            Run("dotnet", root, "publish", project, "-c", "Release", "-o", Path.Combine(outDir, path), "-p:NetWasmOptimization=" + opt, "--nologo", "-v", "q");
+        }
     }
 
-    foreach (var js in new[] { "solid", "react" })
+    foreach (var js in new[] { "solid", "react" }.Where(js => apps.Any(a => a.Path == js)))
     {
         var dir = Path.Combine(bench, js);
         if (!Directory.Exists(Path.Combine(dir, "node_modules")))
@@ -70,7 +84,7 @@ if (!skipBuild)
     }
 
     var blazor = Path.Combine(bench, "BlazorBench", "BlazorBench.csproj");
-    foreach (var stale in new[] { "blazor", "blazor-aot" })
+    foreach (var stale in new[] { "blazor", "blazor-aot" }.Where(b => apps.Any(a => a.Path == b)))
     {
         // publish -o never deletes files, and fingerprinted names would pile up.
         if (Directory.Exists(Path.Combine(outDir, stale)))
@@ -79,8 +93,12 @@ if (!skipBuild)
         }
     }
 
-    Run("dotnet", root, "publish", blazor, "-c", "Release", "-o", Path.Combine(outDir, "blazor"), "--nologo", "-v", "q");
-    if (withAot)
+    if (apps.Any(a => a.Path == "blazor"))
+    {
+        Run("dotnet", root, "publish", blazor, "-c", "Release", "-o", Path.Combine(outDir, "blazor"), "--nologo", "-v", "q");
+    }
+
+    if (apps.Any(a => a.Path == "blazor-aot"))
     {
         // A separate obj directory, so switching AOT on and off never reuses the other build's native output.
         Run("dotnet", root, "publish", blazor, "-c", "Release", "-o", Path.Combine(outDir, "blazor-aot"),
@@ -157,7 +175,7 @@ const string Helpers = """
 
 var table = new List<(string Case, string Unit, double[] Values)>();
 
-foreach (var (name, prep, click, check) in ops)
+foreach (var (name, prep, click, check) in ops.Where(o => Selected(o.Name)))
 {
     var values = new double[apps.Count];
     var layouts = new double[apps.Count];
@@ -212,20 +230,21 @@ foreach (var (name, prep, click, check) in ops)
 Console.WriteLine();
 
 // DOM-free workloads, run back to back in one page per app after a warm-up.
-var workloads = new[] { "deep", "broad", "diamond", "create", "sort", "sieve" };
+var workloads = new[] { "deep", "broad", "diamond", "create", "sort", "sieve" }.Where(Selected).ToArray();
+var withStartup = Selected("startup");
 var startup = new double[apps.Count];
 var reactive = new double[workloads.Length, apps.Count];
 for (var a = 0; a < apps.Count; a++)
 {
     var ready = new List<double>();
-    for (var r = 0; r < runs; r++)
+    for (var r = 0; r < (withStartup ? runs : 0); r++)
     {
         await using var context = await browser.NewContextAsync();
         var page = await OpenAsync(context, apps[a].Path);
         ready.Add(await page.EvaluateAsync<double>("window.__ready"));
     }
 
-    startup[a] = Median(ready);
+    startup[a] = withStartup ? Median(ready) : double.NaN;
 
     await using var ctx = await browser.NewContextAsync();
     var p = await OpenAsync(ctx, apps[a].Path);
@@ -275,7 +294,7 @@ for (var a = 0; a < apps.Count; a++)
 // What a first visit downloads: every response body, raw and Brotli-compressed (quality 11, as in production).
 var rawKb = new double[apps.Count];
 var brotliKb = new double[apps.Count];
-for (var a = 0; a < apps.Count; a++)
+for (var a = 0; a < apps.Count && withStartup; a++)
 {
     (rawKb[a], brotliKb[a]) = await MeasureDownloadAsync(apps[a].Path);
 }
@@ -297,9 +316,12 @@ for (var w = 0; w < workloads.Length; w++)
     AppendRow("reactive: " + workloads[w], Enumerable.Range(0, apps.Count).Select(a => reactive[w, a]).ToArray());
 }
 
-AppendRow("startup (`__ready`)", startup);
-AppendRow("download, raw (KB)", rawKb);
-AppendRow("download, Brotli (KB)", brotliKb);
+if (withStartup)
+{
+    AppendRow("startup (`__ready`)", startup);
+    AppendRow("download, raw (KB)", rawKb);
+    AppendRow("download, Brotli (KB)", brotliKb);
+}
 
 Console.WriteLine("All times in ms (median). – means not applicable.\n");
 Console.WriteLine(md);
@@ -308,7 +330,7 @@ return 0;
 
 void AppendRow(string label, double[] values) =>
     md.AppendLine($"| {label} | {string.Join(" | ", values.Select(Format))} | " +
-        $"{(values[0] / values[solidIndex]).ToString("0.00", CultureInfo.InvariantCulture)}× |");
+        (solidIndex < 0 ? "–" : $"{(values[0] / values[solidIndex]).ToString("0.00", CultureInfo.InvariantCulture)}×") + " |");
 
 static string Format(double v) => double.IsNaN(v) ? "–" : v.ToString("0.0", CultureInfo.InvariantCulture);
 

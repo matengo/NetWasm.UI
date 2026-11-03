@@ -48,7 +48,10 @@ against `FakeDomHost`, an in-memory decoder of the same protocol.
 
 - A `Signal<T>` keeps its subscribers in two-way links that remember their index on both sides
   (as in Solid), so subscribing and unsubscribing are O(1) even with thousands of readers.
-- A `Computed<T>` recomputes eagerly when marked dirty and only propagates if its value changed.
+- Propagation is push-pull. A changed signal marks its observers Dirty and everything further
+  down Check without running anything. Before a computation runs it refreshes its sources in
+  order; it re-runs only if one of them changed, otherwise it goes back to Clean. A `Computed<T>`
+  recomputes on read and only propagates if its value changed. A `Selector` stays eager.
 - `Effect` re-runs are queued on the `Scheduler`. At batch depth 0 the queue is flushed and the
   `Renderer` ships one batch to the host; `OnMount` callbacks run after that, in their own batch.
 - A `Scope` owns disposables (effects, nested scopes, components). Scopes form a tree that

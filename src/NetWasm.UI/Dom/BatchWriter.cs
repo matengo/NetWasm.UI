@@ -86,6 +86,25 @@ internal sealed class BatchWriter
     {
         // Null renders as empty; checked before writing so a throwing encoder can never leave half an op behind.
         value ??= string.Empty;
+
+        // ASCII fast path: one pass, no encoder call. Falls back to UTF-8 at the first non-ASCII char.
+        var n = value.Length;
+        Ensure(4 + n);
+        var p = length + 4;
+        var i = 0;
+        while (i < n && value[i] < 0x80)
+        {
+            buffer[p + i] = (byte)value[i];
+            i++;
+        }
+
+        if (i == n)
+        {
+            Int(n);
+            length += n;
+            return;
+        }
+
         var byteCount = Encoding.UTF8.GetByteCount(value);
         Ensure(4 + byteCount);
         Int(byteCount);

@@ -107,7 +107,7 @@ internal class SourceNode
     /// <summary>Registers the currently running computation, if any, as an observer.</summary>
     public void Track() => Tracker.Current?.Link(this);
 
-    /// <summary>Marks every observer dirty.</summary>
+    /// <summary>Marks every observer dirty: this source's value changed.</summary>
     public void Notify()
     {
         var count = Observers.Count;
@@ -128,6 +128,49 @@ internal class SourceNode
         {
             snapshot[i].MarkDirty();
         }
+    }
+
+    /// <summary>Marks every observer "check": a source further up changed, so this one may have.</summary>
+    internal void NotifyCheck()
+    {
+        var count = Observers.Count;
+        if (count == 1)
+        {
+            Observers.Item(0).MarkCheck();
+            return;
+        }
+
+        if (count == 0)
+        {
+            return;
+        }
+
+        var snapshot = Observers.ToArray();
+        for (var i = 0; i < snapshot.Length; i++)
+        {
+            snapshot[i].MarkCheck();
+        }
+    }
+
+    /// <summary>
+    /// Called while an observer pulls (see <see cref="Computation.ResolveCheck"/>): the value turned out to
+    /// have changed, so observers waiting in "check" must re-run. Clean observers have already read the new value.
+    /// </summary>
+    internal void NotifyChanged()
+    {
+        for (var i = 0; i < Observers.Count; i++)
+        {
+            var observer = Observers.Item(i);
+            if (observer.State == Computation.Check)
+            {
+                observer.State = Computation.Dirty;
+            }
+        }
+    }
+
+    /// <summary>Brings the value up to date if it is derived (a <see cref="Computed{T}"/>); a no-op for plain sources.</summary>
+    internal virtual void Refresh()
+    {
     }
 
     /// <summary>Called when the last observer unsubscribed.</summary>
@@ -182,8 +225,35 @@ public abstract class Computation : IDisposable
         }
     }
 
+    // Push-pull: a changed signal marks its observers Dirty and everything further down Check, without
+    // running anything. A computation in Check asks its sources (in order) to refresh before it runs and
+    // only re-runs if one of them actually changed, so a diamond's join recomputes once and an unchanged
+    // derived value stops propagation.
+    internal const byte Clean = 0;
+    internal const byte Check = 1;
+    internal const byte Dirty = 2;
+
+    internal byte State;
+
     /// <summary>Called by a source when its value changed.</summary>
     internal abstract void MarkDirty();
+
+    /// <summary>Called when a source further up changed; this computation's own sources may or may not have.</summary>
+    internal virtual void MarkCheck() => MarkDirty();
+
+    /// <summary>In Check: refreshes the sources until one changed (→ Dirty) or all are current (→ Clean).</summary>
+    internal void ResolveCheck()
+    {
+        for (var i = 0; i < sources.Count && State == Check; i++)
+        {
+            sources.Item(i).Refresh();
+        }
+
+        if (State == Check)
+        {
+            State = Clean;
+        }
+    }
 
     public virtual void Dispose()
     {

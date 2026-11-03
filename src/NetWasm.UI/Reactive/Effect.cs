@@ -75,6 +75,17 @@ public class Effect : Computation
             return;
         }
 
+        // Only reached through a derived value: re-run only if one of them actually changed.
+        if (started && State == Check)
+        {
+            ResolveGuarded();
+            if (State == Clean)
+            {
+                return;
+            }
+        }
+
+        State = Clean;
         RunCleanups();
         ClearSources();
         var previous = Tracker.Current;
@@ -114,9 +125,48 @@ public class Effect : Computation
         }
     }
 
+    // A throwing derived value makes the effect re-run, so the exception surfaces (and is reported) when it reads it.
+    private void ResolveGuarded()
+    {
+        try
+        {
+            ResolveCheck();
+        }
+        catch (Exception)
+        {
+            State = Dirty;
+        }
+    }
+
     internal override void MarkDirty()
     {
-        if (scheduled || IsDisposed)
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        State = Dirty;
+        Schedule();
+    }
+
+    internal override void MarkCheck()
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        if (State == Clean)
+        {
+            State = Check;
+        }
+
+        Schedule();
+    }
+
+    private void Schedule()
+    {
+        if (scheduled)
         {
             return;
         }

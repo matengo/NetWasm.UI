@@ -61,9 +61,22 @@ class Reader {
   str() {
     const len = this.view.getUint32(this.pos, true);
     this.pos += 4;
-    const s = decoder.decode(this.bytes.subarray(this.pos, this.pos + len));
-    this.pos += len;
-    return s;
+    const bytes = this.bytes;
+    const start = this.pos;
+    const end = start + len;
+    this.pos = end;
+    // Most strings in a batch are short ASCII (ids, labels, attribute and event names): building them
+    // directly is several times faster than a TextDecoder call with its subarray.
+    if (len <= 32) {
+      let s = "";
+      for (let i = start; i < end; i++) {
+        const c = bytes[i];
+        if (c > 0x7f) return decoder.decode(bytes.subarray(start, end));
+        s += String.fromCharCode(c);
+      }
+      return s;
+    }
+    return decoder.decode(bytes.subarray(start, end));
   }
 }
 

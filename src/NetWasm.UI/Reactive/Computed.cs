@@ -3,19 +3,24 @@ using System.Collections.Generic;
 
 namespace NetWasm.UI.Reactive;
 
-/// <summary>A lazily evaluated derived value. Recomputes on the next read after a dependency changed.</summary>
+/// <summary>
+/// A lazily evaluated derived value. A change upstream only marks it; it recomputes on the next read, or when
+/// an observer that is about to re-run asks for it. Observers re-run only if the result differs from the previous one.
+/// </summary>
 public sealed class Computed<T> : Computation, IReadOnlySignal<T>
 {
     private readonly Func<T> compute;
-    private readonly SourceNode observers = new();
+    private readonly Node observers;
     private readonly IEqualityComparer<T> comparer;
     private T value = default!;
-    private bool stale = true;
+    private bool initialized;
 
     public Computed(Func<T> compute, IEqualityComparer<T>? comparer = null)
     {
         this.compute = compute;
         this.comparer = comparer ?? EqualityComparer<T>.Default;
+        observers = new Node(this);
+        State = Dirty;
         Tracker.CurrentOwner?.Register(this);
     }
 
@@ -23,13 +28,35 @@ public sealed class Computed<T> : Computation, IReadOnlySignal<T>
     {
         get
         {
-            observers.Track();
-            if (stale)
+            if (State != Clean)
             {
-                Recompute();
+                Update();
             }
 
+            // Tracked after updating, so the reader is not told about a change it is reading right now.
+            observers.Track();
             return value;
+        }
+    }
+
+    private void Update()
+    {
+        if (State == Check)
+        {
+            ResolveCheck();
+            if (State == Clean)
+            {
+                return;
+            }
+        }
+
+        var previous = value;
+        var first = !initialized;
+        Recompute();
+        initialized = true;
+        if (first || !comparer.Equals(previous, value))
+        {
+            observers.NotifyChanged();
         }
     }
 
@@ -47,27 +74,50 @@ public sealed class Computed<T> : Computation, IReadOnlySignal<T>
             Tracker.Current = previous;
         }
 
-        stale = false;
+        State = Clean;
     }
 
     internal override void MarkDirty()
     {
-        if (stale || IsDisposed)
+        if (State == Dirty || IsDisposed)
         {
             return;
         }
 
-        var previousValue = value;
-        // Recompute eagerly so that equal results do not propagate.
-        Recompute();
-        if (comparer.Equals(previousValue, value))
+        var wasClean = State == Clean;
+        State = Dirty;
+        if (wasClean)
+        {
+            observers.NotifyCheck();
+        }
+    }
+
+    internal override void MarkCheck()
+    {
+        if (State != Clean || IsDisposed)
         {
             return;
         }
 
-        observers.Notify();
+        State = Check;
+        observers.NotifyCheck();
     }
 
     /// <summary>The current value, formatted with the invariant culture. Tracked, so <c>@doubled</c> in a template stays reactive.</summary>
     public override string ToString() => TemplateRuntime.Str(Value) ?? string.Empty;
+
+    private sealed class Node : SourceNode
+    {
+        private readonly Computed<T> owner;
+
+        public Node(Computed<T> owner) => this.owner = owner;
+
+        internal override void Refresh()
+        {
+            if (owner.State != Clean)
+            {
+                owner.Update();
+            }
+        }
+    }
 }

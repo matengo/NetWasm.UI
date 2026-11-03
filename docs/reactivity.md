@@ -29,9 +29,11 @@ var doubled = new Computed<int>(() => count.Value * 2);
 Text(doubled)
 ```
 
-A `Computed` caches a derived value. It recomputes when a dependency changes and only notifies
-its own readers if the result changed. It recomputes eagerly, so in a diamond (`a → b, c → d`)
-`d` may recompute once per branch; see [Benchmarks](benchmarks.md#still-open).
+A `Computed` caches a derived value. It is push-pull: a change only marks it (and everything
+below it) stale, and it recomputes when it is read, at most once per change and only if one of
+its dependencies actually changed. So in a diamond (`a → b, c → d`) `d` recomputes once, a
+`Computed` nobody reads is not recomputed, and one whose value didn't change stops propagation.
+An effect behind such a `Computed` is queued and then skipped without running.
 
 ## Effect
 
