@@ -34,7 +34,12 @@ jobs:
 
       - name: .nwui grammar tests
         working-directory: tools/vscode-nwui
-        run: npm ci && npm test
+        run: npm ci && npm test && npm run package
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vscode-nwui
+          path: tools/vscode-nwui/nwui.vsix
 
       - name: Install Chromium for Playwright
         run: pwsh tests/NetWasm.UI.E2E/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
@@ -42,14 +47,84 @@ jobs:
       - name: E2E tests (publishes samples/Counter and drives it in Chromium)
         run: dotnet test tests/NetWasm.UI.E2E --no-build
 
-      - name: Production publish (Oz) and size report
+      - name: Production publish (Oz), size report and budget
         run: |
-          dotnet publish samples/Counter -c Release
-          {
-            echo "### Counter publish sizes (Oz)"
-            echo "| File | Bytes | gzip -9 |"
-            echo "|---|---:|---:|"
-          } >> "$GITHUB_STEP_SUMMARY"
-          find samples/Counter/bin/Release/netwasm0.1/publish -type f \( -name '*.wasm' -o -name '*.mjs' \) \
-            -exec sh -c 'printf "| %s | %s | %s |\n" "${1##*/publish/}" "$(wc -c < "$1")" "$(gzip -9c "$1" | wc -c)"' _ {} \; \
-            | sort >> "$GITHUB_STEP_SUMMARY"
+          dotnet publish samples/Counter -c Release -p:NetWasmOptimization=Oz
+          node tools/size-report/size-report.mjs samples/Counter/bin/Release/netwasm0.1/publish \
+            --name Counter --budget size-budget.json --markdown "$GITHUB_STEP_SUMMARY"
+
+  e2e-browsers:
+    # The same E2E suite in the other engines (Chromium runs in the test job).
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      E2E_BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Build E2E tests
+        run: dotnet build tests/NetWasm.UI.E2E
+
+      - name: Install ${{ matrix.browser }} for Playwright
+        run: pwsh tests/NetWasm.UI.E2E/bin/Debug/net10.0/playwright.ps1 install --with-deps ${{ matrix.browser }}
+
+      - name: E2E tests (${{ matrix.browser }})
+        run: dotnet test tests/NetWasm.UI.E2E --no-build
+
+  packages:
+    # Packs every NuGet package and proves the quickstart: dotnet new netwasm-ui → publish,
+    # restoring NetWasm.UI* only from the freshly packed feed (own package cache, no stale 0.1.0).
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Pack
+        run: |
+          for p in src/NetWasm.UI src/NetWasm.UI.Browser tools/DevServer templates/NetWasm.UI.Templates; do
+            dotnet pack "$p" -c Release -o "$RUNNER_TEMP/feed"
+          done
+          ls -l "$RUNNER_TEMP/feed"
+
+      - name: Template smoke test (new → tool restore → publish)
+        env:
+          NUGET_PACKAGES: ${{ runner.temp }}/nuget-template
+        run: |
+          dotnet new install "$RUNNER_TEMP"/feed/NetWasm.UI.Templates.*.nupkg
+          cd "$RUNNER_TEMP"
+          dotnet new netwasm-ui -o SmokeApp --skipRestore
+          cd SmokeApp
+          dotnet new nugetconfig
+          dotnet nuget add source "$RUNNER_TEMP/feed" -n local --configfile nuget.config
+          dotnet tool restore
+          dotnet publish -c Release -p:NetWasmOptimization=O1
+          test -f bin/Release/netwasm0.1/publish/index.html
+          test -f bin/Release/netwasm0.1/publish/browser/SmokeApp.wasm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: ${{ runner.temp }}/feed/*

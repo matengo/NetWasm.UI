@@ -95,8 +95,10 @@ public sealed class FakeDomHost : IDomHost
 
     public string Html => string.Concat(Document.Children.Select(c => c.ToHtml()));
 
-    public void ApplyBatch(byte[] ops)
+    public void ApplyBatch(ReadOnlySpan<byte> batch)
     {
+        // The span is only valid during the call (the renderer reuses its buffer), so copy it.
+        var ops = batch.ToArray();
         BatchCount++;
         var pos = 0;
         while (pos < ops.Length)

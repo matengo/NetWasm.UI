@@ -1,0 +1,69 @@
+@* A form with validation, accessible error messages and an asynchronous submit. *@
+<Page Id="signup" Title="Sign up">
+    <form class="signup" novalidate @onsubmit="() => form.Submit(SaveAsync)">
+        <div class="field">
+            <label for="@name.Id">Name</label>
+            <input @bind="name" autocomplete="name" />
+            @render(FieldError(name))
+        </div>
+        <div class="field">
+            <label for="@email.Id">E-mail</label>
+            <input @bind="email" type="email" autocomplete="email" />
+            @render(FieldError(email))
+        </div>
+        <div class="field">
+            <label for="@password.Id">Password</label>
+            <input @bind="password" type="password" autocomplete="new-password" />
+            @render(FieldError(password))
+        </div>
+        <div class="field">
+            <label for="@confirm.Id">Repeat password</label>
+            <input @bind="confirm" type="password" autocomplete="new-password" />
+            @render(FieldError(confirm))
+        </div>
+        <div class="field">
+            <label><input @bind="accept" /> I accept the terms</label>
+            @render(FieldError(accept))
+        </div>
+        <button type="submit" disabled="@form.Submitting">@(form.Submitting ? "Signing up…" : "Sign up")</button>
+        <p class="result" role="status">@result.Value</p>
+    </form>
+</Page>
+
+@code {
+    private readonly Form form = new();
+    private readonly Signal<string> result = new("");
+    private Field<string> name = null!;
+    private Field<string> email = null!;
+    private Field<string> password = null!;
+    private Field<string> confirm = null!;
+    private Field<bool> accept = null!;
+
+    partial void OnInit()
+    {
+        name = form.Field("", Validators.Required("Enter your name."));
+        email = form.Field("", Validators.Required("Enter your e-mail."), Validators.Email());
+        password = form.Field("", Validators.Required("Choose a password."), Validators.MinLength(8));
+        confirm = form.Field("", Validators.Must<string>(v => v == password.Value, "The passwords differ."));
+        accept = form.Field(false, Validators.MustBeChecked("You must accept the terms."));
+        name.Id = "signup-name";
+        email.Id = "signup-email";
+        password.Id = "signup-password";
+        confirm.Id = "signup-confirm";
+        accept.Id = "signup-accept";
+    }
+
+    private async Task SaveAsync()
+    {
+        // Stands in for a server call; "taken@example.com" plays an address that is already registered.
+        await Task.Delay(50);
+        if (email.Value == "taken@example.com")
+        {
+            email.SetError("That address is already registered.");
+            return;
+        }
+
+        result.Value = "Welcome, " + name.Value + "!";
+        form.Reset();
+    }
+}

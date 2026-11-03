@@ -1,0 +1,13 @@
+@* Suspense in a template: the fallback shows until the resource in <NameCard> has loaded. *@
+<main>
+    <Suspense>
+        <NameCard Source="@Load.Task" />
+        <template slot="Fallback">
+            <p class="loading">Loading…</p>
+        </template>
+    </Suspense>
+</main>
+
+@code {
+    public TaskCompletionSource<string> Load { get; } = new();
+}

@@ -15,6 +15,7 @@ public static class Scheduler
     private static int depth;
     private static int flushDepth;
     private static bool flushing;
+    private static bool flushRequested;
 
     /// <summary>Raised after queued effects ran. The DOM renderer uses this to push its op batch.</summary>
     public static event Action? Flushed
@@ -62,6 +63,9 @@ public static class Scheduler
     {
         if (flushing)
         {
+            // Re-entered from a Flushed handler (an event the host dispatched while applying a batch):
+            // the running flush picks the new work up before it returns.
+            flushRequested = true;
             return;
         }
 
@@ -86,26 +90,38 @@ public static class Scheduler
         flushing = true;
         try
         {
-            // Effects may enqueue further effects; drain until stable.
+            // Effects may enqueue further effects; drain until stable. A Flushed handler may re-enter
+            // (see Flush), in which case effects and output are drained again.
             var guard = 0;
-            while (queue.Count > 0)
+            do
             {
+                flushRequested = false;
+                while (queue.Count > 0)
+                {
+                    if (++guard > 100_000)
+                    {
+                        throw new InvalidOperationException("Reactive update cycle detected.");
+                    }
+
+                    queue.Dequeue().Run();
+                }
+
+                foreach (var handler in flushed.ToArray())
+                {
+                    handler();
+                }
+
                 if (++guard > 100_000)
                 {
                     throw new InvalidOperationException("Reactive update cycle detected.");
                 }
-
-                queue.Dequeue().Run();
             }
-
-            foreach (var handler in flushed.ToArray())
-            {
-                handler();
-            }
+            while (flushRequested || queue.Count > 0);
         }
         finally
         {
             flushing = false;
+            flushRequested = false;
         }
 
         // OnMount callbacks: the DOM is up to date now. Each runs in its own batch so its writes
@@ -130,6 +146,7 @@ public static class Scheduler
         depth = 0;
         flushDepth = 0;
         flushing = false;
+        flushRequested = false;
         flushed.Clear();
         ErrorHandling.Reset();
     }

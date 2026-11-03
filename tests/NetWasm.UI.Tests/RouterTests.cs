@@ -197,6 +197,133 @@ public class RouterTests : RendererTest
         Assert.False(router.IsActive("/"));
     }
 
+    private Node Settings()
+    {
+        var builds = 0;
+        return Div(
+            Class("settings"),
+            Text(() => "layout " + (++builds).ToString()),
+            Routes(
+                () => P("no such setting"),
+                Route("/", () => H2("Overview")),
+                Route("/profile", () => H2("Profile")),
+                Route("/users/{id}", p => H2("User " + p.Get("id")))));
+    }
+
+    private Node NestedShell() =>
+        Main(Routes(
+            () => P("404"),
+            Route("/", () => H1("Home")),
+            Route("/settings/*", Settings)));
+
+    [Fact]
+    public void Nested_routes_match_relative_to_the_prefix_and_keep_the_layout()
+    {
+        App.Mount(new Lambda(NestedShell), "#app");
+        router.Navigate("/settings");
+        var layout = Dom.Query("div")!;
+        Assert.Contains("<h2>Overview</h2>", Dom.Html);
+
+        router.Navigate("/settings/profile");
+        Assert.Same(layout, Dom.Query("div"));
+        Assert.Contains("<h2>Profile</h2>", Dom.Html);
+        Assert.Contains("layout 1", Dom.Html);
+
+        router.Navigate("/settings/users/7?tab=x");
+        Assert.Contains("<h2>User 7</h2>", Dom.Html);
+
+        router.Navigate("/settings/nope");
+        Assert.Contains("<p>no such setting</p>", Dom.Html);
+        Assert.Same(layout, Dom.Query("div"));
+
+        router.Navigate("/");
+        Assert.Contains("<h1>Home</h1>", Dom.Html);
+        Assert.DoesNotContain("settings", Dom.Html);
+    }
+
+    [Theory]
+    [InlineData("/settings/*", "/settings", "/")]
+    [InlineData("/settings/*", "/settings/a/b?x=1#h", "/a/b?x=1")]
+    [InlineData("/org/{org}/*", "/org/acme/repos", "/repos")]
+    public void Prefix_pattern_returns_the_rest(string pattern, string path, string rest)
+    {
+        Assert.True(new RoutePattern(pattern).TryMatch(path, out _, out var actual));
+        Assert.Equal(rest, actual);
+        Assert.False(new RoutePattern(pattern).TryMatch("/other", out _));
+    }
+
+    private sealed class Lambda : Component
+    {
+        private readonly Func<Node> build;
+        public Lambda(Func<Node> build) => this.build = build;
+        protected override Node Build() => build();
+    }
+}
+
+public class RouterBasePathTests : RendererTest
+{
+    private readonly MemoryHistory history = new("/app/todos?x=1");
+    private readonly Router router;
+
+    public RouterBasePathTests()
+    {
+        router = Router.Install(history, "/app/");
+    }
+
+    public override void Dispose()
+    {
+        Router.Reset();
+        base.Dispose();
+    }
+
+    [Fact]
+    public void Paths_are_app_relative_and_history_gets_the_base()
+    {
+        Assert.Equal("/app", router.BasePath);
+        Assert.Equal("/todos?x=1", router.Path.Value);
+
+        router.Navigate("/");
+        Assert.Equal("/app/", history.Path);
+        Assert.Equal("/", router.Path.Value);
+
+        history.Back();
+        Assert.Equal("/todos?x=1", router.Path.Value);
+    }
+
+    [Theory]
+    [InlineData("/app", "/")]
+    [InlineData("/app/", "/")]
+    [InlineData("/app?q=1", "/?q=1")]
+    [InlineData("/application", "/application")]
+    [InlineData("/other", "/other")]
+    public void Browser_paths_are_mapped(string browserPath, string appPath)
+    {
+        Router.Install(new MemoryHistory(browserPath), "app");
+        Assert.Equal(appPath, Router.Current!.Path.Value);
+    }
+
+    [Fact]
+    public void Links_render_with_the_base_and_navigate_app_relative()
+    {
+        App.Mount(new Lambda(() => Div(Link("/todos/3", "Todo"), Link("https://example.com/", "Out"), Routes(Route("/todos/{id}", p => P(p.Get("id")))))), "#app");
+
+        var link = Dom.Query("a")!;
+        Assert.Equal("/app/todos/3", link.Attributes["href"]);
+        Assert.Equal("https://example.com/", Dom.QueryAll("a")[1].Attributes["href"]);
+
+        Fire(link, new DomEvent("click"));
+        Assert.Equal("/app/todos/3", history.Path);
+        Assert.Contains("<p>3</p>", Dom.Html);
+    }
+
+    [Fact]
+    public void Root_base_changes_nothing()
+    {
+        var r = Router.Install(new MemoryHistory("/x"), "/");
+        Assert.Equal(string.Empty, r.BasePath);
+        Assert.Equal("/x", r.Href("/x"));
+    }
+
     private sealed class Lambda : Component
     {
         private readonly Func<Node> build;

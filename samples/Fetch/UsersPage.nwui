@@ -1,0 +1,37 @@
+@* A list loaded with Resource + Suspense, and a detail resource keyed on the selection. *@
+<main>
+    <h1>Users</h1>
+    <div class="list">
+    <ErrorBoundary>
+        <div>
+        <Suspense>
+            <UserList Api="@Api" Selected="@selected" />
+            <template slot="Fallback">
+                <p class="loading">Loading users…</p>
+            </template>
+        </Suspense>
+        </div>
+        <template slot="Fallback" context="error">
+            <p class="error">Could not load: @error.Message <button class="retry" @onclick="() => error.Reset()">Retry</button></p>
+        </template>
+    </ErrorBoundary>
+    </div>
+    <section class="details">
+        @if (selected.Value == 0) {
+            <p class="hint">Select a user.</p>
+        } else {
+            <p class="bio">@(details.Loading ? "Loading…" : details.Error is { } e ? "Failed: " + e.Message : details.Latest?.Bio)</p>
+        }
+    </section>
+    <button id="missing" @onclick="() => selected.Value = 99">Load a missing user</button>
+</main>
+
+@code {
+    private readonly Signal<int> selected = new(0);
+    private Resource<UserDetails> details = null!;
+
+    public Api Api { get; set; } = null!;
+
+    partial void OnInit() =>
+        details = Resource.Create(() => selected.Value == 0 ? (int?)null : selected.Value, (id, ct) => Api.GetDetailsAsync(id, ct));
+}

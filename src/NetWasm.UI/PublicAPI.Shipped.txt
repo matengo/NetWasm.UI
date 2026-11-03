@@ -1,0 +1,415 @@
+#nullable enable
+abstract NetWasm.UI.Component.Build() -> NetWasm.UI.Node!
+abstract NetWasm.UI.Forms.FormField.Dirty.get -> bool
+abstract NetWasm.UI.Forms.FormField.Error.get -> string?
+abstract NetWasm.UI.Forms.FormField.Id.get -> string!
+abstract NetWasm.UI.Forms.FormField.Id.set -> void
+abstract NetWasm.UI.Forms.FormField.MarkTouched() -> void
+abstract NetWasm.UI.Forms.FormField.Reset() -> void
+abstract NetWasm.UI.Forms.FormField.SetError(string? message) -> void
+abstract NetWasm.UI.Forms.FormField.Touched.get -> bool
+abstract NetWasm.UI.Fragment.Apply(NetWasm.UI.Element! parent) -> void
+NetWasm.UI.Anchor
+NetWasm.UI.Anchor.Anchor() -> void
+NetWasm.UI.App
+NetWasm.UI.Attr
+NetWasm.UI.BoundaryError
+NetWasm.UI.BoundaryError.Exception.get -> System.Exception!
+NetWasm.UI.BoundaryError.Message.get -> string!
+NetWasm.UI.BoundaryError.Reset() -> void
+NetWasm.UI.Component
+NetWasm.UI.Component.Component() -> void
+NetWasm.UI.Component.Dispose() -> void
+NetWasm.UI.Component.Render() -> NetWasm.UI.Node!
+NetWasm.UI.Component.Root.get -> NetWasm.UI.Node!
+NetWasm.UI.Content
+NetWasm.UI.Content.Content() -> void
+NetWasm.UI.Dom.IDomHost
+NetWasm.UI.Dom.IDomHost.ApplyBatch(System.ReadOnlySpan<byte> ops) -> void
+NetWasm.UI.Dom.ListenerFlags
+NetWasm.UI.Dom.ListenerFlags.None = 0 -> NetWasm.UI.Dom.ListenerFlags
+NetWasm.UI.Dom.ListenerFlags.PreventDefault = 1 -> NetWasm.UI.Dom.ListenerFlags
+NetWasm.UI.Dom.ListenerFlags.PreventDefaultPlainClick = 4 -> NetWasm.UI.Dom.ListenerFlags
+NetWasm.UI.Dom.ListenerFlags.StopPropagation = 2 -> NetWasm.UI.Dom.ListenerFlags
+NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.AddListener = 13 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.AppendChild = 9 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.CloneTemplate = 18 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.CreateAnchor = 3 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.CreateElement = 1 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.CreateText = 2 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.DefineTemplate = 17 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.Focus = 16 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.InsertBefore = 10 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.Mount = 15 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.Release = 12 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.Remove = 11 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.RemoveAttribute = 6 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.RemoveListener = 14 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.SetAttribute = 5 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.SetBoolProperty = 8 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.SetProperty = 7 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.SetText = 4 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Renderer
+NetWasm.UI.DomEvent
+NetWasm.UI.DomEvent.Alt.get -> bool
+NetWasm.UI.DomEvent.Button.get -> int
+NetWasm.UI.DomEvent.Checked.get -> bool
+NetWasm.UI.DomEvent.ClientX.get -> int
+NetWasm.UI.DomEvent.ClientY.get -> int
+NetWasm.UI.DomEvent.Ctrl.get -> bool
+NetWasm.UI.DomEvent.DomEvent() -> void
+NetWasm.UI.DomEvent.DomEvent(string! type, string! value = "", string! key = "", bool isChecked = false, NetWasm.UI.EventModifiers modifiers = NetWasm.UI.EventModifiers.None, int button = 0, int clientX = 0, int clientY = 0, bool repeat = false) -> void
+NetWasm.UI.DomEvent.Encode() -> byte[]!
+NetWasm.UI.DomEvent.IsPlainClick.get -> bool
+NetWasm.UI.DomEvent.Key.get -> string!
+NetWasm.UI.DomEvent.Meta.get -> bool
+NetWasm.UI.DomEvent.Modifiers.get -> NetWasm.UI.EventModifiers
+NetWasm.UI.DomEvent.Repeat.get -> bool
+NetWasm.UI.DomEvent.Shift.get -> bool
+NetWasm.UI.DomEvent.Type.get -> string!
+NetWasm.UI.DomEvent.Value.get -> string!
+NetWasm.UI.Element
+NetWasm.UI.Element.Add(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+NetWasm.UI.Element.Element(string! tag, params NetWasm.UI.Content[]! content) -> void
+NetWasm.UI.Element.Focus() -> void
+NetWasm.UI.Element.Tag.get -> string!
+NetWasm.UI.ErrorBoundary
+NetWasm.UI.ErrorBoundary.ErrorBoundary(System.Func<NetWasm.UI.Node!>! content, System.Func<NetWasm.UI.BoundaryError!, NetWasm.UI.Node!>! fallback) -> void
+NetWasm.UI.EventModifiers
+NetWasm.UI.EventModifiers.Alt = 4 -> NetWasm.UI.EventModifiers
+NetWasm.UI.EventModifiers.Ctrl = 1 -> NetWasm.UI.EventModifiers
+NetWasm.UI.EventModifiers.Meta = 8 -> NetWasm.UI.EventModifiers
+NetWasm.UI.EventModifiers.None = 0 -> NetWasm.UI.EventModifiers
+NetWasm.UI.EventModifiers.Shift = 2 -> NetWasm.UI.EventModifiers
+NetWasm.UI.For<T, TKey>
+NetWasm.UI.For<T, TKey>.For(System.Func<System.Collections.Generic.IReadOnlyList<T>!>! items, System.Func<T, TKey>! key, System.Func<T, NetWasm.UI.Node!>! render) -> void
+NetWasm.UI.Forms.Field<T>
+NetWasm.UI.Forms.Field<T>.Field(T initial, params NetWasm.UI.Forms.Validator<T>![]! validators) -> void
+NetWasm.UI.Forms.Field<T>.Peek() -> T
+NetWasm.UI.Forms.Field<T>.Reset(T newInitial) -> void
+NetWasm.UI.Forms.Field<T>.Value.get -> T
+NetWasm.UI.Forms.Field<T>.Value.set -> void
+NetWasm.UI.Forms.Form
+NetWasm.UI.Forms.Form.Add(NetWasm.UI.Forms.FormField! field) -> NetWasm.UI.Forms.Form!
+NetWasm.UI.Forms.Form.Dirty.get -> bool
+NetWasm.UI.Forms.Form.Field<T>(T initial, params NetWasm.UI.Forms.Validator<T>![]! validators) -> NetWasm.UI.Forms.Field<T>!
+NetWasm.UI.Forms.Form.Fields.get -> System.Collections.Generic.IReadOnlyList<NetWasm.UI.Forms.FormField!>!
+NetWasm.UI.Forms.Form.Form() -> void
+NetWasm.UI.Forms.Form.IsValid.get -> bool
+NetWasm.UI.Forms.Form.Reset() -> void
+NetWasm.UI.Forms.Form.Submit(System.Action! onValid) -> void
+NetWasm.UI.Forms.Form.Submit(System.Func<System.Threading.Tasks.Task!>! onValid) -> void
+NetWasm.UI.Forms.Form.SubmitAsync(System.Func<System.Threading.Tasks.Task!>! onValid) -> System.Threading.Tasks.Task!
+NetWasm.UI.Forms.Form.SubmitAttempted.get -> bool
+NetWasm.UI.Forms.Form.SubmitError.get -> string?
+NetWasm.UI.Forms.Form.Submitting.get -> bool
+NetWasm.UI.Forms.FormField
+NetWasm.UI.Forms.FormField.ErrorId.get -> string!
+NetWasm.UI.Forms.FormField.IsValid.get -> bool
+NetWasm.UI.Forms.FormField.ShowError.get -> bool
+NetWasm.UI.Forms.FormField.ShownError.get -> string!
+NetWasm.UI.Forms.Validator<T>
+NetWasm.UI.Forms.Validators
+NetWasm.UI.Fragment
+NetWasm.UI.Fragment.Fragment() -> void
+NetWasm.UI.Html
+NetWasm.UI.IContent
+NetWasm.UI.IContent.ApplyTo(NetWasm.UI.Element! parent) -> void
+NetWasm.UI.Listener
+NetWasm.UI.Listener.Dispose() -> void
+NetWasm.UI.Listener.HandlerId.get -> int
+NetWasm.UI.Listener.Listener(string! eventName, System.Action! handler, NetWasm.UI.Dom.ListenerFlags flags = NetWasm.UI.Dom.ListenerFlags.None) -> void
+NetWasm.UI.Listener.Listener(string! eventName, System.Action<NetWasm.UI.DomEvent>! handler, NetWasm.UI.Dom.ListenerFlags flags = NetWasm.UI.Dom.ListenerFlags.None) -> void
+NetWasm.UI.Node
+NetWasm.UI.Node.Id.get -> int
+NetWasm.UI.Node.Node(int id) -> void
+NetWasm.UI.Node.Remove() -> void
+NetWasm.UI.Prop<T>
+NetWasm.UI.Prop<T>.IsReactive.get -> bool
+NetWasm.UI.Prop<T>.Prop() -> void
+NetWasm.UI.Prop<T>.Prop(System.Func<NetWasm.UI.Reactive.IReadOnlySignal<T>!>! signal) -> void
+NetWasm.UI.Prop<T>.Prop(System.Func<T>! getter) -> void
+NetWasm.UI.Prop<T>.Prop(T value) -> void
+NetWasm.UI.Prop<T>.Value.get -> T
+NetWasm.UI.Reactive.Computation
+NetWasm.UI.Reactive.Computation.Computation() -> void
+NetWasm.UI.Reactive.Computed<T>
+NetWasm.UI.Reactive.Computed<T>.Computed(System.Func<T>! compute, System.Collections.Generic.IEqualityComparer<T>? comparer = null) -> void
+NetWasm.UI.Reactive.Computed<T>.Value.get -> T
+NetWasm.UI.Reactive.Context<T>
+NetWasm.UI.Reactive.Context<T>.Context(string! name, T defaultValue) -> void
+NetWasm.UI.Reactive.Context<T>.Context(string! name) -> void
+NetWasm.UI.Reactive.Context<T>.Name.get -> string!
+NetWasm.UI.Reactive.Context<T>.Provide(T value) -> void
+NetWasm.UI.Reactive.Context<T>.Use() -> T
+NetWasm.UI.Reactive.Effect
+NetWasm.UI.Reactive.Effect.Effect(System.Action! action) -> void
+NetWasm.UI.Reactive.IReadOnlySignal<T>
+NetWasm.UI.Reactive.IReadOnlySignal<T>.Value.get -> T
+NetWasm.UI.Reactive.Lifecycle
+NetWasm.UI.Reactive.Resource
+NetWasm.UI.Reactive.Resource<T>
+NetWasm.UI.Reactive.Resource<T>.Dispose() -> void
+NetWasm.UI.Reactive.Resource<T>.Error.get -> System.Exception?
+NetWasm.UI.Reactive.Resource<T>.Latest.get -> T?
+NetWasm.UI.Reactive.Resource<T>.Loading.get -> bool
+NetWasm.UI.Reactive.Resource<T>.Mutate(T value) -> void
+NetWasm.UI.Reactive.Resource<T>.Refetch() -> void
+NetWasm.UI.Reactive.Resource<T>.State.get -> NetWasm.UI.Reactive.ResourceState
+NetWasm.UI.Reactive.Resource<T>.Value.get -> T?
+NetWasm.UI.Reactive.ResourceException
+NetWasm.UI.Reactive.ResourceException.ResourceException(System.Exception! inner) -> void
+NetWasm.UI.Reactive.ResourceState
+NetWasm.UI.Reactive.ResourceState.Errored = 4 -> NetWasm.UI.Reactive.ResourceState
+NetWasm.UI.Reactive.ResourceState.Pending = 1 -> NetWasm.UI.Reactive.ResourceState
+NetWasm.UI.Reactive.ResourceState.Ready = 2 -> NetWasm.UI.Reactive.ResourceState
+NetWasm.UI.Reactive.ResourceState.Refreshing = 3 -> NetWasm.UI.Reactive.ResourceState
+NetWasm.UI.Reactive.ResourceState.Unresolved = 0 -> NetWasm.UI.Reactive.ResourceState
+NetWasm.UI.Reactive.Scheduler
+NetWasm.UI.Reactive.Scope
+NetWasm.UI.Reactive.Scope.Dispose() -> void
+NetWasm.UI.Reactive.Scope.IsDisposed.get -> bool
+NetWasm.UI.Reactive.Scope.Parent.get -> NetWasm.UI.Reactive.Scope?
+NetWasm.UI.Reactive.Scope.Register(System.IDisposable! disposable) -> void
+NetWasm.UI.Reactive.Scope.Run(System.Action! action) -> void
+NetWasm.UI.Reactive.Scope.Run<T>(System.Func<T>! func) -> T
+NetWasm.UI.Reactive.Scope.Scope() -> void
+NetWasm.UI.Reactive.Scope.Scope(NetWasm.UI.Reactive.Scope? parent) -> void
+NetWasm.UI.Reactive.Selector<TKey>
+NetWasm.UI.Reactive.Selector<TKey>.Is(TKey key) -> bool
+NetWasm.UI.Reactive.Selector<TKey>.Selector(NetWasm.UI.Reactive.IReadOnlySignal<TKey>! source, System.Collections.Generic.IEqualityComparer<TKey>? comparer = null) -> void
+NetWasm.UI.Reactive.Signal<T>
+NetWasm.UI.Reactive.Signal<T>.Peek() -> T
+NetWasm.UI.Reactive.Signal<T>.Signal(T initial, System.Collections.Generic.IEqualityComparer<T>? comparer = null) -> void
+NetWasm.UI.Reactive.Signal<T>.Touch() -> void
+NetWasm.UI.Reactive.Signal<T>.Update(System.Func<T, T>! updater) -> void
+NetWasm.UI.Reactive.Signal<T>.Value.get -> T
+NetWasm.UI.Reactive.Signal<T>.Value.set -> void
+NetWasm.UI.Routing.IHistory
+NetWasm.UI.Routing.IHistory.Changed -> System.Action<string!>?
+NetWasm.UI.Routing.IHistory.Navigate(string! path, bool replace) -> void
+NetWasm.UI.Routing.IHistory.Path.get -> string!
+NetWasm.UI.Routing.MemoryHistory
+NetWasm.UI.Routing.MemoryHistory.Back() -> void
+NetWasm.UI.Routing.MemoryHistory.Changed -> System.Action<string!>?
+NetWasm.UI.Routing.MemoryHistory.Forward() -> void
+NetWasm.UI.Routing.MemoryHistory.MemoryHistory(string! initialPath = "/") -> void
+NetWasm.UI.Routing.MemoryHistory.Navigate(string! path, bool replace) -> void
+NetWasm.UI.Routing.MemoryHistory.Path.get -> string!
+NetWasm.UI.Routing.Route
+NetWasm.UI.Routing.Route.Pattern.get -> NetWasm.UI.Routing.RoutePattern!
+NetWasm.UI.Routing.Route.Render.get -> System.Func<NetWasm.UI.Routing.RouteParams!, NetWasm.UI.Node!>!
+NetWasm.UI.Routing.Route.Route(string! pattern, System.Func<NetWasm.UI.Routing.RouteParams!, NetWasm.UI.Node!>! render) -> void
+NetWasm.UI.Routing.RouteParams
+NetWasm.UI.Routing.RouteParams.Count.get -> int
+NetWasm.UI.Routing.RouteParams.Get(string! name) -> string!
+NetWasm.UI.Routing.RouteParams.GetInt(string! name, int fallback = 0) -> int
+NetWasm.UI.Routing.RouteParams.Query.get -> string!
+NetWasm.UI.Routing.RouteParams.SameAs(NetWasm.UI.Routing.RouteParams! other) -> bool
+NetWasm.UI.Routing.RouteParams.this[string! name].get -> string?
+NetWasm.UI.Routing.RoutePattern
+NetWasm.UI.Routing.RoutePattern.IsPrefix.get -> bool
+NetWasm.UI.Routing.RoutePattern.Pattern.get -> string!
+NetWasm.UI.Routing.RoutePattern.RoutePattern(string! pattern) -> void
+NetWasm.UI.Routing.RoutePattern.TryMatch(string! path, out NetWasm.UI.Routing.RouteParams! result, out string! rest) -> bool
+NetWasm.UI.Routing.RoutePattern.TryMatch(string! path, out NetWasm.UI.Routing.RouteParams! result) -> bool
+NetWasm.UI.Routing.Router
+NetWasm.UI.Routing.Router.BasePath.get -> string!
+NetWasm.UI.Routing.Router.Href(string! appPath) -> string!
+NetWasm.UI.Routing.Router.IsActive(string! href, bool exact = false) -> bool
+NetWasm.UI.Routing.Router.Navigate(string! to, bool replace = false) -> void
+NetWasm.UI.Routing.Router.Path.get -> NetWasm.UI.Reactive.IReadOnlySignal<string!>!
+NetWasm.UI.Routing.Router.PathName.get -> string!
+NetWasm.UI.Routing.Routes
+NetWasm.UI.Routing.Routes.Routes(System.Collections.Generic.IReadOnlyList<NetWasm.UI.Routing.Route!>! routes, System.Func<NetWasm.UI.Node!>? notFound = null) -> void
+NetWasm.UI.Routing.Url
+NetWasm.UI.Show
+NetWasm.UI.Show.Show(System.Func<bool>! condition, System.Func<NetWasm.UI.Node!>! render, System.Func<NetWasm.UI.Node!>? fallback = null) -> void
+NetWasm.UI.Slot
+NetWasm.UI.Slot.Slot(System.Func<NetWasm.UI.Content[]!>! build) -> void
+NetWasm.UI.Slot.Slot(System.Func<NetWasm.UI.Content>! build) -> void
+NetWasm.UI.Suspense
+NetWasm.UI.Suspense.Suspense(System.Func<NetWasm.UI.Node!>! content, System.Func<NetWasm.UI.Node!>! fallback) -> void
+NetWasm.UI.Template
+NetWasm.UI.Template.Clone() -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.Template.HoleCount.get -> int
+NetWasm.UI.Template.Template(string! html) -> void
+NetWasm.UI.TemplateInstance
+NetWasm.UI.TemplateInstance.Dispose() -> void
+NetWasm.UI.TemplateInstance.Element(int hole) -> NetWasm.UI.Element!
+NetWasm.UI.TemplateInstance.Ref(int hole, out NetWasm.UI.Element! element) -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.TemplateInstance.Root.get -> NetWasm.UI.Element!
+NetWasm.UI.TemplateInstance.Text(int hole, string! text) -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.TemplateInstance.Text(int hole, System.Func<string!>! text) -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.TemplateInstance.Text<T>(int hole, System.Func<T>! value) -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.TemplateInstance.With(int hole, params NetWasm.UI.Content[]! content) -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.TemplateRuntime
+NetWasm.UI.TextNode
+NetWasm.UI.TextNode.TextNode(string! text) -> void
+NetWasm.UI.TextNode.TextNode(System.Func<string!>! text) -> void
+override NetWasm.UI.Forms.Field<T>.Dirty.get -> bool
+override NetWasm.UI.Forms.Field<T>.Error.get -> string?
+override NetWasm.UI.Forms.Field<T>.Id.get -> string!
+override NetWasm.UI.Forms.Field<T>.Id.set -> void
+override NetWasm.UI.Forms.Field<T>.MarkTouched() -> void
+override NetWasm.UI.Forms.Field<T>.Reset() -> void
+override NetWasm.UI.Forms.Field<T>.SetError(string? message) -> void
+override NetWasm.UI.Forms.Field<T>.ToString() -> string!
+override NetWasm.UI.Forms.Field<T>.Touched.get -> bool
+override NetWasm.UI.Prop<T>.ToString() -> string!
+override NetWasm.UI.Reactive.Computed<T>.ToString() -> string!
+override NetWasm.UI.Reactive.Context<T>.ToString() -> string!
+override NetWasm.UI.Reactive.Effect.Dispose() -> void
+override NetWasm.UI.Reactive.Resource<T>.ToString() -> string!
+override NetWasm.UI.Reactive.Selector<TKey>.Dispose() -> void
+override NetWasm.UI.Reactive.Signal<T>.ToString() -> string!
+static NetWasm.UI.App.Mount(NetWasm.UI.Component! root, string! selector) -> void
+static NetWasm.UI.App.OnError.get -> System.Action<System.Exception!>?
+static NetWasm.UI.App.OnError.set -> void
+static NetWasm.UI.App.Unmount() -> void
+static NetWasm.UI.Attr.BoolProperty(string! name, System.Func<bool>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Attr.Dynamic(string! name, System.Func<string?>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Attr.Property(string! name, System.Func<string!>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Attr.Static(string! name, string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Attr.Toggle(string! name, System.Func<bool>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Content.implicit operator NetWasm.UI.Content(NetWasm.UI.Attr! attr) -> NetWasm.UI.Content
+static NetWasm.UI.Content.implicit operator NetWasm.UI.Content(NetWasm.UI.Component! component) -> NetWasm.UI.Content
+static NetWasm.UI.Content.implicit operator NetWasm.UI.Content(NetWasm.UI.Fragment? fragment) -> NetWasm.UI.Content
+static NetWasm.UI.Content.implicit operator NetWasm.UI.Content(NetWasm.UI.Listener! listener) -> NetWasm.UI.Content
+static NetWasm.UI.Content.implicit operator NetWasm.UI.Content(NetWasm.UI.Node! node) -> NetWasm.UI.Content
+static NetWasm.UI.Content.implicit operator NetWasm.UI.Content(string! text) -> NetWasm.UI.Content
+static NetWasm.UI.Content.Of(NetWasm.UI.IContent! content) -> NetWasm.UI.Content
+static NetWasm.UI.Dom.Renderer.Dispatch(int handlerId, byte[]! payload) -> void
+static NetWasm.UI.Dom.Renderer.Dispatch(int handlerId, NetWasm.UI.DomEvent e) -> void
+static NetWasm.UI.Dom.Renderer.Flush() -> void
+static NetWasm.UI.Dom.Renderer.Initialize(NetWasm.UI.Dom.IDomHost! domHost) -> void
+static NetWasm.UI.Dom.Renderer.IsInitialized.get -> bool
+static NetWasm.UI.Dom.Renderer.Reset() -> void
+static NetWasm.UI.DomEvent.Decode(string! type, byte[]! payload) -> NetWasm.UI.DomEvent
+static NetWasm.UI.Forms.Validators.Digits(string! message = "Use digits only.") -> NetWasm.UI.Forms.Validator<string!>!
+static NetWasm.UI.Forms.Validators.Email(string! message = "Enter a valid e-mail address.") -> NetWasm.UI.Forms.Validator<string!>!
+static NetWasm.UI.Forms.Validators.MaxLength(int length, string? message = null) -> NetWasm.UI.Forms.Validator<string!>!
+static NetWasm.UI.Forms.Validators.MinLength(int length, string? message = null) -> NetWasm.UI.Forms.Validator<string!>!
+static NetWasm.UI.Forms.Validators.Must<T>(System.Func<T, bool>! predicate, string! message) -> NetWasm.UI.Forms.Validator<T>!
+static NetWasm.UI.Forms.Validators.MustBeChecked(string! message = "This box must be checked.") -> NetWasm.UI.Forms.Validator<bool>!
+static NetWasm.UI.Forms.Validators.Required(string! message = "This field is required.") -> NetWasm.UI.Forms.Validator<string!>!
+static NetWasm.UI.Html.A(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Alt(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Attr(string! name, string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Attr(string! name, System.Func<string?>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Autofocus() -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Bind(NetWasm.UI.Forms.Field<bool>! field) -> NetWasm.UI.Content[]!
+static NetWasm.UI.Html.Bind(NetWasm.UI.Forms.Field<string!>! field) -> NetWasm.UI.Content[]!
+static NetWasm.UI.Html.Bind(NetWasm.UI.Reactive.Signal<bool>! signal) -> NetWasm.UI.Content[]!
+static NetWasm.UI.Html.Bind(NetWasm.UI.Reactive.Signal<string!>! signal) -> NetWasm.UI.Content[]!
+static NetWasm.UI.Html.Br() -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Button(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Checked(System.Func<bool>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Class(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Class(System.Func<string?>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Code(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Disabled(bool value = true) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Disabled(System.Func<bool>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Div(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Each<T, TKey>(NetWasm.UI.Reactive.IReadOnlySignal<System.Collections.Generic.IReadOnlyList<T>!>! items, System.Func<T, TKey>! key, System.Func<T, NetWasm.UI.Node!>! render) -> NetWasm.UI.For<T, TKey>!
+static NetWasm.UI.Html.Each<T, TKey>(System.Func<System.Collections.Generic.IReadOnlyList<T>!>! items, System.Func<T, TKey>! key, System.Func<T, NetWasm.UI.Node!>! render) -> NetWasm.UI.For<T, TKey>!
+static NetWasm.UI.Html.El(string! tag, params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Em(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.ErrorBoundary(System.Func<NetWasm.UI.Node!>! content, System.Func<NetWasm.UI.BoundaryError!, NetWasm.UI.Node!>! fallback) -> NetWasm.UI.ErrorBoundary!
+static NetWasm.UI.Html.FieldError(NetWasm.UI.Forms.FormField! field) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Footer(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Form(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.H1(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.H2(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.H3(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Header(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Hr() -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Href(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Id(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Img(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Input(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Label(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Li(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Link(string! href, params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Main(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Nav(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.NavLink(string! href, string! activeClass, params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Ol(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.On(string! eventName, System.Action! handler, NetWasm.UI.Dom.ListenerFlags flags = NetWasm.UI.Dom.ListenerFlags.None) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.On(string! eventName, System.Action<NetWasm.UI.DomEvent>! handler, NetWasm.UI.Dom.ListenerFlags flags = NetWasm.UI.Dom.ListenerFlags.None) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.OnBlur(System.Action<NetWasm.UI.DomEvent>! handler) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.OnChange(System.Action<NetWasm.UI.DomEvent>! handler) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.OnCleanup(System.Action! cleanup) -> void
+static NetWasm.UI.Html.OnClick(System.Action! handler) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.OnClick(System.Action<NetWasm.UI.DomEvent>! handler) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.OnDblClick(System.Action<NetWasm.UI.DomEvent>! handler) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.OnInput(System.Action<NetWasm.UI.DomEvent>! handler) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.OnKeyDown(System.Action<NetWasm.UI.DomEvent>! handler) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.OnMount(System.Action! callback) -> void
+static NetWasm.UI.Html.OnSubmit(System.Action<NetWasm.UI.DomEvent>! handler) -> NetWasm.UI.Listener!
+static NetWasm.UI.Html.Option(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.P(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Placeholder(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Pre(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Provide<T>(NetWasm.UI.Reactive.Context<T>! context, T value, System.Func<NetWasm.UI.Node!>! render) -> NetWasm.UI.Node!
+static NetWasm.UI.Html.Provide<T>(NetWasm.UI.Reactive.Context<T>! context, T value) -> void
+static NetWasm.UI.Html.Route(string! pattern, System.Func<NetWasm.UI.Node!>! render) -> NetWasm.UI.Routing.Route!
+static NetWasm.UI.Html.Route(string! pattern, System.Func<NetWasm.UI.Routing.RouteParams!, NetWasm.UI.Node!>! render) -> NetWasm.UI.Routing.Route!
+static NetWasm.UI.Html.Routes(params NetWasm.UI.Routing.Route![]! routes) -> NetWasm.UI.Routing.Routes!
+static NetWasm.UI.Html.Routes(System.Func<NetWasm.UI.Node!>? notFound, params NetWasm.UI.Routing.Route![]! routes) -> NetWasm.UI.Routing.Routes!
+static NetWasm.UI.Html.Section(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Select(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Small(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Span(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Spread(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Content
+static NetWasm.UI.Html.Src(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Strong(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Style(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Style(System.Func<string?>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Suspense(System.Func<NetWasm.UI.Node!>! content, System.Func<NetWasm.UI.Node!>! fallback) -> NetWasm.UI.Suspense!
+static NetWasm.UI.Html.Table(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Tbody(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Td(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Text(string! text) -> NetWasm.UI.TextNode!
+static NetWasm.UI.Html.Text(System.Func<string!>! text) -> NetWasm.UI.TextNode!
+static NetWasm.UI.Html.Text<T>(NetWasm.UI.Reactive.IReadOnlySignal<T>! signal) -> NetWasm.UI.TextNode!
+static NetWasm.UI.Html.Text<T>(System.Func<T>! value) -> NetWasm.UI.TextNode!
+static NetWasm.UI.Html.Textarea(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Th(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Thead(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Title(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Tr(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Type(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Ul(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Use<T>(NetWasm.UI.Reactive.Context<T>! context) -> T
+static NetWasm.UI.Html.Value(string! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.Value(System.Func<string!>! value) -> NetWasm.UI.Attr!
+static NetWasm.UI.Html.When(System.Func<bool>! condition, System.Func<NetWasm.UI.Node!>! render, System.Func<NetWasm.UI.Node!>? otherwise = null) -> NetWasm.UI.Show!
+static NetWasm.UI.Prop<T>.implicit operator NetWasm.UI.Prop<T>(NetWasm.UI.Reactive.Computed<T>! computed) -> NetWasm.UI.Prop<T>
+static NetWasm.UI.Prop<T>.implicit operator NetWasm.UI.Prop<T>(NetWasm.UI.Reactive.Signal<T>! signal) -> NetWasm.UI.Prop<T>
+static NetWasm.UI.Prop<T>.implicit operator NetWasm.UI.Prop<T>(T value) -> NetWasm.UI.Prop<T>
+static NetWasm.UI.Prop<T>.implicit operator T(NetWasm.UI.Prop<T> prop) -> T
+static NetWasm.UI.Reactive.Lifecycle.OnCleanup(System.Action! cleanup) -> void
+static NetWasm.UI.Reactive.Lifecycle.OnMount(System.Action! callback) -> void
+static NetWasm.UI.Reactive.Resource.Create<T>(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task<T>!>! fetcher) -> NetWasm.UI.Reactive.Resource<T>!
+static NetWasm.UI.Reactive.Resource.Create<TSource, T>(System.Func<TSource?>! source, System.Func<TSource, System.Threading.CancellationToken, System.Threading.Tasks.Task<T>!>! fetcher) -> NetWasm.UI.Reactive.Resource<T>!
+static NetWasm.UI.Reactive.Scheduler.Batch(System.Action! action) -> void
+static NetWasm.UI.Reactive.Scheduler.Flush() -> void
+static NetWasm.UI.Reactive.Scheduler.Flushed -> System.Action?
+static NetWasm.UI.Reactive.Scheduler.InBatch.get -> bool
+static NetWasm.UI.Routing.Router.Current.get -> NetWasm.UI.Routing.Router?
+static NetWasm.UI.Routing.Router.Install(NetWasm.UI.Routing.IHistory! history, string? basePath = null) -> NetWasm.UI.Routing.Router!
+static NetWasm.UI.Routing.Router.Reset() -> void
+static NetWasm.UI.Routing.Url.Decode(string! value) -> string!
+static NetWasm.UI.Routing.Url.Encode(string! value) -> string!
+static NetWasm.UI.TemplateRuntime.Chain(System.Func<int>! selector, params System.Func<NetWasm.UI.Node!>![]! branches) -> NetWasm.UI.Content
+static NetWasm.UI.TemplateRuntime.Each<T, TKey>(System.Func<NetWasm.UI.Reactive.IReadOnlySignal<System.Collections.Generic.IReadOnlyList<T>!>!>! items, System.Func<T, TKey>! key, System.Func<T, NetWasm.UI.Node!>! render) -> NetWasm.UI.For<T, TKey>!
+static NetWasm.UI.TemplateRuntime.Each<T, TKey>(System.Func<System.Collections.Generic.IReadOnlyList<T>!>! items, System.Func<T, TKey>! key, System.Func<T, NetWasm.UI.Node!>! render) -> NetWasm.UI.For<T, TKey>!
+static NetWasm.UI.TemplateRuntime.Each<T>(System.Func<NetWasm.UI.Reactive.IReadOnlySignal<System.Collections.Generic.IReadOnlyList<T>!>!>! items, System.Func<T, NetWasm.UI.Node!>! render) -> NetWasm.UI.For<T, T>!
+static NetWasm.UI.TemplateRuntime.Each<T>(System.Func<System.Collections.Generic.IReadOnlyList<T>!>! items, System.Func<T, NetWasm.UI.Node!>! render) -> NetWasm.UI.For<T, T>!
+static NetWasm.UI.TemplateRuntime.Str<T>(T value) -> string?
+static readonly NetWasm.UI.Routing.RouteParams.Empty -> NetWasm.UI.Routing.RouteParams!
+virtual NetWasm.UI.Forms.Validator<T>.Invoke(T value) -> string?
+virtual NetWasm.UI.Node.Dispose() -> void
+virtual NetWasm.UI.Reactive.Computation.Dispose() -> void

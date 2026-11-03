@@ -1,0 +1,9 @@
+@* A page written as a template. The generator turns this file into the HomePage component. *@
+<section>
+    <h1>Hello, NetWasm.UI!</h1>
+    <p>This app is C# compiled to a small WebAssembly module by NetWasm.</p>
+    <ul>
+        <li>Edit <code>Pages/HomePage.nwui</code> or <code>App.cs</code> and save: the dev server rebuilds and reloads.</li>
+        <li>State lives in signals; only the DOM that reads a signal updates.</li>
+    </ul>
+</section>

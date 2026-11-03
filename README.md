@@ -5,13 +5,44 @@ WebAssembly with [NetWasm](https://www.netwasm.com). Inspired by Solid and Svelt
 Blazor: components build their DOM once, fine-grained signals patch exactly the nodes that
 changed, and every state change crosses the Wasm→JS boundary **at most once**.
 
-> **Status: proof of concept.** The core works end-to-end in the browser (see
-> `samples/Counter`), but the API will change and there are no NuGet packages yet.
+> **Status: 0.1, an early but usable release.** The packages are on NuGet and the framework is
+> tested in Chromium, Firefox and WebKit. The public API may still change in 0.x releases; every
+> change is listed in the [CHANGELOG](CHANGELOG.md). See
+> [Compatibility and versioning](docs/compatibility.md).
+
+## Get started in 30 seconds
+
+You need the [.NET SDK 10.0.3xx](https://dotnet.microsoft.com/download).
+
+```shell
+dotnet new install NetWasm.UI.Templates
+dotnet new netwasm-ui -o MyApp
+cd MyApp
+dotnet nwui-dev            # → http://localhost:8765, rebuilds and reloads on save
+```
+
+The template brings:
+
+- a router,
+- a C# component,
+- two `.nwui` pages,
+- CSS,
+- the `nwui-dev` dev server, as a local .NET tool.
+
+Read [Getting started](docs/getting-started.md) next.
+
+| Package | What it is |
+|---|---|
+| `NetWasm.UI.Browser` | The package an app references: the browser host and the `nwui.dom` module. It brings in `NetWasm.UI`. |
+| `NetWasm.UI` | The core: signals, components, router, forms and the `.nwui` template compiler. |
+| `NetWasm.UI.Templates` | `dotnet new netwasm-ui`. |
+| `NetWasm.UI.DevServer` | `dotnet nwui-dev`: publishes, serves (Brotli, SPA fallback) and live-reloads. |
+| VS Code: *NetWasm.UI templates (.nwui)* | Syntax highlighting for `.nwui`. |
 
 ## Quick look
 
-Write components as `.nwui` templates (HTML + Razor-style `@`), compiled at build time by a
-source generator:
+You write components as `.nwui` templates (HTML with Razor-style `@`). A source generator
+compiles them at build time:
 
 ```razor
 @* CounterView.nwui → public partial class CounterView : Component *@
@@ -33,7 +64,7 @@ source generator:
 }
 ```
 
-…or directly in C#, which is what the generator emits:
+You can also write components directly in C#, which is what the generator emits:
 
 ```csharp
 public sealed class CounterView : Component
@@ -56,30 +87,55 @@ public sealed class CounterView : Component
 
 ## Size and speed
 
-- The whole demo app (counter, todos, router, nested components) is **140 KB** with Brotli;
-  about 40 % of that is NetWasm's JS host.
-- In a [js-framework-benchmark-style comparison](docs/benchmarks.md) it is level with or faster
-  than React on most cases, 1.1–1.8× SolidJS, and 2–10× faster than Blazor WebAssembly with a
-  ~12× smaller download and ~7× faster startup.
+- **Size:** the whole demo app (counter, todos, router, forms, nested components) is about
+  **150 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
+  past its [size budget](size-budget.json).
+- **Speed:** in a [js-framework-benchmark-style comparison](docs/benchmarks.md) it is level with
+  or faster than React on most cases and 1.1–1.8× SolidJS. Against Blazor WebAssembly it is
+  4–20× faster, with a ~12× smaller download and ~8× faster startup.
 
-## Try it
+## Requirements
 
-Prerequisite: .NET SDK 10.0.3xx. The NetWasm SDK is resolved from `global.json`.
+| | |
+|---|---|
+| .NET SDK | 10.0.3xx. The NetWasm SDK is resolved from `global.json`. |
+| NetWasm.Sdk | 0.10.7, target framework `netwasm0.1` |
+| Browsers | Chrome/Edge 137+, Firefox 131+, Safari 18.4+ (needed for Wasm exception handling with `exnref`) |
+
+**Licensing.** NetWasm.UI is MIT. The NetWasm compiler and tools use the
+[NetWasm Community License](https://github.com/zion-sati/NetWasm):
+
+- It is free for individuals, open source, education, and organisations with fewer than 250
+  employees and under USD 10 M in revenue.
+- Larger organisations need a sponsorship.
+- NetWasm's CoreLib and runtime are MIT, and the apps you build can use any license.
+
+Check the current terms before you adopt it.
+
+## Try the samples
+
+From a clone of this repository:
 
 ```powershell
-dotnet run --project tools/DevServer -- samples/Counter
-# → publishes, serves http://localhost:8765/ and rebuilds + reloads the browser on save
+dotnet run --project tools/DevServer -- samples/Counter   # counter, todos, routing, forms, components
+dotnet run --project tools/DevServer -- samples/Fetch     # HttpClient + System.Text.Json with Suspense
+dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one page
 ```
 
 ## Documentation
 
-- [Getting started](docs/getting-started.md): a new app from scratch and the dev server
+- [Getting started](docs/getting-started.md): the template, the dev server and a first component
 - [Components and the C# API](docs/components.md)
 - [Templates (`.nwui`)](docs/templates.md)
 - [Reactivity](docs/reactivity.md): signals, batching, context, lifecycle
+- [Async data and Suspense](docs/async.md): `Resource<T>`, `Suspense`, `HttpClient`
+- [Forms and validation](docs/forms.md)
+- [Routing](docs/routing.md): parameters, nested routes, base path
 - [Error handling](docs/error-handling.md): `ErrorBoundary` and `App.OnError`
-- [Routing](docs/routing.md)
+- [Embedding and several apps on one page](docs/embedding.md)
 - [Publishing and size](docs/deployment.md)
+- [Security](docs/security.md): Content Security Policy, Trusted Types, XSS
+- [Compatibility and versioning](docs/compatibility.md)
 - [Architecture](docs/architecture.md)
 - [Benchmarks](docs/benchmarks.md)
 - [Troubleshooting and known limitations](docs/troubleshooting.md)
@@ -88,26 +144,35 @@ dotnet run --project tools/DevServer -- samples/Counter
 
 | Path                         | What                                                                 |
 |------------------------------|----------------------------------------------------------------------|
-| `src/NetWasm.UI`             | Core: reactivity, binary renderer, component/builder API, router. Targets `netwasm0.1` and `net10.0` (for tests). |
+| `src/NetWasm.UI`             | Core: reactivity, binary renderer, component/builder API, router, forms. Targets `netwasm0.1`, plus `net10.0` for tests. |
 | `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings and the `dom.mjs` decoder. `netwasm0.1` only. |
-| `src/NetWasm.UI.Generator`   | Roslyn source generator: `*.nwui` templates → `Component` partial classes. |
-| `samples/Counter`            | Demo app: counter, todos, routing and `/components` (nested components, `.nwui` vs C#). |
+| `src/NetWasm.UI.Generator`   | Roslyn source generator: `*.nwui` templates → `Component` partial classes. Ships inside the `NetWasm.UI` package. |
+| `samples/Counter`            | Demo app: counter, todos, routing, nested routes, forms and `/components`. |
+| `samples/Fetch`              | `HttpClient` + `System.Text.Json` with `Resource` and `Suspense`.    |
+| `samples/Widgets`            | Several independent apps (Wasm instances) on one page.              |
+| `templates/`                 | The `dotnet new netwasm-ui` template package.                        |
 | `tests/NetWasm.UI.Tests`     | xunit tests against an in-memory `FakeDomHost`.                      |
-| `tests/NetWasm.UI.E2E`       | Playwright browser tests against `samples/Counter`.                  |
-| `tools/DevServer`            | Kestrel dev server with Brotli, live reload and an error overlay.   |
+| `tests/NetWasm.UI.E2E`       | Playwright browser tests against the samples (Chromium, Firefox, WebKit). |
+| `tools/DevServer`            | `nwui-dev`: Kestrel dev server with Brotli, live reload and an error overlay. |
+| `tools/size-report`          | Brotli/gzip size report and the budget check CI runs.                |
 | `tools/vscode-nwui`          | VS Code extension: `.nwui` syntax highlighting.                      |
 | `benchmarks/`                | Comparison with SolidJS, React and Blazor WebAssembly.               |
 
 ## Known limitations
 
-No `System.Linq`, reflection or `async` in `netwasm0.1`; one app per Wasm module; no
-base-path routing or SSR yet; no hot reload (live reload in 15–20 s); `.nwui` has
-syntax highlighting but no IntelliSense. See [Troubleshooting](docs/troubleshooting.md#known-limitations).
+- No reflection in `netwasm0.1`.
+- No `System.Linq` in the core library. Apps may use the NetWasm LINQ package.
+- One app per Wasm module.
+- No server-side rendering (SSR) or hydration.
+- No hot reload; live reload takes 5–20 s.
+- `.nwui` has syntax highlighting but no IntelliSense.
+
+See [Troubleshooting](docs/troubleshooting.md#known-limitations).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for building, tests, the dev server internals and the
-roadmap, and [CHANGELOG.md](CHANGELOG.md) for what has changed.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for building, tests, the public API workflow and the
+roadmap. See [CHANGELOG.md](CHANGELOG.md) for what has changed.
 
 ## License
 

@@ -1,0 +1,93 @@
+name: Release
+
+# Push a tag such as v0.1.0 (or v0.2.0-preview.1) to publish:
+#   NuGet:   NetWasm.UI, NetWasm.UI.Browser, NetWasm.UI.DevServer, NetWasm.UI.Templates
+#   VS Code: the .nwui extension (version from tools/vscode-nwui/package.json)
+#   GitHub:  a release with the packages and the .vsix attached
+# Secrets: NUGET_API_KEY (nuget.org API key with push rights for NetWasm.UI*) and VSCE_PAT
+# (Azure DevOps token for the VS Code Marketplace publisher). A missing secret skips that step.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          # The template pins the package and tool versions; they must match the release.
+          grep -q "Include=\"NetWasm.UI.Browser\" Version=\"$VERSION\"" templates/NetWasm.UI.Templates/templates/netwasm-ui/NetWasmApp.csproj \
+            || { echo "::error::NetWasmApp.csproj does not reference NetWasm.UI.Browser $VERSION"; exit 1; }
+          grep -q "\"version\": \"$VERSION\"" templates/NetWasm.UI.Templates/templates/netwasm-ui/.config/dotnet-tools.json \
+            || { echo "::error::dotnet-tools.json does not pin netwasm.ui.devserver $VERSION"; exit 1; }
+          grep -q "## \[$VERSION\]" CHANGELOG.md \
+            || { echo "::error::CHANGELOG.md has no '## [$VERSION]' section"; exit 1; }
+
+      - name: Unit tests
+        run: dotnet test tests/NetWasm.UI.Tests -c Release
+
+      - name: Pack
+        run: |
+          for p in src/NetWasm.UI src/NetWasm.UI.Browser tools/DevServer templates/NetWasm.UI.Templates; do
+            dotnet pack "$p" -c Release -p:Version=$VERSION -o "$RUNNER_TEMP/feed"
+          done
+          ls -l "$RUNNER_TEMP/feed"
+
+      - name: Template smoke test
+        env:
+          NUGET_PACKAGES: ${{ runner.temp }}/nuget-template
+        run: |
+          dotnet new install "$RUNNER_TEMP/feed/NetWasm.UI.Templates.$VERSION.nupkg"
+          cd "$RUNNER_TEMP"
+          dotnet new netwasm-ui -o SmokeApp --skipRestore
+          cd SmokeApp
+          dotnet new nugetconfig
+          dotnet nuget add source "$RUNNER_TEMP/feed" -n local --configfile nuget.config
+          dotnet tool restore
+          dotnet publish -c Release
+          test -f bin/Release/netwasm0.1/publish/browser/SmokeApp.wasm
+
+      - name: VS Code extension
+        working-directory: tools/vscode-nwui
+        run: npm ci && npm test && npm run package
+
+      - name: Publish to NuGet
+        if: env.NUGET_API_KEY != ''
+        run: |
+          dotnet nuget push "$RUNNER_TEMP/feed/*.nupkg" --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Publish to the VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        working-directory: tools/vscode-nwui
+        run: npx vsce publish --packagePath nwui.vsix --skip-duplicate
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRERELEASE=""
+          case "$VERSION" in *-*) PRERELEASE="--prerelease";; esac
+          # The CHANGELOG section for this version is the release text.
+          awk -v v="## [$VERSION]" 'index($0, v) == 1 {on=1; next} on && /^## \[/ {exit} on' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          gh release create "$GITHUB_REF_NAME" "$RUNNER_TEMP"/feed/*.nupkg tools/vscode-nwui/nwui.vsix \
+            --title "NetWasm.UI $VERSION" --notes-file "$RUNNER_TEMP/notes.md" $PRERELEASE

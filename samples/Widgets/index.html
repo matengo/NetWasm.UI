@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>NetWasm.UI – Widgets</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+    .slot { border: 1px solid #ccd; border-radius: .5rem; padding: .75rem; margin: .5rem 0; }
+    .widget { display: flex; gap: 1rem; align-items: center; }
+    .count { font-weight: bold; min-width: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Two instances of one Wasm module</h1>
+  <div class="slot" id="first"></div>
+  <div class="slot" id="second"></div>
+  <button id="close-second">Close second</button>
+  <script type="module" src="/app.mjs"></script>
+</body>
+</html>

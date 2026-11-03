@@ -62,6 +62,9 @@ public sealed class Attr : IContent
             var id = e.Id;
             _ = new Effect(() => Renderer.SetBoolProperty(id, name, value()));
         });
+
+    /// <summary>Runs <paramref name="apply"/> with the element when the content is applied.</summary>
+    internal static Attr Custom(Action<Element> apply) => new(apply);
 }
 
 /// <summary>An event listener. Registered with the owning scope so it is removed when the subtree goes away.</summary>

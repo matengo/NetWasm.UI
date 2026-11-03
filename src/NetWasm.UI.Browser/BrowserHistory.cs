@@ -7,7 +7,7 @@ namespace NetWasm.UI.Browser;
 /// <summary><see cref="IHistory"/> over the browser History API via <c>dom.mjs</c>.</summary>
 public sealed class BrowserHistory : IHistory
 {
-    private const string Module = "netwasm.ui.dom";
+    private const string Module = "nwui.dom";
 
     [JSImport("currentPath", Module)]
     private static extern string CurrentPathJs();
@@ -17,6 +17,12 @@ public sealed class BrowserHistory : IHistory
 
     [JSImport("onPopState", Module)]
     private static extern JSSubscription OnPopStateJs(Action<string> handler);
+
+    [JSImport("basePath", Module)]
+    private static extern string BasePathJs();
+
+    /// <summary>The base path configured on the DOM host (<c>createDomHost({ basePath })</c>) or taken from <c>&lt;base href&gt;</c>; empty for the site root.</summary>
+    public static string DocumentBasePath() => BasePathJs();
 
     private static BrowserHistory? instance;
     private JSSubscription? subscription;

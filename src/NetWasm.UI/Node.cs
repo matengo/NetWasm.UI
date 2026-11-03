@@ -59,7 +59,7 @@ public sealed class TextNode : Node
     }
 }
 
-/// <summary>An invisible marker used by <see cref="Show"/> and <see cref="For{T}"/> to know where to insert.</summary>
+/// <summary>An invisible marker used by <see cref="Show"/> and <see cref="For{T, TKey}"/> to know where to insert.</summary>
 public sealed class Anchor : Node
 {
     public Anchor()

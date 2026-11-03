@@ -1,0 +1,30 @@
+<Project Sdk="NetWasm.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <OutputType>JsModule</OutputType>
+    <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
+    <RootNamespace>Fetch</RootNamespace>
+    <!-- The HTTP/JSON ports make the default Oz wasm-opt pass very slow; keep Debug builds fast. -->
+    <NetWasmOptimization Condition="'$(NetWasmOptimization)' == '' and '$(Configuration)' == 'Debug'">O1</NetWasmOptimization>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- NetWasm ports of HttpClient (fetch-based) and System.Text.Json (source generation only). -->
+    <PackageReference Include="NetWasm.System.Net.Http" Version="0.10.7" />
+    <PackageReference Include="NetWasm.System.Text.Json" Version="0.10.7" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Browser\NetWasm.UI.Browser.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                      SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="**\*.nwui" Exclude="bin\**;obj\**" />
+    <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
+  </ItemGroup>
+  <ItemGroup>
+    <NetWasmJavaScriptModule Include="..\..\src\NetWasm.UI.Browser\dom.mjs" Module="nwui.dom" />
+    <Content Include="index.html;app.mjs;api\**\*.json" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

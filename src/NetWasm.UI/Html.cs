@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using NetWasm.UI.Dom;
+using NetWasm.UI.Forms;
 using NetWasm.UI.Reactive;
 
 namespace NetWasm.UI;
@@ -125,6 +126,52 @@ public static class Html
         OnChange(e => signal.Value = e.Checked),
     };
 
+    /// <summary>
+    /// Two-way binds a text input to a form field: sets <c>id</c>, marks the field touched on blur, and sets
+    /// <c>aria-invalid</c> and <c>aria-describedby</c> (pointing at <see cref="FieldError"/>) while an error shows.
+    /// </summary>
+    public static Content[] Bind(Field<string> field) => new Content[]
+    {
+        Id(field.Id),
+        Value(() => field.Value ?? string.Empty),
+        OnInput(e => field.Value = e.Value),
+        OnBlur(_ => field.MarkTouched()),
+        FieldAria(field),
+    };
+
+    /// <summary>Two-way binds a checkbox to a form field, with the same accessibility attributes as the text overload.</summary>
+    public static Content[] Bind(Field<bool> field) => new Content[]
+    {
+        Type("checkbox"),
+        Id(field.Id),
+        Checked(() => field.Value),
+        OnChange(e =>
+        {
+            field.Value = e.Checked;
+            field.MarkTouched();
+        }),
+        OnBlur(_ => field.MarkTouched()),
+        FieldAria(field),
+    };
+
+    /// <summary>
+    /// The error message element for <paramref name="field"/>: <c>&lt;span id="{ErrorId}" class="field-error"&gt;</c>,
+    /// empty until the error should show. Announced politely by screen readers.
+    /// </summary>
+    public static Element FieldError(FormField field) => new(
+        "span",
+        Id(field.ErrorId),
+        Class("field-error"),
+        Attr("aria-live", "polite"),
+        Text(() => field.ShownError));
+
+    private static Attr FieldAria(FormField field) => UI.Attr.Custom(e =>
+    {
+        field.ElementId = e.Id;
+        _ = new AttrBinding(e.Id, "aria-invalid", () => field.ShowError ? "true" : null);
+        _ = new AttrBinding(e.Id, "aria-describedby", () => field.ShowError ? field.ErrorId : null);
+    });
+
     // ---- control flow ----
 
     public static Show When(Func<bool> condition, Func<Node> render, Func<Node>? otherwise = null) =>
@@ -132,6 +179,10 @@ public static class Html
 
     /// <summary>Renders <paramref name="content"/>, or <paramref name="fallback"/> once something inside it throws.</summary>
     public static ErrorBoundary ErrorBoundary(Func<Node> content, Func<BoundaryError, Node> fallback) =>
+        new(content, fallback);
+
+    /// <summary>Renders <paramref name="fallback"/> until the resources created inside <paramref name="content"/> have loaded.</summary>
+    public static Suspense Suspense(Func<Node> content, Func<Node> fallback) =>
         new(content, fallback);
 
     public static For<T, TKey> Each<T, TKey>(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Func<T, Node> render)
@@ -166,11 +217,11 @@ public static class Html
 
     // ---- routing ----
 
-    /// <summary>An in-app link: renders <c>&lt;a href&gt;</c> and routes plain clicks through <see cref="Routing.Router.Current"/>.
+    /// <summary>An in-app link: renders <c>&lt;a href&gt;</c> (prefixed with the router's base path) and routes plain clicks through <see cref="Routing.Router.Current"/>.
     /// Modified/middle clicks fall through to the browser so "open in new tab" keeps working.</summary>
     public static Element Link(string href, params Content[] content)
     {
-        var a = new Element("a", Href(href), On("click", e =>
+        var a = new Element("a", Href(Routing.Router.Current?.Href(href) ?? href), On("click", e =>
         {
             if (e.IsPlainClick)
             {

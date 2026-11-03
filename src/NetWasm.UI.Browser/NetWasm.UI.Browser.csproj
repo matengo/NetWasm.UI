@@ -3,11 +3,13 @@
     <TargetFramework>netwasm0.1</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>NetWasm.UI.Browser</RootNamespace>
+    <Description>Browser host for NetWasm.UI: the nwui.dom JavaScript module (DOM batching, event delegation, History API) and BrowserApp.Start.</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NetWasm.UI\NetWasm.UI.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="dom.mjs" />
+    <None Include="dom.mjs" Pack="true" PackagePath="build;buildTransitive" />
+    <None Include="build\NetWasm.UI.Browser.targets" Pack="true" PackagePath="build;buildTransitive" />
   </ItemGroup>
 </Project>

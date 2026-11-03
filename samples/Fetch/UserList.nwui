@@ -1,0 +1,16 @@
+@* Its resource is created in OnInit, so the enclosing Suspense waits for it. *@
+<ul class="users">
+    @foreach (var user in users.Value ?? []) {
+        <li class="user"><button @onclick="() => Selected.Value = user.Id">@user.Name</button> <small>@user.Email</small></li>
+    }
+</ul>
+
+@code {
+    private Resource<User[]> users = null!;
+
+    public Api Api { get; set; } = null!;
+
+    public Signal<int> Selected { get; set; } = null!;
+
+    partial void OnInit() => users = Resource.Create(Api.GetUsersAsync);
+}

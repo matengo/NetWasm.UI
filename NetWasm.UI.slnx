@@ -6,11 +6,16 @@
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Counter/Counter.csproj" />
+    <Project Path="samples/Fetch/Fetch.csproj" />
+    <Project Path="samples/Widgets/Widgets.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/NetWasm.UI.Browser/NetWasm.UI.Browser.csproj" />
     <Project Path="src/NetWasm.UI.Generator/NetWasm.UI.Generator.csproj" />
     <Project Path="src/NetWasm.UI/NetWasm.UI.csproj" />
+  </Folder>
+  <Folder Name="/templates/">
+    <Project Path="templates/NetWasm.UI.Templates/NetWasm.UI.Templates.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/NetWasm.UI.E2E/NetWasm.UI.E2E.csproj" />

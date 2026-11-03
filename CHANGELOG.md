@@ -1,10 +1,79 @@
 # Changelog
 
-NetWasm.UI has no releases yet. This lists what has been built so far.
+All notable changes to NetWasm.UI. The project follows [Semantic Versioning](https://semver.org);
+in 0.x, minor releases may contain breaking changes, and they are listed here with what to do.
+See [Compatibility and versioning](docs/compatibility.md).
 
-## Unreleased
+## [Unreleased]
 
-### Core
+## [0.1.0]
+
+The first public release: NuGet packages, a `dotnet new` template and the features needed for
+real applications. It requires NetWasm.Sdk 0.10.7 and the .NET SDK 10.0.3xx.
+
+### Added
+
+- **Packages:**
+  - `NetWasm.UI` and `NetWasm.UI.Browser` on NuGet. The packages set up the source generator,
+    the `*.nwui` files and the `nwui.dom` browser module automatically.
+  - Opt-outs: `NetWasmUIEnableTemplates` and `NetWasmUIAddDomModule`.
+  - `NetWasmUIDomModulePath`, for apps that create their own DOM hosts.
+- **Template:** `NetWasm.UI.Templates` (`dotnet new netwasm-ui`): an app with a router, a C#
+  component, `.nwui` pages and the dev server as a local tool.
+- **Dev server:** `NetWasm.UI.DevServer` (`dotnet nwui-dev`), the dev server as a .NET tool.
+- **Async data:** `Resource<T>` (keyed reloads, cancellation, `Latest`, `Refetch`, `Mutate`)
+  and `Suspense` / `<Suspense>`. `samples/Fetch` shows `HttpClient` and `System.Text.Json`.
+- **Forms:**
+  - `Form`, `Field<T>` and `Validators`.
+  - `@bind` for fields sets the input's `id`, `aria-invalid` and `aria-describedby`.
+  - `FieldError`, server errors with `SetError`, and async submit with `Submitting`.
+  - Focus moves to the first invalid input.
+- **Routing:**
+  - Nested routes and layouts with prefix patterns (`/settings/*`).
+  - Base path support from `<base href>`, `BrowserApp.Start(..., basePath)` or
+    `createDomHost({ basePath })`, and `Router.Href`.
+  - A new page scrolls to the top.
+- **Embedding:**
+  - `createDomHost({ root, basePath, history })` gives every Wasm instance its own DOM host, so
+    several apps can run on one page (`samples/Widgets`).
+  - `BrowserApp.Stop()` / `App.Unmount()`.
+- **Security:**
+  - `dom.mjs` creates a Trusted Types policy named `nwui` for template HTML.
+  - A tested strict Content Security Policy in [docs/security.md](docs/security.md).
+- **Quality:**
+  - Public API baselines (`PublicAPI.*.txt`).
+  - E2E tests in Chromium, Firefox and WebKit.
+  - A size budget in CI (`size-budget.json`, `tools/size-report`).
+  - A packaging and template smoke test in CI.
+  - A tag-driven release workflow.
+- **VS Code extension:** prepared for the Marketplace (icon, metadata, `npm run package`).
+
+### Changed
+
+- NetWasm.Sdk 0.10.0 → 0.10.7. The DOM batch is passed to JavaScript without copying.
+- The `.nwui` generator adds `using System.Threading.Tasks;` and `using NetWasm.UI.Forms;` to
+  every generated file.
+
+### Breaking changes
+
+These apply if you used the projects in this repository before 0.1.0:
+
+- **Import module renamed.** The browser module is now `nwui.dom`; it was `netwasm.ui.dom`.
+  With the package, remove your own `<NetWasmJavaScriptModule … dom.mjs>` item; the package
+  adds it.
+- **`IDomHost.ApplyBatch`** takes a `ReadOnlySpan<byte>`; it took a `byte[]`.
+- **Internal APIs.** `BatchWriter` and the low-level operations on `Renderer` are now internal.
+  Use components and the `Html` API.
+- **`Router.Install`** has a new parameter: `Router.Install(history, basePath = null)`.
+- **`BrowserApp.Start`** has a new parameter: `BrowserApp.Start(root, selector, basePath = null)`.
+  Code that compiled against the old signatures needs to be recompiled.
+- **Dev server.** Run it as `dotnet nwui-dev` (from the package) or
+  `dotnet run --project tools/DevServer` (in this repository). With `--no-watch` it no longer
+  injects the live-reload script.
+
+### Before 0.1.0
+
+#### Core
 
 - Signals (`Signal<T>`, `Computed<T>`, `Effect`, `Selector<TKey>`), a batching `Scheduler` and
   `Scope` ownership.
@@ -20,7 +89,7 @@ NetWasm.UI has no releases yet. This lists what has been built so far.
   hook. Errors from builds, effects, event handlers and `OnMount` go to the nearest boundary.
   Unhandled errors are rethrown after the DOM update has been applied.
 
-### Templates
+#### Templates
 
 - `.nwui` templates compiled by a Roslyn source generator: `@expr`, attributes, events,
   `@bind`, `@ref`, `@if`/`else`, keyed `@foreach`, components, `@code`, `#line` mapping for
@@ -30,7 +99,7 @@ NetWasm.UI has no releases yet. This lists what has been built so far.
 - Reactive props: `@prop` and `Prop<T>`.
 - VS Code extension with syntax highlighting (`tools/vscode-nwui`).
 
-### Tooling
+#### Tooling
 
 - Kestrel dev server (replacing a Python server): Brotli/gzip, correct MIME types, SPA fallback,
   live reload over WebSocket, build error overlay, content-hash change detection, `O1` dev
@@ -38,13 +107,13 @@ NetWasm.UI has no releases yet. This lists what has been built so far.
 - Playwright E2E tests and GitHub Actions CI with a size report.
 - Benchmark against SolidJS, React and Blazor WebAssembly (`benchmarks/`).
 
-### Size
+#### Size
 
 - `Counter.wasm` reduced from 645 KB to 463 KB (102 → 77 KB Brotli): no interpolation with
   number holes, no `IFormattable`, a non-generic keyed-list diff, own URL encoding, no multicast
   delegates.
 
-### Performance (fixes found by the benchmark)
+#### Performance (fixes found by the benchmark)
 
 First run (Oz, script + layout) before the fixes: select row 40.8 ms, clear 119.9 ms, replace
 213.8 ms, create 10,000 rows 2369.6 ms, reactive `broad` 3509.2 ms. After: 11.3, 15.8, 106.1,
@@ -57,7 +126,7 @@ First run (Oz, script + layout) before the fixes: select row 40.8 ms, clear 119.
 - `Each` row scopes were registered with (and never removed from) the owner scope.
 - Reactive attributes emitted an op on every re-run; they now skip unchanged values.
 
-### Performance (template cloning and event delegation)
+#### Performance (template cloning and event delegation)
 
 - `Template`: static HTML with holes (`<tag $>`, `<!--$-->`, `<!--@-->`) that the browser parses
   once and clones. New ops `DefineTemplate` and `CloneTemplate`; appending to a comment inserts
@@ -70,7 +139,7 @@ First run (Oz, script + layout) before the fixes: select row 40.8 ms, clear 119.
   create 10,000 rows 1050.4 → 773.8, select 11.3 → 3.9, clear 15.8 → 12.5. The Wasm grows by
   ~5 KB raw (~1 KB Brotli) for the Counter sample.
 
-### Performance (fewer allocations per row)
+#### Performance (fewer allocations per row)
 
 - Signal/computation links keep the first link inline and only allocate an array from the second.
   A signal with one observer notifies it without a snapshot copy.

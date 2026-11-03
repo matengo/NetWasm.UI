@@ -7,15 +7,26 @@ using Microsoft.Playwright;
 namespace NetWasm.UI.E2E;
 
 /// <summary>
-/// Publishes and serves <c>samples/Counter</c> with the dev server (once per test run) and launches Chromium.
+/// Publishes and serves a sample (default <c>samples/Counter</c>) with the dev server (once per test run) and launches the browser named by <c>E2E_BROWSER</c> (default Chromium).
 /// Set <c>NETWASM_UI_E2E_URL</c> (e.g. http://localhost:8765) to test an already running server instead.
 /// </summary>
-public sealed class AppServerFixture : IAsyncLifetime
+public class AppServerFixture : IAsyncLifetime
 {
     private static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(10);
+
+    // Dev servers publish shared projects; start them one at a time to avoid concurrent builds.
+    private static readonly SemaphoreSlim StartGate = new(1, 1);
     private readonly StringBuilder log = new();
+    private readonly string sample;
     private Process? server;
     private IPlaywright? playwright;
+
+    public AppServerFixture()
+        : this("Counter")
+    {
+    }
+
+    protected AppServerFixture(string sample) => this.sample = sample;
 
     public string BaseUrl { get; private set; } = string.Empty;
 
@@ -23,21 +34,35 @@ public sealed class AppServerFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        var external = Environment.GetEnvironmentVariable("NETWASM_UI_E2E_URL");
-        BaseUrl = string.IsNullOrEmpty(external) ? await StartServerAsync() : external.TrimEnd('/');
-
-        playwright = await Playwright.CreateAsync();
+        var external = sample == "Counter" ? Environment.GetEnvironmentVariable("NETWASM_UI_E2E_URL") : null;
+        await StartGate.WaitAsync();
         try
         {
-            Browser = await playwright.Chromium.LaunchAsync(new() { Headless = Environment.GetEnvironmentVariable("HEADED") != "1" });
+            BaseUrl = string.IsNullOrEmpty(external) ? await StartServerAsync() : external.TrimEnd('/');
+        }
+        finally
+        {
+            StartGate.Release();
+        }
+
+        playwright = await Playwright.CreateAsync();
+        var browserName = BrowserName;
+        try
+        {
+            var options = new BrowserTypeLaunchOptions { Headless = Environment.GetEnvironmentVariable("HEADED") != "1" };
+            Browser = await playwright[browserName].LaunchAsync(options);
         }
         catch (PlaywrightException ex)
         {
             throw new InvalidOperationException(
-                "Chromium for Playwright is not installed. Run: pwsh tests/NetWasm.UI.E2E/bin/Debug/net10.0/playwright.ps1 install chromium",
+                $"{browserName} for Playwright is not installed. Run: pwsh tests/NetWasm.UI.E2E/bin/Debug/net10.0/playwright.ps1 install {browserName}",
                 ex);
         }
     }
+
+    /// <summary>The Playwright browser to run in: <c>E2E_BROWSER</c> = chromium (default), firefox or webkit.</summary>
+    public static string BrowserName =>
+        Environment.GetEnvironmentVariable("E2E_BROWSER") is { Length: > 0 } name ? name : "chromium";
 
     public async Task DisposeAsync()
     {
@@ -67,7 +92,7 @@ public sealed class AppServerFixture : IAsyncLifetime
             RedirectStandardError = true,
             UseShellExecute = false,
         };
-        foreach (var a in new[] { "run", "--project", Path.Combine("tools", "DevServer"), "--", Path.Combine("samples", "Counter"), "--port", port.ToString(), "--no-watch" })
+        foreach (var a in new[] { "run", "--project", Path.Combine("tools", "DevServer"), "--", Path.Combine("samples", sample), "--port", port.ToString(), "--no-watch" })
         {
             psi.ArgumentList.Add(a);
         }
@@ -138,8 +163,26 @@ public sealed class AppServerFixture : IAsyncLifetime
     }
 }
 
+/// <summary>Serves <c>samples/Widgets</c>: one Wasm module instantiated several times on one page.</summary>
+public sealed class WidgetsServerFixture : AppServerFixture
+{
+    public WidgetsServerFixture()
+        : base("Widgets")
+    {
+    }
+}
+
+/// <summary>Serves <c>samples/Fetch</c>: HttpClient + System.Text.Json with Resource and Suspense.</summary>
+public sealed class FetchServerFixture : AppServerFixture
+{
+    public FetchServerFixture()
+        : base("Fetch")
+    {
+    }
+}
+
 [CollectionDefinition(Name)]
-public sealed class AppCollection : ICollectionFixture<AppServerFixture>
+public sealed class AppCollection : ICollectionFixture<AppServerFixture>, ICollectionFixture<WidgetsServerFixture>, ICollectionFixture<FetchServerFixture>
 {
     public const string Name = "app";
 }
@@ -149,6 +192,7 @@ public sealed class AppCollection : ICollectionFixture<AppServerFixture>
 public abstract class PageTest : IAsyncLifetime
 {
     private readonly List<string> errors = new();
+    private readonly List<string> allowed = new();
     private IBrowserContext context = null!;
 
     protected PageTest(AppServerFixture app) => App = app;
@@ -164,7 +208,7 @@ public abstract class PageTest : IAsyncLifetime
         Page = await context.NewPageAsync();
         Page.Console += (_, m) =>
         {
-            if (m.Type == "error")
+            if (m.Type == "error" && !allowed.Exists(a => m.Text.Contains(a, StringComparison.Ordinal)))
             {
                 errors.Add("console: " + m.Text);
             }
@@ -186,4 +230,7 @@ public abstract class PageTest : IAsyncLifetime
     }
 
     protected ILocator Nav(string href) => Page.Locator($"nav a[href=\"{href}\"]");
+
+    /// <summary>Ignores console errors containing <paramref name="text"/> (e.g. a deliberate 404).</summary>
+    protected void AllowConsoleError(string text) => allowed.Add(text);
 }

@@ -1,0 +1,20 @@
+<Project Sdk="NetWasm.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <!-- A browser app: JavaScript calls the [JSExport] methods in Program.cs. -->
+    <OutputType>JsModule</OutputType>
+    <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
+    <RootNamespace>NetWasmApp</RootNamespace>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Brings NetWasm.UI, the .nwui template compiler and the nwui.dom browser module. -->
+    <PackageReference Include="NetWasm.UI.Browser" Version="0.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Published at the site root: wwwroot\index.html becomes /index.html. -->
+    <Content Include="wwwroot\**" CopyToPublishDirectory="PreserveNewest" Link="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
+

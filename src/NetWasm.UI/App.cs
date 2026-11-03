@@ -22,11 +22,38 @@ public static class App
             try
             {
                 var node = root.Render();
+                mounted.Add(root);
                 Renderer.Mount(node.Id, selector);
             }
             catch (System.Exception ex)
             {
                 ErrorHandling.Report(ex, null);
+            }
+        });
+    }
+
+    private static readonly System.Collections.Generic.List<Component> mounted = new();
+
+    internal static void ForgetMounted() => mounted.Clear();
+
+    /// <summary>
+    /// Removes every component mounted with <see cref="Mount"/> from the DOM and disposes their effects,
+    /// listeners and nodes. Call it before closing a Wasm instance that should leave the page clean.
+    /// </summary>
+    public static void Unmount()
+    {
+        if (mounted.Count == 0)
+        {
+            return;
+        }
+
+        Scheduler.Batch(() =>
+        {
+            var roots = mounted.ToArray();
+            mounted.Clear();
+            for (var i = roots.Length - 1; i >= 0; i--)
+            {
+                roots[i].Dispose();
             }
         });
     }

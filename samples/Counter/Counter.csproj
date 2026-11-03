@@ -18,7 +18,7 @@
     <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
   </ItemGroup>
   <ItemGroup>
-    <NetWasmJavaScriptModule Include="..\..\src\NetWasm.UI.Browser\dom.mjs" Module="netwasm.ui.dom" />
+    <NetWasmJavaScriptModule Include="..\..\src\NetWasm.UI.Browser\dom.mjs" Module="nwui.dom" />
     <Content Include="index.html;app.mjs" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

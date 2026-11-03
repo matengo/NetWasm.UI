@@ -89,7 +89,11 @@ app.Use(async (context, next) =>
         if (File.Exists(file))
         {
             var html = await File.ReadAllTextAsync(file);
-            html = InjectScript(html, "/__netwasm_ui/reload-client.js");
+            if (!options.NoWatch)
+            {
+                html = InjectScript(html, "/__netwasm_ui/reload-client.js");
+            }
+
             context.Response.ContentType = "text/html; charset=utf-8";
             context.Response.Headers.CacheControl = "no-store";
             await context.Response.WriteAsync(html);

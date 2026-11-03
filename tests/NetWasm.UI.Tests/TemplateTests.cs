@@ -161,6 +161,18 @@ public partial class TemplateTests : RendererTest
     }
 
     [Fact]
+    public void Suspense_in_template_shows_fallback_until_loaded()
+    {
+        var loader = new Loader();
+        App.Mount(loader, "#app");
+        Assert.Equal("<main><p class=\"loading\">Loading…</p><!----></main>", Dom.Html);
+
+        loader.Load.SetResult("Ada");
+
+        Assert.Equal("<main><p class=\"name\">Hello Ada</p><!----></main>", Dom.Html);
+    }
+
+    [Fact]
     public void Card_renders_child_content_and_named_slots()
     {
         App.Mount(new CardHost(), "#app");
@@ -310,6 +322,10 @@ public partial class TemplateTests : RendererTest
     [InlineData("<div><ErrorBoundary><p></p><template slot=\"Fallback\" context=\"1x\"><i></i></template></ErrorBoundary></div>", "NWUI001", "not a valid name")]
     [InlineData("<div><ErrorBoundary x=\"1\"><p></p><template slot=\"Fallback\"><i></i></template></ErrorBoundary></div>", "NWUI003", "not supported on <ErrorBoundary>")]
     [InlineData("<ErrorBoundary><p></p><template slot=\"Fallback\"><i></i></template></ErrorBoundary>", "NWUI002", "wrap it in an element")]
+    [InlineData("<div><Suspense><p></p></Suspense></div>", "NWUI002", "needs a <template slot=\"Fallback\">")]
+    [InlineData("<div><Suspense><p></p><template slot=\"Other\"><i></i></template></Suspense></div>", "NWUI002", "only takes a <template slot=\"Fallback\">")]
+    [InlineData("<div><Suspense x=\"1\"><p></p><template slot=\"Fallback\"><i></i></template></Suspense></div>", "NWUI003", "not supported on <Suspense>")]
+    [InlineData("<Suspense><p></p><template slot=\"Fallback\"><i></i></template></Suspense>", "NWUI002", "wrap it in an element")]
     [InlineData("<div>@if (x) { <a></a><b></b> }</div>", "NWUI002", "exactly one root")]
     [InlineData("<div @onclick:preventDefault></div>", "NWUI002", "without an '@onclick' handler")]
     [InlineData("@if (x) { <a></a> }", "NWUI002", "wrap it in an element")]

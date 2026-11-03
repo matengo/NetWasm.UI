@@ -22,6 +22,8 @@ public sealed class AppRoot : Component
                     NavLink("/counter", "active", "Counter"),
                     NavLink("/todos", "active", "Todos"),
                     NavLink("/components", "active", "Components"),
+                    NavLink("/signup", "active", "Sign up"),
+                    NavLink("/settings", "active", "Settings"),
                     NavLink("/greet/world", "active", "Greet"))),
             Routes(
                 NotFound,
@@ -29,6 +31,8 @@ public sealed class AppRoot : Component
                 Route("/counter", () => new CounterView().Render()),
                 Route("/todos", () => new TodoList().Render()),
                 Route("/components", () => new ComponentsPage().Render()),
+                Route("/signup", () => new SignupPage().Render()),
+                Route("/settings/*", Settings),
                 Route("/greet/{name}", Greet)));
     }
 
@@ -38,6 +42,28 @@ public sealed class AppRoot : Component
             P("This sample is a small multi-page app. Links are intercepted client-side, ",
               "ctrl/middle-click still opens a new tab, and the back button works."),
             P(Link("/todos/3", "A link to a route that does not exist"), " shows the 404 page."));
+
+    private static int settingsBuilds;
+
+    // A layout route: "/settings/*" stays mounted while the nested Routes switch on the rest of the path.
+    private static Node Settings()
+    {
+        var layoutBuild = (++settingsBuilds).ToString();
+        return Section(
+            Id("settings"),
+            Attr("data-build", layoutBuild),
+            H2("Settings"),
+            Nav(
+                Class("subnav"),
+                Link("/settings", Class(() => Router.Current!.IsActive("/settings", exact: true) ? "active" : null), "Overview"),
+                NavLink("/settings/profile", "active", "Profile"),
+                NavLink("/settings/security", "active", "Security")),
+            Routes(
+                () => P(Id("settings-page"), "Unknown setting."),
+                Route("/", () => P(Id("settings-page"), "Pick a section.")),
+                Route("/profile", () => P(Id("settings-page"), "Profile settings.")),
+                Route("/security", () => P(Id("settings-page"), "Security settings."))));
+    }
 
     private static Node Greet(RouteParams p)
     {

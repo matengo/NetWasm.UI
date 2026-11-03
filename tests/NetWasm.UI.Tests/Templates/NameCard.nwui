@@ -1,0 +1,10 @@
+@* Creates its resource in OnInit, which runs inside the enclosing Suspense. *@
+<p class="name">Hello @name.Value</p>
+
+@code {
+    private Resource<string> name = null!;
+
+    public Task<string> Source { get; set; } = Task.FromResult("nobody");
+
+    partial void OnInit() => name = Resource.Create(_ => Source);
+}

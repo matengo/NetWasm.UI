@@ -30,18 +30,25 @@ components/blocks are set per instance.
 ## Setup
 
 A `Foo.nwui` file becomes `public partial class Foo : Component` in `RootNamespace` plus the
-folder path (or the namespace given with `@namespace X.Y`). Add the generator to the app's
-`.csproj` (see [Getting started](getting-started.md#a-new-app) for the whole file):
+folder path (or the namespace given with `@namespace X.Y`). For example, `Pages/Home.nwui` in
+`MyApp` becomes `MyApp.Pages.Home`; add `using MyApp.Pages;` where you use it from another
+namespace.
 
-```xml
-<ProjectReference Include="..\NetWasm.UI\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
-                  OutputItemType="Analyzer" ReferenceOutputAssembly="false"
-                  SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
-<AdditionalFiles Include="**\*.nwui" Exclude="bin\**;obj\**" />
-<CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
+The `NetWasm.UI` package contains the generator and feeds it every `*.nwui` file in the
+project, so there is nothing to set up. Set `<NetWasmUIEnableTemplates>false</NetWasmUIEnableTemplates>`
+to turn it off. The dev server watches `.nwui` files like `.cs` files.
+
+Every generated file has these usings, plus your own `@using` lines:
+
+```csharp
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using NetWasm.UI;
+using NetWasm.UI.Forms;
+using NetWasm.UI.Reactive;
+using NetWasm.UI.Routing;
+using static NetWasm.UI.Html;
 ```
-
-The dev server watches `.nwui` files like `.cs` files.
 
 ## Syntax
 
@@ -54,7 +61,7 @@ The dev server watches `.nwui` files like `.cs` files.
 | `value="…"` | the `value` property (`Value(...)`) |
 | `@onclick="() => …"`, `@onsubmit="Save"` | `On("click", handler)`; the handler is an `Action` or `Action<DomEvent>` |
 | `@onclick:preventDefault`, `@onclick:stopPropagation`, `@onsubmit:preventDefault="false"` | listener flags (`submit` prevents default unless turned off) |
-| `@bind="signal"` | `Spread(Bind(signal))` for `Signal<string>` / `Signal<bool>` |
+| `@bind="signal"` | `Spread(Bind(signal))` for `Signal<string>` / `Signal<bool>`, and for `Field<string>` / `Field<bool>` (with `id`, touched and ARIA state; see [Forms](forms.md)) |
 | `@ref="field"` | assigns the `Element` (or component) to a generated field |
 | `@if (c) { … } else if (c2) { … } else { … }` | `When(...)`; a chain shares one memoized selector |
 | `@foreach (var x in items) { <li @key="x.Id">…</li> }` | keyed `Each(...)`; `items` may be a list expression or an `IReadOnlySignal<IReadOnlyList<T>>`; without `@key` the item itself is the key |
@@ -63,6 +70,7 @@ The dev server watches `.nwui` files like `.cs` files.
 | `<Card><template slot="Header">…</template>…</Card>` | a named slot: `Header = new Slot(() => …)`; the rest still goes to `ChildContent` |
 | `<Link href="/x">…</Link>`, `<NavLink href="/x" activeClass="on">…</NavLink>` | `Html.Link` / `Html.NavLink` |
 | `<ErrorBoundary>…<template slot="Fallback" context="error">…</template></ErrorBoundary>` | `Html.ErrorBoundary(() => …, (BoundaryError error) => …)`; see [Error handling](error-handling.md) |
+| `<Suspense>…<template slot="Fallback">…</template></Suspense>` | `Html.Suspense(() => …, () => …)`; the content must have exactly one root node, and the `<Suspense>` cannot be the only content of a template or block. See [Async data](async.md) |
 | `@code { … }`, `@using X`, `@namespace X` | class members, usings, namespace |
 | `@prop int Level = 1;` | a reactive prop: `public Prop<int> Level { get; set; } = 1;` |
 | `@* … *@`, `<!-- … -->`, `@@`, `&amp; &times; &minus; &#65;` | comments, a literal `@`, decoded entities (common named ones plus numeric; an unknown `&name;` is an error) |

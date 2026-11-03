@@ -2,21 +2,36 @@
 
 ## Prerequisites
 
-- .NET SDK 10.0.3xx or later (`global.json` rolls forward to the latest feature band).
-- The NetWasm SDK is resolved from `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.10.0" }`) and
+- .NET SDK 10.0.3xx or later. `global.json` rolls forward to the latest feature band.
+- The NetWasm SDK is pinned in `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.10.7" }`). It
   downloads its host tooling on first restore.
+- A browser listed in [Compatibility](compatibility.md#browsers).
 
-Run the sample to check that everything works:
+## From the template
 
-```powershell
-dotnet run --project tools/DevServer -- samples/Counter
-# → publishes, serves http://localhost:8765/ and rebuilds + reloads the browser on save
+```shell
+dotnet new install NetWasm.UI.Templates
+dotnet new netwasm-ui -o MyApp
+cd MyApp
+dotnet nwui-dev
 ```
 
-## A new app
+`dotnet new` restores the project and the local `nwui-dev` tool. Open http://localhost:8765/.
+The template contains:
 
-NetWasm.UI is not on NuGet yet, so an app references the projects in this repository. The
-smallest app is five files plus `global.json`; `samples/Counter` is the complete version.
+| File | What it is |
+|---|---|
+| `MyApp.csproj` | A NetWasm page app that references `NetWasm.UI.Browser`. |
+| `global.json` | Pins the NetWasm SDK. |
+| `.config/dotnet-tools.json` | The `nwui-dev` dev server. |
+| `Program.cs` | The `[JSExport("start")]` entry point. |
+| `App.cs` | The root component: navigation and routes, written in C#. |
+| `Pages/*.nwui` | Two pages written as templates. |
+| `wwwroot/` | `index.html`, `app.mjs` and `app.css`. Published to the site root. |
+
+## The pieces, by hand
+
+To add NetWasm.UI to an existing NetWasm project, you need the same pieces as the template.
 
 **`MyApp.csproj`**
 
@@ -29,26 +44,21 @@ smallest app is five files plus `global.json`; `samples/Counter` is the complete
     <RootNamespace>MyApp</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NetWasm.UI\src\NetWasm.UI\NetWasm.UI.csproj" />
-    <ProjectReference Include="..\NetWasm.UI\src\NetWasm.UI.Browser\NetWasm.UI.Browser.csproj" />
-    <!-- Optional: compiles *.nwui templates into components (see templates.md). -->
-    <ProjectReference Include="..\NetWasm.UI\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
-                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
-                      SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
+    <PackageReference Include="NetWasm.UI.Browser" Version="0.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <AdditionalFiles Include="**\*.nwui" Exclude="bin\**;obj\**" />
-    <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- The DOM decoder is declared by the app and bundled into netwasm.page.mjs. -->
-    <NetWasmJavaScriptModule Include="..\NetWasm.UI\src\NetWasm.UI.Browser\dom.mjs" Module="netwasm.ui.dom" />
-    <Content Include="index.html;app.mjs" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="wwwroot\**" CopyToPublishDirectory="PreserveNewest" Link="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
 ```
 
-`global.json` must pin the NetWasm SDK; copy it from this repository.
+The packages set up the rest:
+
+- `NetWasm.UI.Browser` adds the `nwui.dom` JavaScript module to the app. Set
+  `<NetWasmUIAddDomModule>false</NetWasmUIAddDomModule>` to supply your own module, for example
+  a custom `createDomHost` (see [Embedding](embedding.md)).
+- `NetWasm.UI` feeds every `*.nwui` file to the template compiler. Set
+  `<NetWasmUIEnableTemplates>false</NetWasmUIEnableTemplates>` to turn that off.
 
 **`Program.cs`** – the entry point that JavaScript calls:
 
@@ -92,7 +102,7 @@ public sealed class App : Component
 }
 ```
 
-**`index.html`** and **`app.mjs`** – the page and the module that starts the app. Use absolute
+**`wwwroot/index.html`** and **`wwwroot/app.mjs`** – the page and the module that starts the app. Use absolute
 URLs so that deep links such as `/todos/3` still find the assets:
 
 ```html
@@ -115,13 +125,23 @@ app.start();
 
 ## Developing
 
-```powershell
-dotnet run --project path/to/NetWasm.UI/tools/DevServer -- path/to/MyApp
+```shell
+dotnet nwui-dev            # in the app folder; or: dotnet nwui-dev path/to/MyApp
 ```
 
-The dev server publishes the app, serves it with the right MIME types and Brotli/gzip, watches
-`.cs` and `.nwui` files and reloads the browser after each rebuild. Build errors are shown as an
-overlay in the page.
+The dev server does the following:
+
+- publishes the app;
+- serves it with the right MIME types, Brotli/gzip and a fallback to `index.html` for deep
+  links;
+- watches `.cs`, `.nwui` and asset files;
+- reloads the browser after each rebuild;
+- shows build errors as an overlay in the page.
+
+Install it outside the template with `dotnet tool install NetWasm.UI.DevServer`.
+
+`dotnet run` from the NetWasm SDK also serves the app, but it has no deep-link fallback, so a
+reload on `/counter` returns 404.
 
 | Option | Meaning |
 |---|---|
@@ -131,10 +151,10 @@ overlay in the page.
 | `-c Debug\|Release` | Configuration (default `Release`; Debug is slower and larger) |
 | `--no-watch` | Serve only |
 | `--no-publish` | Skip the initial publish |
-| `-w <dir>` | Watch root (default: the repository root) |
+| `-w <dir>` | Watch root (default: the nearest folder containing `.git` or `global.json`) |
 
 There is no hot reload. NetWasm compiles ahead of time, so there is no runtime to patch. A
-rebuild after a one-line change takes about 15–20 s; see
+rebuild after a one-line change takes about 5–20 s; see
 [CONTRIBUTING.md](../CONTRIBUTING.md#why-a-rebuild-takes-15-20-s) for where the time goes.
 
 ## Next

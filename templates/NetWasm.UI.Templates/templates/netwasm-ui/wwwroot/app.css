@@ -1,0 +1,9 @@
+:root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+body { margin: 0; }
+.layout { max-width: 44rem; margin: 0 auto; padding: 0 1rem 2rem; }
+header { display: flex; align-items: center; gap: 2rem; padding: 1rem 0; border-bottom: 1px solid #8884; }
+.brand { font-size: 1.2rem; }
+nav a { margin-right: 1rem; color: inherit; }
+nav a.active { font-weight: bold; text-decoration: none; }
+button { font: inherit; padding: .3rem .8rem; margin-right: .5rem; }
+.hint { color: #b35; }

@@ -22,7 +22,7 @@ public static class Renderer
     internal static int Generation { get; private set; }
 
     /// <summary>Number of batches pushed to the host. Useful for asserting the "one crossing per update" rule.</summary>
-    public static int FlushCount { get; private set; }
+    internal static int FlushCount { get; private set; }
 
     public static void Initialize(IDomHost domHost)
     {
@@ -42,6 +42,7 @@ public static class Renderer
         nextHandlerId = 1;
         FlushCount = 0;
         Generation++;
+        App.ForgetMounted();
     }
 
     /// <summary>Sends the pending ops to the host, if any.</summary>
@@ -53,14 +54,22 @@ public static class Renderer
         }
 
         FlushCount++;
-        host.ApplyBatch(batch.Take());
+        var ops = batch.Detach(out var count);
+        try
+        {
+            host.ApplyBatch(new ReadOnlySpan<byte>(ops, 0, count));
+        }
+        finally
+        {
+            batch.Return(ops);
+        }
     }
 
     internal static int AllocateNodeId() => nextNodeId++;
 
     // ---- node creation ----
 
-    public static int CreateElement(string tag)
+    internal static int CreateElement(string tag)
     {
         var id = AllocateNodeId();
         batch.Op(Op.CreateElement);
@@ -69,7 +78,7 @@ public static class Renderer
         return id;
     }
 
-    public static int CreateText(string text)
+    internal static int CreateText(string text)
     {
         var id = AllocateNodeId();
         batch.Op(Op.CreateText);
@@ -78,7 +87,7 @@ public static class Renderer
         return id;
     }
 
-    public static int CreateAnchor()
+    internal static int CreateAnchor()
     {
         var id = AllocateNodeId();
         batch.Op(Op.CreateAnchor);
@@ -106,14 +115,14 @@ public static class Renderer
 
     // ---- mutation ----
 
-    public static void SetText(int id, string text)
+    internal static void SetText(int id, string text)
     {
         batch.Op(Op.SetText);
         batch.Int(id);
         batch.String(text);
     }
 
-    public static void SetAttribute(int id, string name, string value)
+    internal static void SetAttribute(int id, string name, string value)
     {
         batch.Op(Op.SetAttribute);
         batch.Int(id);
@@ -121,14 +130,14 @@ public static class Renderer
         batch.String(value);
     }
 
-    public static void RemoveAttribute(int id, string name)
+    internal static void RemoveAttribute(int id, string name)
     {
         batch.Op(Op.RemoveAttribute);
         batch.Int(id);
         batch.String(name);
     }
 
-    public static void SetProperty(int id, string name, string value)
+    internal static void SetProperty(int id, string name, string value)
     {
         batch.Op(Op.SetProperty);
         batch.Int(id);
@@ -136,7 +145,7 @@ public static class Renderer
         batch.String(value);
     }
 
-    public static void SetBoolProperty(int id, string name, bool value)
+    internal static void SetBoolProperty(int id, string name, bool value)
     {
         batch.Op(Op.SetBoolProperty);
         batch.Int(id);
@@ -146,40 +155,40 @@ public static class Renderer
 
     // ---- tree ----
 
-    public static void AppendChild(int parent, int child)
+    internal static void AppendChild(int parent, int child)
     {
         batch.Op(Op.AppendChild);
         batch.Int(parent);
         batch.Int(child);
     }
 
-    public static void InsertBefore(int reference, int child)
+    internal static void InsertBefore(int reference, int child)
     {
         batch.Op(Op.InsertBefore);
         batch.Int(reference);
         batch.Int(child);
     }
 
-    public static void Remove(int id)
+    internal static void Remove(int id)
     {
         batch.Op(Op.Remove);
         batch.Int(id);
     }
 
-    public static void Release(int id)
+    internal static void Release(int id)
     {
         batch.Op(Op.Release);
         batch.Int(id);
     }
 
-    public static void Mount(int id, string selector)
+    internal static void Mount(int id, string selector)
     {
         batch.Op(Op.Mount);
         batch.Int(id);
         batch.String(selector);
     }
 
-    public static void Focus(int id)
+    internal static void Focus(int id)
     {
         batch.Op(Op.Focus);
         batch.Int(id);
@@ -187,7 +196,7 @@ public static class Renderer
 
     // ---- events ----
 
-    public static int AddListener(int id, string eventName, Action<DomEvent> handler, ListenerFlags flags)
+    internal static int AddListener(int id, string eventName, Action<DomEvent> handler, ListenerFlags flags)
     {
         var listener = new UI.Listener(eventName, handler, flags) { Owner = Tracker.CurrentOwner };
         return AddListener(id, listener, flags);
@@ -205,7 +214,7 @@ public static class Renderer
         return handlerId;
     }
 
-    public static void RemoveListener(int id, int handlerId)
+    internal static void RemoveListener(int id, int handlerId)
     {
         if (handlers.Remove(handlerId))
         {

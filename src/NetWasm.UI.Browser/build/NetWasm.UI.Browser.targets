@@ -1,0 +1,12 @@
+<Project>
+  <!-- Registers dom.mjs as the "nwui.dom" import module of browser apps (OutputType JsModule or Exe).
+       Set NetWasmUIAddDomModule=false to supply your own module (e.g. a custom createDomHost).
+       NetWasm.Sdk normalizes OutputType=JsModule to Library and records it in _NetWasmWorkerKind. -->
+  <PropertyGroup>
+    <!-- For apps that create their own hosts: <Content Include="$(NetWasmUIDomModulePath)" Link="nwui\dom.mjs" ... /> -->
+    <NetWasmUIDomModulePath>$(MSBuildThisFileDirectory)dom.mjs</NetWasmUIDomModulePath>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NetWasmUIAddDomModule)' != 'false' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
+    <NetWasmJavaScriptModule Include="$(MSBuildThisFileDirectory)dom.mjs" Module="nwui.dom" />
+  </ItemGroup>
+</Project>

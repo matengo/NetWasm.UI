@@ -15,6 +15,10 @@ namespace NetWasm.UI;
 /// </list>
 /// Hole 0 is always the root element; the marked holes follow in document order. Keep the instance in a
 /// <c>static readonly</c> field so it is defined once.
+/// <para>
+/// <b>Security:</b> the HTML is parsed as markup (it is trusted like code). Never build it from user
+/// input; put user data into text holes or attributes, which are always set as plain text.
+/// </para>
 /// </summary>
 /// <example>
 /// <code>

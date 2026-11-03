@@ -24,6 +24,8 @@ each test in a fresh Chromium context. Any console error or uncaught page error 
 
 - `NETWASM_UI_E2E_URL=http://localhost:8765` reuses a server you already run.
 - `HEADED=1` shows the browser.
+- `E2E_BROWSER=firefox` or `E2E_BROWSER=webkit` runs the tests in another engine. The default
+  is `chromium`. Install the engine first with `playwright.ps1 install firefox`.
 
 ### Template grammar tests
 
@@ -35,8 +37,61 @@ npm test
 
 ### CI
 
-`.github/workflows/ci.yml` runs on `ubuntu-latest`: build, unit tests, `.nwui` grammar tests,
-E2E tests, and an `Oz` publish of `samples/Counter` with a size table in the job summary.
+`.github/workflows/ci.yml` runs on `ubuntu-latest` and has three jobs:
+
+- **`test`**: the build, the unit tests, the `.nwui` grammar tests with the packaged VS Code
+  extension, the Chromium E2E tests, and an `Oz` publish of `samples/Counter` checked against
+  [`size-budget.json`](size-budget.json).
+- **`e2e-browsers`**: the E2E tests in Firefox and WebKit.
+- **`packages`**: packs the NuGet packages, then creates, builds and publishes an app from the
+  template against them.
+
+### Size budget
+
+The `test` job fails when the Counter sample exceeds `size-budget.json`. If your change makes it
+bigger on purpose, update the budget in the same pull request and explain why:
+
+```powershell
+dotnet publish samples/Counter -c Release -p:NetWasmOptimization=Oz
+node tools/size-report/size-report.mjs samples/Counter/bin/Release/netwasm0.1/publish --name Counter --write-budget size-budget.json
+```
+
+### Public API
+
+`NetWasm.UI` and `NetWasm.UI.Browser` use the public API analyzer. A new public member fails
+the build with `RS0016` until it is listed in that project's `PublicAPI.Unshipped.txt`. Copy the
+signature from the build error; `dotnet format analyzers --diagnostics RS0016` does not handle
+every case.
+
+At a release, the `Unshipped` lines move to `PublicAPI.Shipped.txt`. Removing or changing a
+shipped member is a breaking change; list it in the CHANGELOG.
+
+### Packages and the template locally
+
+```powershell
+$feed = "$env:TEMP\nwfeed"
+dotnet pack src/NetWasm.UI -c Release -o $feed
+dotnet pack src/NetWasm.UI.Browser -c Release -o $feed
+dotnet pack tools/DevServer -c Release -o $feed
+dotnet pack templates/NetWasm.UI.Templates -c Release -o $feed
+dotnet new install "$feed\NetWasm.UI.Templates.0.1.0.nupkg"
+dotnet new netwasm-ui -o $env:TEMP\MyApp --skipRestore
+dotnet restore $env:TEMP\MyApp -s $feed -s https://api.nuget.org/v3/index.json
+```
+
+NuGet caches packages by version. Clear `~/.nuget/packages/netwasm.ui*` before you test a
+rebuilt package with the same version.
+
+### Releasing
+
+1. Update the [CHANGELOG](CHANGELOG.md) and move `PublicAPI.Unshipped.txt` into
+   `PublicAPI.Shipped.txt`.
+2. Bump `VersionPrefix` in `Directory.Build.props`, and the versions the template pins in
+   `templates/NetWasm.UI.Templates/templates/netwasm-ui/NetWasmApp.csproj` and
+   `.config/dotnet-tools.json`.
+3. Push a tag `v<version>` (for example `v0.1.0`). `.github/workflows/release.yml` builds, tests,
+   publishes the packages to NuGet and the extension to the VS Code Marketplace, and creates a
+   GitHub release.
 
 ### Benchmarks
 
@@ -45,7 +100,9 @@ reactive core, the renderer or `dom.mjs`.
 
 ## Code guidelines
 
-- `netwasm0.1` has no `System.Linq`, reflection or `async`. Write plain loops.
+- `netwasm0.1` has no reflection. Do not use `System.Linq` in the libraries; write plain loops.
+  `async` works, but its first use costs about 15–20 KB Brotli, so keep it out of the core
+  unless a feature needs it.
 - Watch the Wasm size: avoid interpolated strings with non-string holes, `IFormattable`, new
   generic instantiations in the core and multicast delegates. Avoid culture-aware or
   case-insensitive string APIs (`ToLowerInvariant`, `StringComparison.OrdinalIgnoreCase`,
@@ -61,7 +118,9 @@ reactive core, the renderer or `dom.mjs`.
 
 ## The dev server
 
-`tools/DevServer` is a Kestrel server that publishes the app, serves it with Brotli/gzip and the
+`tools/DevServer` is packed as the .NET tool `NetWasm.UI.DevServer` (command `nwui-dev`). In
+this repository, run it with `dotnet run --project tools/DevServer -- <app>`. It is a Kestrel
+server that publishes the app, serves it with Brotli/gzip and the
 right MIME types, falls back to `index.html` for extension-less paths, watches sources and
 reloads the browser.
 
@@ -105,15 +164,12 @@ AOT) and is feedback for the NetWasm team rather than something this repository 
 
 ## Roadmap ideas
 
-- **Production readiness:** NuGet packages (with the generator wired up automatically) and a
-  `dotnet new` template; a public API baseline in CI.
 - **Templates:** parameterized slots (`Slot<T>`), `@switch`, a language server for `.nwui`
   (IntelliSense via the generated C#).
 - **Rendering speed** (see [Benchmarks](docs/benchmarks.md#still-open)): push-pull `Computed` to
   avoid glitchy eager recomputes; cheaper per-row Wasm work (fewer allocations per effect).
 - Microtask-coalesced batching across multiple JS→Wasm events in one frame.
-- `<Suspense>`-style async boundaries once NetWasm supports async interop; nested/layout routes;
-  base-path routing.
+- **Accessibility:** focus management after navigation, announcing route changes.
 - **Wasm size:** a size report per feature in CI; a slimmer JS host for page-only apps (needs
   NetWasm).
 - **Dev loop:** snapshot/restore signal state across live reloads, CSS swap without reload,

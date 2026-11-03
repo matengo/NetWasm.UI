@@ -69,6 +69,8 @@ public sealed class RouteParams
 /// <summary>
 /// A path pattern such as <c>/todos/{id}</c> or <c>/files/{*path}</c>. Segments are literal
 /// (case-insensitive), <c>{name}</c> (one segment) or <c>{*name}</c> (the rest of the path, last only).
+/// A trailing <c>/*</c> (<c>/settings/*</c>) makes a prefix pattern for nested <see cref="Routes"/>: it matches
+/// the prefix and leaves the rest of the path to the nested routes without capturing it.
 /// Matching ignores query and hash and a trailing slash.
 /// </summary>
 public sealed class RoutePattern
@@ -76,12 +78,20 @@ public sealed class RoutePattern
     private readonly string[] segments;
     private readonly string?[] paramNames;   // null for literal segments
     private readonly bool catchAll;
+    private readonly bool prefix;
     private readonly int paramCount;
 
     public RoutePattern(string pattern)
     {
         Pattern = pattern;
-        segments = Split(StripQuery(pattern));
+        var all = Split(StripQuery(pattern));
+        if (all.Length > 0 && all[all.Length - 1] == "*")
+        {
+            prefix = true;
+            Array.Resize(ref all, all.Length - 1);
+        }
+
+        segments = all;
         paramNames = new string?[segments.Length];
         for (var i = 0; i < segments.Length; i++)
         {
@@ -91,7 +101,7 @@ public sealed class RoutePattern
                 var name = s.Substring(1, s.Length - 2);
                 if (name.StartsWith("*", StringComparison.Ordinal))
                 {
-                    if (i != segments.Length - 1)
+                    if (i != segments.Length - 1 || prefix)
                     {
                         throw new ArgumentException($"Catch-all must be the last segment: '{pattern}'.", nameof(pattern));
                     }
@@ -108,12 +118,23 @@ public sealed class RoutePattern
 
     public string Pattern { get; }
 
-    public bool TryMatch(string path, out RouteParams result)
+    /// <summary>True for a prefix pattern ending in <c>/*</c>.</summary>
+    public bool IsPrefix => prefix;
+
+    public bool TryMatch(string path, out RouteParams result) => TryMatch(path, out result, out _);
+
+    /// <summary>
+    /// Like <see cref="TryMatch(string, out RouteParams)"/>; for a prefix pattern <paramref name="rest"/> is the
+    /// unmatched remainder (<c>/profile?tab=1</c>, or <c>/</c>), otherwise empty.
+    /// </summary>
+    public bool TryMatch(string path, out RouteParams result, out string rest)
     {
+        rest = string.Empty;
         var query = QueryOf(path);
         var parts = Split(StripQuery(path));
 
-        if (catchAll ? parts.Length < segments.Length - 1 : parts.Length != segments.Length)
+        var tooShort = parts.Length < (catchAll ? segments.Length - 1 : segments.Length);
+        if (tooShort || (!catchAll && !prefix && parts.Length != segments.Length))
         {
             result = RouteParams.Empty;
             return false;
@@ -150,7 +171,29 @@ public sealed class RoutePattern
             p++;
         }
 
-        result = new RouteParams(names, values, query);
+        if (prefix)
+        {
+            var sb = new System.Text.StringBuilder();
+            for (var i = segments.Length; i < parts.Length; i++)
+            {
+                sb.Append('/').Append(parts[i]);
+            }
+
+            if (sb.Length == 0)
+            {
+                sb.Append('/');
+            }
+
+            if (query.Length > 0)
+            {
+                sb.Append('?').Append(query);
+            }
+
+            rest = sb.ToString();
+        }
+
+        // A prefix route keeps its page while the nested part (including the query) changes.
+        result = new RouteParams(names, values, prefix ? string.Empty : query);
         return true;
     }
 

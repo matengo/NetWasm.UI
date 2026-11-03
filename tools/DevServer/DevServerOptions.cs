@@ -91,7 +91,8 @@ internal sealed class DevServerOptions
         """
         NetWasm.UI dev server – publishes a NetWasm app, serves it with Brotli, and reloads the browser on change.
 
-        usage: dotnet run --project tools/DevServer -- [project-or-dir] [options]
+        usage: dotnet nwui-dev [project-or-dir] [options]
+           or: dotnet run --project tools/DevServer -- [project-or-dir] [options]
 
           -p, --project <csproj|dir>   App project (default: current directory)
           -w, --watch-root <dir>       Directory to watch (default: repo root)

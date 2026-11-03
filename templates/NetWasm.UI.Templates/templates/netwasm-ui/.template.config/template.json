@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "NetWasm.UI contributors",
+  "classifications": [ "Web", "WebAssembly", "NetWasm", "SPA" ],
+  "identity": "NetWasm.UI.App",
+  "name": "NetWasm.UI app",
+  "description": "A browser app built with NetWasm.UI: router, a C# component, a .nwui page and CSS.",
+  "shortName": "netwasm-ui",
+  "sourceName": "NetWasmApp",
+  "preferNameDirectory": true,
+  "tags": { "language": "C#", "type": "project" },
+  "symbols": {
+    "skipRestore": {
+      "type": "parameter",
+      "datatype": "bool",
+      "description": "Skip the automatic restore after creating the project.",
+      "defaultValue": "false"
+    }
+  },
+  "primaryOutputs": [ { "path": "NetWasmApp.csproj" } ],
+  "postActions": [
+    {
+      "condition": "(!skipRestore)",
+      "description": "Restore NuGet packages and the nwui-dev tool.",
+      "manualInstructions": [ { "text": "Run 'dotnet restore' and 'dotnet tool restore'" } ],
+      "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
+      "continueOnError": true
+    }
+  ]
+}

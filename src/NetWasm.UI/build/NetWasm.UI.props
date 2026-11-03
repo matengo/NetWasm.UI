@@ -1,0 +1,7 @@
+<Project>
+  <!-- Feeds *.nwui templates to the NetWasm.UI source generator. Set NetWasmUIEnableTemplates=false to opt out. -->
+  <ItemGroup Condition="'$(NetWasmUIEnableTemplates)' != 'false'">
+    <AdditionalFiles Include="**\*.nwui" Exclude="$(DefaultItemExcludes);bin\**;obj\**" />
+    <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
+  </ItemGroup>
+</Project>

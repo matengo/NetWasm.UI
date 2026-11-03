@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "netwasm.ui.devserver": {
+      "version": "0.1.0",
+      "commands": [ "nwui-dev" ],
+      "rollForward": false
+    }
+  }
+}

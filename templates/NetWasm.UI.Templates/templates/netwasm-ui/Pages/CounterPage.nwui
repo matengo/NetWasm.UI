@@ -1,0 +1,13 @@
+<section>
+    <h1>Counter</h1>
+    <p>Count: <strong id="count">@count</strong></p>
+    <button id="increment" @onclick="() => count.Value++">Click me</button>
+    <button disabled="@(count.Value == 0)" @onclick="() => count.Value = 0">Reset</button>
+    @if (count.Value >= 5) {
+        <p class="hint">Every click only re-renders the number.</p>
+    }
+</section>
+
+@code {
+    private readonly Signal<int> count = new(0);
+}

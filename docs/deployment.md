@@ -3,8 +3,8 @@
 ## Release build
 
 ```powershell
-dotnet publish samples/Counter -c Release
-# → samples/Counter/bin/Release/netwasm0.1/publish/
+dotnet publish -c Release
+# → bin/Release/netwasm0.1/publish/
 ```
 
 `Release` uses `NetWasmOptimization=Oz` (smallest output). The dev server uses `O1` for faster
@@ -16,22 +16,42 @@ Deploy your content files (`index.html`, `app.mjs`, CSS, images) and the whole `
 folder. The `*.dll` and `*.pdb` files in the publish root are build artifacts and are never
 downloaded. `deployment.json` lists every artifact the runtime may load, with its SHA-256.
 
-A first visit downloads `index.html`, `app.mjs`, `browser/<App>.mjs`, `netwasm.page.mjs` (NetWasm's
-JS host, with `dom.mjs` bundled in), `deployment.json`, the raw adapter and `<App>.wasm`.
+A first visit downloads these files:
+
+- `index.html` and `app.mjs`;
+- `browser/<App>.mjs`;
+- `netwasm.page.mjs` and the `netwasm.runtime.*.mjs` chunks (NetWasm's JS host, with `dom.mjs`
+  bundled in);
+- `deployment.json`;
+- the raw adapter;
+- `<App>.wasm`.
 
 ## Size
 
-The whole demo app (counter, todos, router, `/components`), Release:
+This is the whole demo app in Release with NetWasm.Sdk 0.10.7. It has a counter, todos, the
+router with nested routes, an async form and `/components`:
 
 | Artifact | Raw | Brotli | Gzip |
 |---|---:|---:|---:|
-| `Counter.wasm` | 481 KB | 80 KB | 106 KB |
-| `netwasm.page.mjs` host | 308 KB | 58 KB | 69 KB |
-| HTML + small JS modules | 10 KB | 2.5 KB | 3 KB |
-| **Whole page** | **798 KB** | **140 KB** | **178 KB** |
+| `Counter.wasm` | 589 KB | 102 KB | 138 KB |
+| NetWasm JS host (`netwasm.page.mjs`, runtime chunks, adapter) | 222 KB | 49 KB | 56 KB |
+| **Whole page** | **812 KB** | **151 KB** | **195 KB** |
 
-About 40 % is NetWasm's own JS host, not application code. See [Benchmarks](benchmarks.md) for
-a comparison with SolidJS, React and Blazor.
+About 15–20 KB of the Wasm is the `async`/`Task` machinery that the form's async submit pulls
+in. An app without `async` is correspondingly smaller. See [Benchmarks](benchmarks.md) for a
+comparison with SolidJS, React and Blazor.
+
+To measure your own app:
+
+```shell
+node tools/size-report/size-report.mjs bin/Release/netwasm0.1/publish --name MyApp
+```
+
+### Size budget
+
+CI publishes `samples/Counter` with `Oz` and fails when it exceeds the limits in
+[`size-budget.json`](../size-budget.json). If a pull request grows the app on purpose, raise the
+budget in the same pull request and say why. `--write-budget` writes the current sizes plus 5 %.
 
 ## Hosting
 
@@ -43,9 +63,11 @@ Any static file host works if it does three things:
    Pre-compress at deploy time (`brotli -q 11`) if the host does not compress on the fly.
 3. **SPA fallback**: return `index.html` for extension-less paths that are not files, so deep
    links like `/todos/3` work. Asset URLs in `index.html` and `app.mjs` must be absolute
-   (`/app.mjs`, `/browser/App.mjs`).
+   (`/app.mjs`, `/browser/App.mjs`), or relative to a `<base href>`.
 
-The app must be served from the site root; there is no base-path support yet.
+To serve the app under a sub-path, see [base path](routing.md#hosting-and-base-path). Also send
+a Content Security Policy; see [Security](security.md#content-security-policy) for one that
+works.
 
 Examples:
 
@@ -69,11 +91,13 @@ app.MapFallbackToFile("index.html");
 app.Run();
 ```
 
-`tools/DevServer` is a working Kestrel reference (compression, MIME types, fallback).
+`tools/DevServer` (`nwui-dev`) is a working Kestrel reference with compression, MIME types and
+fallback. It is a development server; do not use it in production.
 
 ## Caching
 
-NetWasm emits **stable file names** (`browser/App.wasm`), not fingerprinted ones, so a long
+NetWasm's runtime chunks have hashed names (`netwasm.runtime.<hash>.mjs`), but the app's own
+files have **stable names** (`browser/App.wasm`, `browser/App.mjs`), so a long
 `Cache-Control: max-age` would keep old code after a deploy. Until fingerprinted output is
 supported, use `Cache-Control: no-cache` with ETags: browsers revalidate (cheap 304s) and keep
 the compiled Wasm in their code cache when it has not changed.

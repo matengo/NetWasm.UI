@@ -4,9 +4,10 @@ using System.Text;
 namespace NetWasm.UI.Dom;
 
 /// <summary>Growable little-endian byte buffer that encodes render ops.</summary>
-public sealed class BatchWriter
+internal sealed class BatchWriter
 {
     private byte[] buffer;
+    private byte[]? spare;
     private int length;
 
     public BatchWriter(int initialCapacity = 1024)
@@ -33,6 +34,30 @@ public sealed class BatchWriter
         return result;
     }
 
+    /// <summary>
+    /// Hands out the buffer holding the encoded ops (valid bytes: <paramref name="count"/>) without copying,
+    /// and continues on another buffer, so ops written while the caller still reads the detached one
+    /// (an event dispatched re-entrantly) cannot overwrite it. Give it back with <see cref="Return"/>.
+    /// </summary>
+    public byte[] Detach(out int count)
+    {
+        var detached = buffer;
+        count = length;
+        buffer = spare ?? new byte[detached.Length];
+        spare = null;
+        Clear();
+        return detached;
+    }
+
+    /// <summary>Returns a buffer obtained from <see cref="Detach"/> for reuse.</summary>
+    public void Return(byte[] detached)
+    {
+        if (spare is null || spare.Length < detached.Length)
+        {
+            spare = detached;
+        }
+    }
+
     public void Op(Op op)
     {
         OpCount++;
@@ -57,8 +82,10 @@ public sealed class BatchWriter
 
     public void Bool(bool value) => Byte(value ? (byte)1 : (byte)0);
 
-    public void String(string value)
+    public void String(string? value)
     {
+        // Null renders as empty; checked before writing so a throwing encoder can never leave half an op behind.
+        value ??= string.Empty;
         var byteCount = Encoding.UTF8.GetByteCount(value);
         Ensure(4 + byteCount);
         Int(byteCount);
