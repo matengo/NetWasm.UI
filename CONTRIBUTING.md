@@ -93,6 +93,10 @@ rebuilt package with the same version.
    publishes the packages to NuGet and the extension to the VS Code Marketplace, and creates a
    GitHub release.
 
+Publishing needs, once: a Trusted Publishing policy on nuget.org (owner `matengo`, repository
+`NetWasm.UI`, workflow file `release.yml`), the repository variable `NUGET_USER` (your nuget.org
+profile name) and the secret `VSCE_PAT` for the Marketplace. Without them the step is skipped.
+
 ### Benchmarks
 
 See [docs/benchmarks.md](docs/benchmarks.md). Run them before and after changes to the
