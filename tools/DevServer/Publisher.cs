@@ -20,6 +20,11 @@ internal sealed class Publisher(DevServerOptions options)
         }
 
         var dir = output.Trim();
+        if (Path.DirectorySeparatorChar == '/')
+        {
+            dir = dir.Replace('\\', '/');
+        }
+
         return Path.GetFullPath(Path.IsPathRooted(dir) ? dir : Path.Combine(Path.GetDirectoryName(options.ProjectPath)!, dir));
     }
 
@@ -47,24 +52,46 @@ internal sealed class Publisher(DevServerOptions options)
 
     private static async Task<(int Code, string Output)> RunDotnetAsync(string arguments)
     {
-        var psi = new ProcessStartInfo("dotnet", arguments)
+        var psi = new ProcessStartInfo("dotnet", arguments + " -nodeReuse:false")
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
         };
-        using var process = Process.Start(psi)!;
-        var stdout = process.StandardOutput.ReadToEndAsync();
-        var stderr = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-        var sb = new StringBuilder(await stdout);
-        var err = await stderr;
-        if (err.Length > 0)
+
+        // Build servers would inherit the output pipes and keep them open after dotnet exits.
+        psi.Environment["MSBUILDDISABLENODEREUSE"] = "1";
+        psi.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
+        psi.Environment["UseSharedCompilation"] = "false";
+
+        var sb = new StringBuilder();
+        void Append(string? line)
         {
-            sb.AppendLine().Append(err);
+            if (line is not null)
+            {
+                lock (sb)
+                {
+                    sb.AppendLine(line);
+                }
+            }
         }
 
-        return (process.ExitCode, sb.ToString());
+        using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        var exited = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        process.Exited += (_, _) => exited.TrySetResult();
+        process.OutputDataReceived += (_, e) => Append(e.Data);
+        process.ErrorDataReceived += (_, e) => Append(e.Data);
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        // Wait for the process itself, not for EOF on its pipes, which a leftover child may hold.
+        await exited.Task;
+        await Task.Delay(100);
+        lock (sb)
+        {
+            return (process.ExitCode, sb.ToString());
+        }
     }
 }

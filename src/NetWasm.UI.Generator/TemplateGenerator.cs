@@ -68,7 +68,7 @@ internal static class TemplateCompiler
 
     public static CompiledTemplate Compile(string path, string text, string? rootNamespace, string? projectDir, string? reactiveProps = null)
     {
-        var className = SafeIdentifier(Path.GetFileNameWithoutExtension(path));
+        var className = SafeIdentifier(FileStem(path));
         var relativeDir = RelativeDirectory(path, projectDir);
         var hint = Sanitize(relativeDir.Length == 0 ? className : relativeDir.Replace('\\', '.').Replace('/', '.') + "." + className) + ".nwui.g.cs";
         try
@@ -122,7 +122,7 @@ internal static class TemplateCompiler
             return System.Array.Empty<string>();
         }
 
-        return PropsOf(file, SafeIdentifier(Path.GetFileNameWithoutExtension(path)));
+        return PropsOf(file, SafeIdentifier(FileStem(path)));
     }
 
     private static List<string> PropsOf(TemplateFile file, string className)
@@ -179,14 +179,38 @@ internal static class TemplateCompiler
             return string.Empty;
         }
 
-        var dir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? string.Empty;
-        var root = Path.GetFullPath(projectDir).TrimEnd('\\', '/');
-        if (!dir.StartsWith(root, System.StringComparison.OrdinalIgnoreCase))
+        // Paths are compared as strings with either separator so that the result does not depend
+        // on the OS the generator runs on.
+        var file = path.Replace('\\', '/');
+        var root = projectDir!.Replace('\\', '/').TrimEnd('/');
+        var cut = file.LastIndexOf('/');
+        var dir = cut < 0 ? string.Empty : file.Substring(0, cut);
+        if (dir.StartsWith(root, System.StringComparison.OrdinalIgnoreCase) && (dir.Length == root.Length || dir[root.Length] == '/'))
+        {
+            return dir.Substring(root.Length).Trim('/');
+        }
+
+        if (Path.IsPathRooted(path) && Path.IsPathRooted(projectDir))
         {
             return string.Empty;
         }
 
-        return dir.Substring(root.Length).Trim('\\', '/');
+        var fullDir = Path.GetDirectoryName(Path.GetFullPath(path)) ?? string.Empty;
+        var fullRoot = Path.GetFullPath(projectDir).TrimEnd('\\', '/');
+        if (!fullDir.StartsWith(fullRoot, System.StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Empty;
+        }
+
+        return fullDir.Substring(fullRoot.Length).Trim('\\', '/');
+    }
+
+    private static string FileStem(string path)
+    {
+        var start = System.Math.Max(path.LastIndexOf('/'), path.LastIndexOf('\\')) + 1;
+        var name = path.Substring(start);
+        var dot = name.LastIndexOf('.');
+        return dot > 0 ? name.Substring(0, dot) : name;
     }
 
     private static string SafeIdentifier(string name)
