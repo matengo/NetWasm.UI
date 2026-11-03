@@ -6,21 +6,7 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
-### Changed
-
-- `Computed` is push-pull: a change marks it and everything below it stale, and it recomputes on
-  read, only if a dependency actually changed. A diamond recomputes its join once per change
-  (benchmark `diamond`: 7.8 → 2.6 ms), and a `Computed` nobody reads is not recomputed. An effect
-  behind a `Computed` whose value didn't change is now queued and then skipped instead of never
-  being queued; it still does not run.
-- Short ASCII strings in a render batch are encoded and decoded without `Encoding.UTF8` /
-  `TextDecoder`.
-
-### Added
-
-- Benchmark runner: `--apps` and `--cases` select a subset of apps and cases for quick runs.
-
-## [0.1.0]
+## [0.1.0] - 2026-11-03
 
 The first public release: NuGet packages, a `dotnet new` template and the features needed for
 real applications. It requires NetWasm.Sdk 0.10.7 and the .NET SDK 10.0.3xx.
@@ -60,11 +46,19 @@ real applications. It requires NetWasm.Sdk 0.10.7 and the .NET SDK 10.0.3xx.
   - A size budget in CI (`size-budget.json`, `tools/size-report`).
   - A packaging and template smoke test in CI.
   - A tag-driven release workflow.
+  - Benchmark runner: `--apps` and `--cases` select a subset of apps and cases for quick runs.
 - **VS Code extension:** prepared for the Marketplace (icon, metadata, `npm run package`).
 
 ### Changed
 
 - NetWasm.Sdk 0.10.0 → 0.10.7. The DOM batch is passed to JavaScript without copying.
+- `Computed` is push-pull: a change marks it and everything below it stale, and it recomputes on
+  read, only if a dependency actually changed. A diamond recomputes its join once per change
+  (benchmark `diamond`: 7.8 → 2.6 ms), and a `Computed` nobody reads is not recomputed. An effect
+  behind a `Computed` whose value didn't change is now queued and then skipped instead of never
+  being queued; it still does not run.
+- Short ASCII strings in a render batch are encoded and decoded without `Encoding.UTF8` /
+  `TextDecoder`.
 - The `.nwui` generator adds `using System.Threading.Tasks;` and `using NetWasm.UI.Forms;` to
   every generated file.
 
