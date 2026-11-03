@@ -9,8 +9,8 @@
     <NoWarn>$(NoWarn);CS1591;RS0026;RS0027</NoWarn>
     <WarningsAsErrors>$(WarningsAsErrors);RS0016;RS0017</WarningsAsErrors>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- No .snupkg: NetWasm.Sdk 0.10.x's pack task omits the SymbolsPackage package type, so nuget.org rejects it (HTTP 400). -->
+    <IncludeSymbols>false</IncludeSymbols>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' or '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
