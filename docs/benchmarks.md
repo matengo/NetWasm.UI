@@ -72,7 +72,8 @@ O3 is now level with or faster than Oz on the DOM cases.
 
 In short: NetWasm.UI is faster than React on every DOM case except append, level with or faster
 than Solid at partial update, remove and all reactive workloads except diamond, 1.1–1.8× Solid
-elsewhere, and 4–20× faster than Blazor with a ~12× smaller download and ~8× faster startup.
+elsewhere, and 3–25× faster than Blazor (interpreter) with a ~12× smaller download and ~8×
+faster startup.
 The pure-compute rows vary between runs because Chromium tiers Wasm and JS up at different
 times (Liftoff → TurboFan).
 

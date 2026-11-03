@@ -90,9 +90,10 @@ public sealed class CounterView : Component
 - **Size:** the whole demo app (counter, todos, router, forms, nested components) is about
   **150 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
   past its [size budget](size-budget.json).
-- **Speed:** in a [js-framework-benchmark-style comparison](docs/benchmarks.md) it is level with
-  or faster than React on most cases and 1.1–1.8× SolidJS. Against Blazor WebAssembly it is
-  4–20× faster, with a ~12× smaller download and ~8× faster startup.
+- **Speed:** in a [js-framework-benchmark-style comparison](docs/benchmarks.md)
+  it is faster than React on every case except append, and between 0.8× and 1.8× SolidJS's
+  time. Against Blazor WebAssembly (interpreter) it is 3–25× faster, with a ~12× smaller
+  download and ~8× faster startup.
 
 ## Requirements
 
