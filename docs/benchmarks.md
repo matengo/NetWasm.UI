@@ -86,6 +86,7 @@ The fixes made after earlier runs are listed in the [CHANGELOG](../CHANGELOG.md)
   two listeners, a scope and a boxed key.
 - `Computed` recomputes eagerly on every dirty notification, so a diamond recomputes its join
   once per branch (`diamond`). A push-pull model (mark stale, recompute on read) would fix it.
-- `O3` is ~1.5–2× faster than `Oz` on reactive work but makes the Wasm bigger. `Oz` stays the
-  default.
-- Startup includes downloading and compiling ~360 KB of Wasm vs. 17 KB of JS.
+- `O3` is ~1.2–1.4× faster than `Oz` on reactive work and level with or faster on most DOM
+  cases, but the Wasm grows from ~306 to ~536 KB raw (+11 % total Brotli download). `Oz` stays
+  the default.
+- Startup includes downloading and compiling ~306 KB of Wasm vs. 17 KB of JS.
