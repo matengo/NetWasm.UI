@@ -16,7 +16,6 @@
   },
   "categories": ["Programming Languages"],
   "galleryBanner": { "color": "#512BD4", "theme": "dark" },
-  "galleryBanner": { "color": "#512BD4", "theme": "dark" },
   "contributes": {
     "languages": [
       {
@@ -44,7 +43,6 @@
   "scripts": {
     "test": "node --test test/grammar.test.mjs",
     "package": "vsce package --out nwui.vsix",
-    "publish": "vsce publish",
     "publish": "vsce publish"
   },
   "devDependencies": {
