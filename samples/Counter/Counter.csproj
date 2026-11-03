@@ -11,7 +11,7 @@
     <!-- Compiles *.nwui templates into components at build time. -->
     <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false"
-                      SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
+                      UndefineProperties="TargetFramework" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="**\*.nwui" Exclude="bin\**;obj\**" />

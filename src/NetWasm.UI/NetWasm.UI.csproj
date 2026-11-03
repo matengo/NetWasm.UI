@@ -16,7 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
                       ReferenceOutputAssembly="false" PrivateAssets="all"
-                      SetTargetFramework="TargetFramework=netstandard2.0" SkipGetTargetFrameworkProperties="true" />
+                      UndefineProperties="TargetFramework" SkipGetTargetFrameworkProperties="true" />
     <None Include="..\NetWasm.UI.Generator\bin\$(Configuration)\netstandard2.0\NetWasm.UI.Generator.dll"
           Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <!-- NuGet imports build/<PackageId>.props. -->
