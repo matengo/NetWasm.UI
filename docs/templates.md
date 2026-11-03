@@ -187,6 +187,12 @@ own HTML and C# grammars, so markup, `@expressions`, `@if`/`@foreach`, directive
 (`@onclick="…"`), components, `@prop` and `@code { … }` get their normal colors. It also sets up
 `@* *@` comments, bracket matching and auto-closing.
 
+To install it, download `nwui.vsix` from the
+[latest release](https://github.com/matengo/NetWasm.UI/releases/latest). Then run
+`code --install-extension nwui.vsix`, or use **Extensions → … → Install from VSIX…** in VS Code.
+
+To build it from source:
+
 ```powershell
 cd tools/vscode-nwui
 npm install

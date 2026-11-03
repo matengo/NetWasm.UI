@@ -19,7 +19,16 @@ NetWasm.UI source generator when you build. See the
 
 ## Install
 
-Install **NetWasm.UI templates (.nwui)** from the Marketplace, or build a local package:
+Each [GitHub release](https://github.com/matengo/NetWasm.UI/releases/latest) has an `nwui.vsix`.
+Download it, then either:
+
+- run `code --install-extension nwui.vsix`, or
+- in VS Code, open the Extensions view, click **…** and choose **Install from VSIX…**.
+
+Reinstall a newer `.vsix` the same way to update. The extension will also be published to the
+Marketplace as **NetWasm.UI templates (.nwui)**.
+
+To build a local package from source:
 
 ```powershell
 npm install

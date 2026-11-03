@@ -31,13 +31,27 @@ The template brings:
 
 Read [Getting started](docs/getting-started.md) next.
 
-| Package | What it is |
-|---|---|
-| `NetWasm.UI.Browser` | The package an app references: the browser host and the `nwui.dom` module. It brings in `NetWasm.UI`. |
-| `NetWasm.UI` | The core: signals, components, router, forms and the `.nwui` template compiler. |
-| `NetWasm.UI.Templates` | `dotnet new netwasm-ui`. |
-| `NetWasm.UI.DevServer` | `dotnet nwui-dev`: publishes, serves (Brotli, SPA fallback) and live-reloads. |
-| VS Code: *NetWasm.UI templates (.nwui)* | Syntax highlighting for `.nwui`. |
+## Packages
+
+All packages are on nuget.org and are released together with the same version number.
+
+| Package | What it is | Install |
+|---|---|---|
+| [`NetWasm.UI.Browser`](https://www.nuget.org/packages/NetWasm.UI.Browser) | The package an app references: the browser host and the `nwui.dom` module. It brings in `NetWasm.UI`. | `dotnet add package NetWasm.UI.Browser` |
+| [`NetWasm.UI`](https://www.nuget.org/packages/NetWasm.UI) | The core: signals, components, router, forms and the `.nwui` template compiler. | Comes with `NetWasm.UI.Browser`. |
+| [`NetWasm.UI.Templates`](https://www.nuget.org/packages/NetWasm.UI.Templates) | `dotnet new netwasm-ui`. | `dotnet new install NetWasm.UI.Templates` |
+| [`NetWasm.UI.DevServer`](https://www.nuget.org/packages/NetWasm.UI.DevServer) | `dotnet nwui-dev`: publishes, serves (Brotli, SPA fallback) and live-reloads. | In the template. Otherwise `dotnet tool install --local NetWasm.UI.DevServer`. |
+| VS Code: *NetWasm.UI templates (.nwui)* | Syntax highlighting for `.nwui`. | See below. |
+
+### VS Code extension
+
+The extension is not on the Marketplace yet. Install it from a GitHub release:
+
+1. Download `nwui.vsix` from the [latest release](https://github.com/matengo/NetWasm.UI/releases/latest).
+2. Run `code --install-extension nwui.vsix`. Or, in VS Code, open the Extensions view, click
+   **…** and choose **Install from VSIX…**.
+
+To build it from source, see [tools/vscode-nwui](tools/vscode-nwui/README.md).
 
 ## Quick look
 
