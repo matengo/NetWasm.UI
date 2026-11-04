@@ -59,6 +59,7 @@ Rules:
 | An effect, `Text(() => …)`, reactive attribute, `When`/`Each` re-running later | The boundary around where the effect was created |
 | An event handler | The boundary around the element with the listener |
 | An `OnMount` callback | The boundary around the component that registered it |
+| A `SetInterval` tick | The boundary around the component that started the timer |
 | An `OnCleanup` callback or effect cleanup | `App.OnError` (the boundary may already be gone) |
 | The fallback itself | The next boundary out |
 | The initial `App.Mount` with no boundary | `App.OnError` |

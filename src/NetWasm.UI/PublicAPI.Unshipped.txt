@@ -1,1 +1,4 @@
 #nullable enable
+static NetWasm.UI.Html.SetInterval(System.Action! tick, int milliseconds) -> System.IDisposable!
+NetWasm.UI.Services.AddLazy<T>() -> NetWasm.UI.Services!
+NetWasm.UI.Services.AddLazy<TService, TImplementation>() -> NetWasm.UI.Services!

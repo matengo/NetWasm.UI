@@ -5,10 +5,10 @@
     }
 </ul>
 
+@inject Api Api
+
 @code {
     private Resource<User[]> users = null!;
-
-    public Api Api { get; set; } = null!;
 
     public Signal<int> Selected { get; set; } = null!;
 

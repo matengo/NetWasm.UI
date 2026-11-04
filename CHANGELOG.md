@@ -6,6 +6,18 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `SetInterval(tick, milliseconds)` in `Html`: a repeating timer that stops when its component,
+  branch or effect run is torn down. Each tick is batched, and errors go to the nearest
+  `ErrorBoundary`. The Counter sample shows the seconds spent on the page.
+- `Services.AddLazy<TService, TImplementation>()` and `AddLazy<T>()`: register a class whose
+  constructor parameters are injected. The source generator rewrites each call at compile time
+  (a C# interceptor) into `AddLazy<TService>(() => new TImplementation(Inject<…>(), …))`, with no
+  reflection. Types it cannot construct are build error `NWUI010`. The NwUi package sets
+  `InterceptorsNamespaces`. The Fetch sample now registers its `Api` this way and uses `@inject`.
+  See [Services](docs/services.md#auto-wired-services).
+
 ## [0.3.0] - 2026-11-04
 
 ### Added

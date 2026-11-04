@@ -4,4 +4,8 @@
     <AdditionalFiles Include="**\*.nwui" Exclude="$(DefaultItemExcludes);bin\**;obj\**" />
     <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
   </ItemGroup>
+  <!-- Services.AddLazy<TService, TImplementation>() is rewritten by generated interceptors in this namespace. -->
+  <PropertyGroup>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);NetWasm.UI.Generated</InterceptorsNamespaces>
+  </PropertyGroup>
 </Project>

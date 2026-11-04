@@ -10,7 +10,8 @@ namespace NetWasm.UI;
 /// <code>
 /// var services = new Services()
 ///     .Add&lt;IClock&gt;(new SystemClock())          // an existing instance
-///     .AddLazy&lt;IApi&gt;(() => new HttpApi(Inject&lt;IClock&gt;())); // created on first Inject
+///     .AddLazy&lt;IApi, HttpApi&gt;()                  // created on first Inject; constructor parameters injected
+///     .AddLazy&lt;ICache&gt;(() => new MemoryCache(100)); // created on first Inject by your factory
 /// </code>
 /// </summary>
 /// <remarks>
@@ -18,7 +19,7 @@ namespace NetWasm.UI;
 /// <c>IApi</c>, so give the type argument when consumers inject an interface.</para>
 /// <para>There is no reflection: the key is a per-type static object, and lookups walk the scope tree like
 /// <see cref="Context{T}"/>. The nearest provider wins, so a subtree can override an app-wide service.</para>
-/// <para>Lifetimes follow the scope that provides the set. <see cref="AddLazy{T}"/> creates one instance per
+/// <para>Lifetimes follow the scope that provides the set. <see cref="AddLazy{T}(Func{T})"/> creates one instance per
 /// providing scope (app-wide when passed to <c>Start</c>, per subtree when provided in a component) and disposes
 /// it with that scope if it is <see cref="IDisposable"/>. Instances passed to <see cref="Add{T}"/> belong to the
 /// caller and are never disposed. For a new instance on every resolve, register a factory: <c>Add&lt;Func&lt;Foo&gt;&gt;(() => new Foo())</c>.</para>
@@ -56,6 +57,24 @@ public sealed class Services
         Append(new LazyRegistration<T>(factory));
         return this;
     }
+
+    /// <summary>
+    /// Registers <typeparamref name="TImplementation"/> as the <typeparamref name="TService"/> service, created on first
+    /// <see cref="Html.Inject{T}"/> like <see cref="AddLazy{T}(Func{T})"/>. Its constructor parameters are injected from
+    /// the providing scope. The NetWasm.UI source generator rewrites each call into
+    /// <c>AddLazy&lt;TService&gt;(() =&gt; new TImplementation(Inject&lt;…&gt;(), …))</c> at compile time; there is no reflection.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The call was not rewritten (the generator is not running for this project).</exception>
+    public Services AddLazy<TService, TImplementation>()
+        where TImplementation : TService => throw NotGenerated();
+
+    /// <summary>Registers <typeparamref name="T"/> as its own service, with injected constructor parameters. See <see cref="AddLazy{TService, TImplementation}"/>.</summary>
+    /// <exception cref="InvalidOperationException">The call was not rewritten (the generator is not running for this project).</exception>
+    public Services AddLazy<T>() => throw NotGenerated();
+
+    private static InvalidOperationException NotGenerated() => new(
+        "AddLazy<TService, TImplementation>() is rewritten at compile time by the NetWasm.UI source generator, which did not run for this call. " +
+        "Reference the NwUi package (or the generator as an analyzer) and include NetWasm.UI.Generated in InterceptorsNamespaces, or register a factory with AddLazy(() => new ...).");
 
     private void Append(Registration registration)
     {

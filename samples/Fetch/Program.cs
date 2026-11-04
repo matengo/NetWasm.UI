@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Runtime.InteropServices.JavaScript;
+using NetWasm.UI;
 using NetWasm.UI.Browser;
 
 namespace Fetch;
@@ -15,7 +16,10 @@ public static partial class Program
     [JSExport("start")]
     public static void Start(string origin)
     {
-        var api = new Api(new HttpClient { BaseAddress = new Uri(origin + "/") });
-        BrowserApp.Start(new UsersPage { Api = api }, "#app");
+        // AddLazy<Api>() is wired at compile time: the generator emits () => new Api(Inject<HttpClient>()).
+        var services = new Services()
+            .Add(new HttpClient { BaseAddress = new Uri(origin + "/") })
+            .AddLazy<Api>();
+        BrowserApp.Start(new UsersPage(), services, "#app");
     }
 }

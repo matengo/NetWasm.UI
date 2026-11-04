@@ -140,3 +140,27 @@ protected override Node Build()
 - `OnMount` runs once, in its own batch, after the host applied the DOM ops. It is skipped if
   its scope was disposed first.
 - `OnCleanup` runs when the owning scope is disposed (or, inside an `Effect`, before each re-run).
+
+### Timers
+
+`SetInterval(tick, milliseconds)` runs `tick` repeatedly and stops by itself when the component
+or branch is torn down. It is the counterpart of Solid's `setInterval` plus `onCleanup`:
+
+```csharp
+public sealed class CountingComponent : Component
+{
+    protected override Node Build()
+    {
+        var count = new Signal<int>(0);
+        SetInterval(() => count.Value++, 1000);
+        return Div(Text(() => $"Count value is {count.Value}"));
+    }
+}
+```
+
+- Call it while building (in templates, in `OnInit`) or inside an `Effect`. Inside an effect the
+  timer stops before the next run.
+- Each tick is one batched update. An exception goes to the nearest
+  [error boundary](error-handling.md).
+- It returns an `IDisposable`. Dispose it to stop the timer early.
+- The first tick comes after one interval, not immediately.

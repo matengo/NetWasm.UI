@@ -29,6 +29,18 @@ public sealed class CounterTests : PageTest
     }
 
     [Fact]
+    public async Task Interval_ticks_and_restarts_with_the_page()
+    {
+        await OpenAsync("/counter");
+        var seconds = Page.Locator("#seconds");
+        await Expect(seconds).ToHaveTextAsync("2", new() { Timeout = 10_000 });
+
+        await Nav("/todos").ClickAsync();
+        await Nav("/counter").ClickAsync();
+        await Expect(seconds).ToHaveTextAsync("0");
+    }
+
+    [Fact]
     public async Task Hint_appears_at_ten_clicks()
     {
         await OpenAsync("/counter");

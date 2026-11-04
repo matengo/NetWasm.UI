@@ -5,7 +5,7 @@
     <ErrorBoundary>
         <div>
         <Suspense>
-            <UserList Api="@Api" Selected="@selected" />
+            <UserList Selected="@selected" />
             <template slot="Fallback">
                 <p class="loading">Loading users…</p>
             </template>
@@ -26,11 +26,11 @@
     <button id="missing" @onclick="() => selected.Value = 99">Load a missing user</button>
 </main>
 
+@inject Api Api
+
 @code {
     private readonly Signal<int> selected = new(0);
     private Resource<UserDetails> details = null!;
-
-    public Api Api { get; set; } = null!;
 
     partial void OnInit() =>
         details = Resource.Create(() => selected.Value == 0 ? (int?)null : selected.Value, (id, ct) => Api.GetDetailsAsync(id, ct));

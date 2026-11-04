@@ -4,6 +4,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Services.AddLazy<TService, TImplementation>() interceptors (the NwUi package sets this for consumers). -->
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);NetWasm.UI.Generated</InterceptorsNamespaces>
   </PropertyGroup>
 
   <!-- Package metadata. Only projects under src/ are packable (see src/Directory.Build.props). -->

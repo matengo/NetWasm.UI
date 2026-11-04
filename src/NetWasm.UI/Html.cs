@@ -253,6 +253,13 @@ public static class Html
     /// <summary>Runs when the current component/branch (or effect run) is torn down. See <see cref="Lifecycle.OnCleanup"/>.</summary>
     public static void OnCleanup(Action cleanup) => Lifecycle.OnCleanup(cleanup);
 
+    /// <summary>
+    /// Runs <paramref name="tick"/> every <paramref name="milliseconds"/> until the current component/branch
+    /// (or effect run) is torn down, or until the returned handle is disposed. Each tick is one batched update;
+    /// an exception goes to the nearest <c>ErrorBoundary</c>. Call it while building a component or inside an Effect.
+    /// </summary>
+    public static IDisposable SetInterval(Action tick, int milliseconds) => Interval.Start(tick, milliseconds);
+
     // ---- routing ----
 
     /// <summary>An in-app link: renders <c>&lt;a href&gt;</c> (prefixed with the router's base path) and routes plain clicks through <see cref="Routing.Router.Current"/>.

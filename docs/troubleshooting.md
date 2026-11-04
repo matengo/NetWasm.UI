@@ -42,6 +42,11 @@ cache `browser/*.wasm` because NetWasm file names do not change between builds; 
 
 - `NWUI001`–`NWUI003` come from the template generator and point at the `.nwui` file; see
   [Templates](templates.md#errors).
+- `NWUI010`: a type passed to `Services.AddLazy<TService, TImplementation>()` cannot be
+  constructed (abstract, private, several constructors, or `ref`/`params` parameters); see
+  [Services](services.md#auto-wired-services). If that call instead throws
+  `InvalidOperationException` at run time, the generator did not intercept it: check that the
+  project references NwUi and that `InterceptorsNamespaces` includes `NetWasm.UI.Generated`.
 - Reflection is not available in `netwasm0.1`. For `System.Text.Json`, use a source-generated
   `JsonSerializerContext`. Use the `NetWasm.*` packages (`NetWasm.System.Net.Http`,
   `NetWasm.System.Text.Json`) rather than the Microsoft ones; the Microsoft packages fail with
