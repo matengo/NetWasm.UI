@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+- Version aligned with NwUi 0.3.0; no grammar changes.
+
 ## 0.2.0
 
 - Highlight `@inject Type Name` like `@prop`.
