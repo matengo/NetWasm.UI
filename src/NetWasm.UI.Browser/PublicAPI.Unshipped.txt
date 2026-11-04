@@ -1,1 +1,2 @@
 #nullable enable
+static NetWasm.UI.Browser.BrowserApp.Start(NetWasm.UI.Component! root, NetWasm.UI.Services! services, string! selector = "#app", string? basePath = null) -> void

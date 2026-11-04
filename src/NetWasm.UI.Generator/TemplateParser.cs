@@ -209,6 +209,7 @@ internal sealed class TemplateParser
             case "using":
             case "namespace":
             case "prop":
+            case "inject":
                 if (file is null)
                 {
                     throw Error($"'@{keyword}' is only allowed at the top level of a template.", at, keyword.Length + 1);
@@ -224,9 +225,8 @@ internal sealed class TemplateParser
             case "switch":
             case "do":
             case "functions":
-            case "inject":
             case "page":
-                throw new TemplateException("NWUI003", $"'@{keyword}' is not supported in .nwui templates (supported: @if, @foreach, @render, @code, @prop, @using, @namespace).", at, keyword.Length + 1);
+                throw new TemplateException("NWUI003", $"'@{keyword}' is not supported in .nwui templates (supported: @if, @foreach, @render, @code, @prop, @inject, @using, @namespace).", at, keyword.Length + 1);
         }
 
         var exprEnd = CSharpScanner.ScanImplicit(s, pos);
@@ -275,7 +275,20 @@ internal sealed class TemplateParser
 
         if (keyword == "prop")
         {
-            file.Props.Add(ParseProp(value, pos, at));
+            file.Props.Add(ParseProp(value, pos, at, keyword));
+            pos = lineEnd;
+            return;
+        }
+
+        if (keyword == "inject")
+        {
+            var decl = ParseProp(value, pos, at, keyword);
+            if (decl.Default is not null)
+            {
+                throw Error("'@inject' cannot have a default value; register the service with Services.Add/AddLazy instead.", at, 7);
+            }
+
+            file.Injects.Add(new InjectDecl(decl.Type, decl.Name));
             pos = lineEnd;
             return;
         }
@@ -294,7 +307,7 @@ internal sealed class TemplateParser
     }
 
     /// <summary><c>Type Name</c> or <c>Type Name = default</c>; <paramref name="start"/> is the offset of <paramref name="decl"/>.</summary>
-    private PropDecl ParseProp(string decl, int start, int at)
+    private PropDecl ParseProp(string decl, int start, int at, string keyword)
     {
         var depth = 0;
         var eq = -1;
@@ -325,7 +338,9 @@ internal sealed class TemplateParser
         var type = left.Substring(0, nameStart).Trim();
         if (name.Length == 0 || !CSharpScanner.IsIdentStart(name[0]) || type.Length == 0)
         {
-            throw Error("Expected '@prop Type Name' or '@prop Type Name = default'.", at, 5);
+            throw Error(keyword == "prop"
+                ? "Expected '@prop Type Name' or '@prop Type Name = default'."
+                : $"Expected '@{keyword} Type Name'.", at, keyword.Length + 1);
         }
 
         Directive? defaultValue = null;
@@ -335,7 +350,7 @@ internal sealed class TemplateParser
             var code = raw.Trim();
             if (code.Length == 0)
             {
-                throw Error($"Expected a default value after '=' in '@prop {left}'.", start + eq, 1);
+                throw Error($"Expected a default value after '=' in '@{keyword} {left}'.", start + eq, 1);
             }
 
             defaultValue = new Directive(code, start + eq + 1 + (raw.Length - raw.TrimStart().Length));

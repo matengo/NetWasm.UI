@@ -70,7 +70,7 @@
       }
     },
     "prop-directive": {
-      "match": "(@)(prop)\\s+(.+?)\\s+([A-Za-z_]\\w*)\\s*(?:(=)\\s*(.*?))?\\s*(;)?\\s*$",
+      "match": "(@)(prop|inject)\\s+(.+?)\\s+([A-Za-z_]\\w*)\\s*(?:(=)\\s*(.*?))?\\s*(;)?\\s*$",
       "captures": {
         "1": { "name": "keyword.control.nwui.transition" },
         "2": { "name": "keyword.control.nwui.directive" },

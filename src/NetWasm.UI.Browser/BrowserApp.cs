@@ -21,6 +21,25 @@ public static class BrowserApp
     /// </param>
     public static void Start(Component root, string selector = "#app", string? basePath = null)
     {
+        Initialize(basePath);
+        App.Mount(root, selector);
+    }
+
+    /// <summary>
+    /// Like <see cref="Start(Component, string, string?)"/>, with app-wide <paramref name="services"/> that every
+    /// component can resolve with <c>Inject&lt;T&gt;()</c>. They live until <see cref="Stop"/>.
+    /// <code>
+    /// BrowserApp.Start(new App(), new Services().Add&lt;IApi&gt;(new HttpApi()));
+    /// </code>
+    /// </summary>
+    public static void Start(Component root, Services services, string selector = "#app", string? basePath = null)
+    {
+        Initialize(basePath);
+        App.Mount(root, selector, services);
+    }
+
+    private static void Initialize(string? basePath)
+    {
         if (host is null)
         {
             host = new BrowserDomHost();
@@ -28,10 +47,8 @@ public static class BrowserApp
             host.Connect();
             Router.Install(new BrowserHistory(), basePath ?? BrowserHistory.DocumentBasePath());
         }
-
-        App.Mount(root, selector);
     }
 
-    /// <summary>Unmounts everything <see cref="Start"/> mounted (see <see cref="App.Unmount"/>).</summary>
+    /// <summary>Unmounts everything <see cref="Start(Component, string, string?)"/> mounted (see <see cref="App.Unmount"/>).</summary>
     public static void Stop() => App.Unmount();
 }

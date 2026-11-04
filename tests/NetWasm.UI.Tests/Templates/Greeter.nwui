@@ -1,0 +1,11 @@
+@* @inject: the field is filled from the nearest Services provider before OnInit runs. *@
+<p class="greeter">@greeting, @Name! (@Greetings.Count)</p>
+
+@inject IGreetings Greetings
+@prop string Name = "";
+
+@code {
+    private string greeting = "";
+
+    partial void OnInit() => greeting = Greetings.Hello;
+}

@@ -62,7 +62,13 @@ internal sealed class TemplateEmitter
         header.Append("using System.Collections.Generic;\nusing System.Threading.Tasks;\nusing NetWasm.UI;\nusing NetWasm.UI.Forms;\nusing NetWasm.UI.Reactive;\nusing NetWasm.UI.Routing;\nusing static NetWasm.UI.Html;\n");
 
         var bodyStart = sb.Length;
-        sb.Append("    protected override global::NetWasm.UI.Node Build()\n    {\n        OnInit();\n        return ");
+        sb.Append("    protected override global::NetWasm.UI.Node Build()\n    {\n");
+        foreach (var inj in file.Injects)
+        {
+            sb.Append("        ").Append(inj.Name.Code).Append(" = global::NetWasm.UI.Html.Inject<").Append(inj.Type.Code).Append(">();\n");
+        }
+
+        sb.Append("        OnInit();\n        return ");
         EmitNode(root, nodePosition: true);
         Hidden();
         sb.Append(";\n    }\n");
@@ -109,6 +115,17 @@ internal sealed class TemplateEmitter
             }
 
             header.Append(";\n");
+        }
+
+        foreach (var inj in file.Injects)
+        {
+            header.Append("\n    private ");
+            User(inj.Type, string.Empty, string.Empty, header);
+            HiddenIn(header);
+            header.Append("    ");
+            User(inj.Name, string.Empty, string.Empty, header);
+            HiddenIn(header);
+            header.Append("    = default!;\n");
         }
 
         header.Append("\n    /// <summary>Runs at the start of Build, inside the component's scope (Use/Provide/OnMount work here).</summary>\n");

@@ -334,6 +334,9 @@ public partial class TemplateTests : RendererTest
     [InlineData("<div title=\"&nosuch;\"></div>", "NWUI001", "Unknown entity")]
     [InlineData("@prop Count\n<div></div>", "NWUI001", "@prop Type Name")]
     [InlineData("@prop int Count =\n<div></div>", "NWUI001", "default value")]
+    [InlineData("@inject IApi\n<div></div>", "NWUI001", "@inject Type Name")]
+    [InlineData("@inject IApi Api = null\n<div></div>", "NWUI001", "cannot have a default value")]
+    [InlineData("<div>@inject IApi Api</div>", "NWUI001", "only allowed at the top level")]
     public void Compiler_reports_template_errors(string template, string id, string message)
     {
         var result = TemplateCompiler.Compile("C:\\p\\Bad.nwui", template, "App", "C:\\p\\");

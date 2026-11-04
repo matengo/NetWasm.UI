@@ -6,6 +6,7 @@
 | [Components and the C# API](components.md) | `Component`, elements, attributes, events, binding, `When`/`Each`, props and slots |
 | [Templates (`.nwui`)](templates.md) | The Razor-like template syntax, the source generator and editor support |
 | [Reactivity](reactivity.md) | `Signal`, `Computed`, `Effect`, `Selector`, batching, scopes, context and lifecycle |
+| [Services and DI](services.md) | `Services`, `Inject<T>()`, `@inject`, scoped and lazy services |
 | [Async data and Suspense](async.md) | `Resource<T>`, `Suspense`, `HttpClient` and JSON |
 | [Forms and validation](forms.md) | `Form`, `Field<T>`, validators, `@bind`, accessible errors |
 | [Error handling](error-handling.md) | `ErrorBoundary`, `App.OnError`, where exceptions go |

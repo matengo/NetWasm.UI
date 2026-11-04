@@ -150,6 +150,7 @@ test('top-level directives and @code', () => {
     '@namespace My.App',
     '<b>@Level</b>',
     '@prop IReadOnlyList<string> Tags = new string[0];',
+    '@inject IWeatherApi Weather',
     '@code {',
     '    private readonly Signal<int> count = new(0);',
     '    public void Bump() { if (count.Value > 0) { count.Value++; } }',
@@ -162,6 +163,9 @@ test('top-level directives and @code', () => {
   expectScope(t, 'IReadOnlyList', 'entity.name.type');
   expectScope(t, 'Tags', 'entity.name.variable.property');
   expectScope(t, 'new', 'keyword.operator.expression.new.cs', 'Tags');
+  expectScope(t, 'inject', 'keyword.control.nwui.directive');
+  expectScope(t, 'IWeatherApi', 'entity.name.type');
+  expectScope(t, 'Weather', 'entity.name.variable.property');
   expectScope(t, 'readonly', 'storage.modifier');
   expectScope(t, 'Bump', 'entity.name.function');
   expectScope(t, 'p', 'entity.name.tag.html');

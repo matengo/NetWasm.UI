@@ -121,6 +121,8 @@ var count = Use(AppState.Context).Count;
 - Call `Use` while building, not inside a reactive lambda. In templates, call it in `OnInit`.
 - Pages are rebuilt on navigation. Keep state that should survive in a store
   (see `samples/Counter/AppState.cs`).
+- For services looked up by type (API clients, stores shared app-wide), `Services` and
+  `Inject<T>()` are the shorter form of the same mechanism. See [Services and DI](services.md).
 
 ## Lifecycle
 

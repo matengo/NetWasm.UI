@@ -73,6 +73,7 @@ using static NetWasm.UI.Html;
 | `<Suspense>…<template slot="Fallback">…</template></Suspense>` | `Html.Suspense(() => …, () => …)`; the content must have exactly one root node, and the `<Suspense>` cannot be the only content of a template or block. See [Async data](async.md) |
 | `@code { … }`, `@using X`, `@namespace X` | class members, usings, namespace |
 | `@prop int Level = 1;` | a reactive prop: `public Prop<int> Level { get; set; } = 1;` |
+| `@inject IWeatherApi Weather` | a field set from `Inject<IWeatherApi>()` before `OnInit`; see [Services and DI](services.md) |
 | `@* … *@`, `<!-- … -->`, `@@`, `&amp; &times; &minus; &#65;` | comments, a literal `@`, decoded entities (common named ones plus numeric; an unknown `&name;` is an error) |
 
 ## Rules

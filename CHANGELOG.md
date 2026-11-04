@@ -6,6 +6,15 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- **Services and DI:** `Services` (`Add<T>`, `AddLazy<T>`), `Inject<T>()`/`TryInject<T>()`,
+  `Provide(services)`/`Provide(services, render)`, `App.Mount(root, selector, services)` and
+  `BrowserApp.Start(root, services)`. Lookups walk the scope tree like `Context<T>`, with no
+  reflection. Lazy services are created once per providing scope and disposed with it.
+  See [Services and DI](docs/services.md).
+- **Templates:** `@inject Type Name` declares a field filled from `Inject<T>()` before `OnInit`.
+
 ## [0.1.0] - 2026-11-03
 
 The first public release: NuGet packages, a `dotnet new` template and the features needed for

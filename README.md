@@ -145,6 +145,7 @@ dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one 
 - [Components and the C# API](docs/components.md)
 - [Templates (`.nwui`)](docs/templates.md)
 - [Reactivity](docs/reactivity.md): signals, batching, context, lifecycle
+- [Services and DI](docs/services.md): `Services`, `Inject<T>()`, `@inject`
 - [Async data and Suspense](docs/async.md): `Resource<T>`, `Suspense`, `HttpClient`
 - [Forms and validation](docs/forms.md)
 - [Routing](docs/routing.md): parameters, nested routes, base path

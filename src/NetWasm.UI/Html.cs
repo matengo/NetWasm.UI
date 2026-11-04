@@ -209,6 +209,44 @@ public static class Html
     /// <summary>The nearest provided value of <paramref name="context"/>. Call while building, not inside a reactive lambda.</summary>
     public static T Use<T>(Context<T> context) => context.Use();
 
+    /// <summary>
+    /// Makes <paramref name="services"/> available to everything built after this call in the current component
+    /// and its descendants. Overrides services of the same type provided further up.
+    /// </summary>
+    public static void Provide(Services services)
+    {
+        var scope = Scope.Current ?? throw new InvalidOperationException(
+            "Provide(services) must be called while building a component (there is no current scope).");
+        services.ApplyTo(scope);
+    }
+
+    /// <summary>Builds <paramref name="render"/> in a child scope where <paramref name="services"/> are available.</summary>
+    public static Node Provide(Services services, Func<Node> render)
+    {
+        var scope = new Scope();
+        services.ApplyTo(scope);
+        return scope.Run(render);
+    }
+
+    /// <summary>
+    /// The nearest <typeparamref name="T"/> service (see <see cref="Services"/>). Call while building, not inside a
+    /// reactive lambda or event handler: keep the result in a field or local and use that later.
+    /// </summary>
+    public static T Inject<T>()
+    {
+        if (Services.TryResolve<T>(out var value))
+        {
+            return value;
+        }
+
+        throw new InvalidOperationException(
+            "No service of the requested type is registered. Register it with Services.Add/AddLazy (passed to BrowserApp.Start or Provide) " +
+            "and call Inject while building a component, not inside a reactive lambda or event handler.");
+    }
+
+    /// <summary>Like <see cref="Inject{T}"/>, but returns false instead of throwing when no <typeparamref name="T"/> service is registered.</summary>
+    public static bool TryInject<T>(out T value) => Services.TryResolve(out value);
+
     /// <summary>Runs after this component's DOM has been applied by the host. See <see cref="Lifecycle.OnMount"/>.</summary>
     public static void OnMount(Action callback) => Lifecycle.OnMount(callback);
 

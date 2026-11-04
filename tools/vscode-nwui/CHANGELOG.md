@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Highlight `@inject Type Name` like `@prop`.
+
 ## 0.1.0
 
 - First Marketplace release.

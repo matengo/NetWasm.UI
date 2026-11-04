@@ -1,1 +1,10 @@
 #nullable enable
+NetWasm.UI.Services
+NetWasm.UI.Services.Add<T>(T instance) -> NetWasm.UI.Services!
+NetWasm.UI.Services.AddLazy<T>(System.Func<T>! factory) -> NetWasm.UI.Services!
+NetWasm.UI.Services.Services() -> void
+static NetWasm.UI.App.Mount(NetWasm.UI.Component! root, string! selector, NetWasm.UI.Services! services) -> void
+static NetWasm.UI.Html.Inject<T>() -> T
+static NetWasm.UI.Html.Provide(NetWasm.UI.Services! services) -> void
+static NetWasm.UI.Html.Provide(NetWasm.UI.Services! services, System.Func<NetWasm.UI.Node!>! render) -> NetWasm.UI.Node!
+static NetWasm.UI.Html.TryInject<T>(out T value) -> bool

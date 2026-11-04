@@ -24,7 +24,21 @@ internal sealed class TemplateFile
     public Directive? Namespace { get; set; }
     public List<Directive> CodeBlocks { get; } = new();
     public List<PropDecl> Props { get; } = new();
+    public List<InjectDecl> Injects { get; } = new();
     public List<TNode> Nodes { get; } = new();
+}
+
+/// <summary><c>@inject Type Name</c></summary>
+internal sealed class InjectDecl
+{
+    public InjectDecl(Directive type, Directive name)
+    {
+        Type = type;
+        Name = name;
+    }
+
+    public Directive Type { get; }
+    public Directive Name { get; }
 }
 
 /// <summary><c>@prop Type Name = default;</c></summary>

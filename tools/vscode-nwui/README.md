@@ -3,7 +3,7 @@
 Syntax highlighting for [NetWasm.UI](https://github.com/matengo/NetWasm.UI) `.nwui` templates. It
 covers HTML with embedded C#: `@expr`, `@(expr)`, `@if`/`else`/`@foreach`, `@render(...)`, directive
 attributes (`@onclick`, `@bind`, `@ref`, `@key`, `:preventDefault`), components and slots, `@prop`,
-`@using`, `@namespace`, `@code { … }` and `@* comments *@`.
+`@inject`, `@using`, `@namespace`, `@code { … }` and `@* comments *@`.
 
 ```razor
 <button @onclick="() => count.Value++">Clicked @count times</button>
