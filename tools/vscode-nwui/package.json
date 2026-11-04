@@ -2,7 +2,7 @@
   "name": "nwui",
   "displayName": "NetWasm.UI templates (.nwui)",
   "description": "Syntax highlighting for NetWasm.UI .nwui templates: HTML with embedded C#.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "netwasm-ui",
   "license": "MIT",
   "private": true,

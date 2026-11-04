@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-04
+
 ### Added
 
 - `SetInterval(tick, milliseconds)` in `Html`: a repeating timer that stops when its component,

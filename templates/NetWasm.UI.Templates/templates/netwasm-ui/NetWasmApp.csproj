@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Brings NetWasm.UI, the .nwui template compiler and the nwui.dom browser module. -->
-    <PackageReference Include="NwUi.Browser" Version="0.3.0" />
+    <PackageReference Include="NwUi.Browser" Version="0.4.0" />
   </ItemGroup>
   <ItemGroup>
     <!-- Published at the site root: wwwroot\index.html becomes /index.html. -->
