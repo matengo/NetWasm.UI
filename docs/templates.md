@@ -65,7 +65,7 @@ using static NetWasm.UI.Html;
 | `@ref="field"` | assigns the `Element` (or component) to a generated field |
 | `@if (c) { … } else if (c2) { … } else { … }` | `When(...)`; a chain shares one memoized selector |
 | `@foreach (var x in items) { <li @key="x.Id">…</li> }` | keyed `Each(...)`; `items` may be a list expression or an `IReadOnlySignal<IReadOnlyList<T>>`; without `@key` the item itself is the key |
-| `<Badge Label="hi" Count="@n" />` | `new Badge { Label = "hi", Count = n }` (an uppercase tag is a component) |
+| `<Badge Label="hi" Count="@n" />` | `new Badge { Label = "hi", Count = n }` (an uppercase tag is a component; constructor parameters are filled with `Inject<T>()`, see [constructor injection](services.md#constructor-injection)) |
 | `<Card>…</Card>` | `new Card { ChildContent = new Slot(() => …) }`; place it inside `Card` with `@render(ChildContent)` |
 | `<Card><template slot="Header">…</template>…</Card>` | a named slot: `Header = new Slot(() => …)`; the rest still goes to `ChildContent` |
 | `<Link href="/x">…</Link>`, `<NavLink href="/x" activeClass="on">…</NavLink>` | `Html.Link` / `Html.NavLink` |

@@ -1,0 +1,2 @@
+@* Constructor injection in a code-behind: Motto.cs declares the primary constructor. *@
+<em>@greetings.Hello</em>

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -66,7 +67,7 @@ internal static class TemplateCompiler
     public static readonly DiagnosticDescriptor UnsupportedError = new(
         "NWUI003", "Unsupported template feature", "{0}", "NetWasm.UI.Templates", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static CompiledTemplate Compile(string path, string text, string? rootNamespace, string? projectDir, string? reactiveProps = null)
+    public static CompiledTemplate Compile(string path, string text, string? rootNamespace, string? projectDir, string? reactiveProps = null, string? injectedConstructors = null)
     {
         var className = SafeIdentifier(FileStem(path));
         var relativeDir = RelativeDirectory(path, projectDir);
@@ -96,7 +97,7 @@ internal static class TemplateCompiler
                 reactive.Add(p);
             }
 
-            var source = TemplateEmitter.Emit(file, text, path, ns, className, reactive);
+            var source = TemplateEmitter.Emit(file, text, path, ns, className, reactive, ParseConstructors(injectedConstructors));
             return new CompiledTemplate(path, hint, source, null);
         }
         catch (TemplateException ex)
@@ -107,6 +108,114 @@ internal static class TemplateCompiler
             var span = new TextSpan(start, length);
             return new CompiledTemplate(path, hint, null, new TemplateDiagnostic(ex.Id, ex.Message, span, source.Lines.GetLinePositionSpan(span)));
         }
+    }
+
+    /// <summary>
+    /// For a component class whose only accessible constructor takes parameters: its simple name, then the
+    /// fully qualified parameter types, separated by tabs. The parent fills the parameters with <c>Inject&lt;T&gt;()</c>.
+    /// Null when the class has a parameterless constructor, several candidates, or is not a component.
+    /// </summary>
+    public static string? InjectedConstructorOf(INamedTypeSymbol? type)
+    {
+        if (type is null || type.IsAbstract || type.IsStatic || type.TypeParameters.Length > 0 || !MayBeComponent(type))
+        {
+            return null;
+        }
+
+        IMethodSymbol? only = null;
+        foreach (var ctor in type.InstanceConstructors)
+        {
+            if (ctor.DeclaredAccessibility is not (Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedOrInternal))
+            {
+                continue;
+            }
+
+            if (ctor.Parameters.Length == 0 || only is not null)
+            {
+                return null;
+            }
+
+            only = ctor;
+        }
+
+        if (only is null)
+        {
+            return null;
+        }
+
+        var b = new StringBuilder(type.Name);
+        foreach (var p in only.Parameters)
+        {
+            if (p.RefKind != RefKind.None || p.IsParams)
+            {
+                return null;
+            }
+
+            b.Append('\t').Append(p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+        }
+
+        return b.ToString();
+    }
+
+    /// <summary>
+    /// A <c>Component</c> subclass, or a partial class whose base may come from a generated <c>.nwui</c> part
+    /// (generated sources are not visible to the semantic model in the same run).
+    /// </summary>
+    private static bool MayBeComponent(INamedTypeSymbol type)
+    {
+        for (var b = type.BaseType; b is not null; b = b.BaseType)
+        {
+            if (b.Name == "Component" && b.ContainingNamespace?.ToDisplayString() == "NetWasm.UI")
+            {
+                return true;
+            }
+        }
+
+        if (type.BaseType is { SpecialType: not SpecialType.System_Object })
+        {
+            return false;
+        }
+
+        foreach (var r in type.DeclaringSyntaxReferences)
+        {
+            if (r.GetSyntax() is ClassDeclarationSyntax cls && cls.Modifiers.Any(static m => m.IsKind(SyntaxKind.PartialKeyword)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Dictionary<string, string[]>? ParseConstructors(string? all)
+    {
+        if (string.IsNullOrEmpty(all))
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, string[]>(System.StringComparer.Ordinal);
+        var ambiguous = new HashSet<string>(System.StringComparer.Ordinal);
+        foreach (var entry in all!.Split('\n'))
+        {
+            var parts = entry.Split('\t');
+            var types = new string[parts.Length - 1];
+            System.Array.Copy(parts, 1, types, 0, types.Length);
+            if (result.TryGetValue(parts[0], out var existing) && string.Join("\t", existing) != string.Join("\t", types))
+            {
+                ambiguous.Add(parts[0]);
+            }
+
+            result[parts[0]] = types;
+        }
+
+        // Two components with the same simple name and different constructors: leave both to the C# compiler.
+        foreach (var name in ambiguous)
+        {
+            result.Remove(name);
+        }
+
+        return result;
     }
 
     /// <summary><c>Class.Prop</c> for every <c>@prop</c> and every <c>Prop&lt;T&gt;</c> property in <c>@code</c> of a template.</summary>
@@ -273,11 +382,20 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             return string.Join("|", all);
         });
 
+        // Components without a parameterless constructor: a component tag fills the parameters with Inject<T>().
+        var constructors = context.SyntaxProvider.CreateSyntaxProvider(
+                static (node, _) => node is ClassDeclarationSyntax c && (c.ParameterList is not null || c.Members.Any(m => m is ConstructorDeclarationSyntax)),
+                static (ctx, ct) => TemplateCompiler.InjectedConstructorOf(ctx.SemanticModel.GetDeclaredSymbol((ClassDeclarationSyntax)ctx.Node, ct)))
+            .Where(static c => c is not null)
+            .Collect()
+            .Select(static (all, _) => string.Join("\n", new SortedSet<string>(all!, System.StringComparer.Ordinal)));
+
         var templates = sources
             .Combine(options)
             .Combine(reactiveProps)
+            .Combine(constructors)
             .Select(static (pair, _) => TemplateCompiler.Compile(
-                pair.Left.Left.Path, pair.Left.Left.Text, pair.Left.Right.Namespace, pair.Left.Right.ProjectDir, pair.Right));
+                pair.Left.Left.Left.Path, pair.Left.Left.Left.Text, pair.Left.Left.Right.Namespace, pair.Left.Left.Right.ProjectDir, pair.Left.Right, pair.Right));
 
         context.RegisterSourceOutput(templates, static (spc, t) =>
         {

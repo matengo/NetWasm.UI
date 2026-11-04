@@ -1,0 +1,2 @@
+@* Component tags whose only constructor takes services: the parent injects them. *@
+<div><Welcome Name="Ada" /><Motto /></div>

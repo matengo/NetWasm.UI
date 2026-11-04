@@ -6,6 +6,12 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- Constructor injection for component tags: in a `.nwui` template, `<Forecast />` compiles to
+  `new Forecast(Inject<IWeatherApi>())` when the component's only constructor takes parameters
+  (primary constructors and code-behind partial classes included).
+
 ## [0.2.0] - 2026-11-04
 
 ### Added

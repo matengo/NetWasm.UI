@@ -240,4 +240,22 @@ public class ServicesTests : RendererTest
         greetings.Count.Value = 2;
         Assert.Equal("<p class=\"greeter\">Hej, Ada! (2)</p>", Dom.Html);
     }
+
+    [Fact]
+    public void Component_tags_inject_constructor_parameters()
+    {
+        var greetings = new Greetings();
+
+        App.Mount(new WelcomeHost(), "#app", new Services().Add<IGreetings>(greetings));
+        Assert.Equal("<div><span>Hej Ada (1)</span><em>Hej</em></div>", Dom.Html);
+
+        greetings.Count.Value = 3;
+        Assert.Equal("<div><span>Hej Ada (3)</span><em>Hej</em></div>", Dom.Html);
+    }
+
+    [Fact]
+    public void Constructor_injection_without_a_provider_throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => App.Mount(new WelcomeHost(), "#app"));
+    }
 }

@@ -29,22 +29,25 @@ internal sealed class TemplateEmitter
     private readonly LineMap lines;
     private readonly string path;
     private readonly ISet<string> reactiveProps;
+    private readonly IReadOnlyDictionary<string, string[]>? injectedConstructors;
     private readonly StringBuilder sb = new();
     private readonly List<(string Type, string Name)> refs = new();
     private readonly List<string> templates = new();
     private bool lineHidden;
 
-    private TemplateEmitter(string text, string path, ISet<string> reactiveProps)
+    private TemplateEmitter(string text, string path, ISet<string> reactiveProps, IReadOnlyDictionary<string, string[]>? injectedConstructors)
     {
         lines = new LineMap(text);
         this.path = path.Replace("\"", string.Empty);
         this.reactiveProps = reactiveProps;
+        this.injectedConstructors = injectedConstructors;
     }
 
     /// <param name="reactiveProps"><c>Component.Prop</c> names whose type is <c>Prop&lt;T&gt;</c>; the parent passes those as getters.</param>
-    public static string Emit(TemplateFile file, string text, string path, string? ns, string className, ISet<string>? reactiveProps = null)
+    /// <param name="injectedConstructors">Component simple name to constructor parameter types; a tag fills them with <c>Inject&lt;T&gt;()</c>.</param>
+    public static string Emit(TemplateFile file, string text, string path, string? ns, string className, ISet<string>? reactiveProps = null, IReadOnlyDictionary<string, string[]>? injectedConstructors = null)
     {
-        var e = new TemplateEmitter(text, path, reactiveProps ?? new HashSet<string>());
+        var e = new TemplateEmitter(text, path, reactiveProps ?? new HashSet<string>(), injectedConstructors);
         return e.EmitFile(file, ns, className);
     }
 
@@ -646,7 +649,20 @@ internal sealed class TemplateEmitter
             sb.Append('(').Append(refName).Append(" = ");
         }
 
-        sb.Append("new ").Append(el.Tag).Append(" {");
+        sb.Append("new ").Append(el.Tag);
+        var dot = el.Tag.LastIndexOf('.');
+        if (injectedConstructors is not null && injectedConstructors.TryGetValue(dot < 0 ? el.Tag : el.Tag.Substring(dot + 1), out var parameters))
+        {
+            sb.Append('(');
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                sb.Append(i == 0 ? string.Empty : ", ").Append("global::NetWasm.UI.Html.Inject<").Append(parameters[i]).Append(">()");
+            }
+
+            sb.Append(')');
+        }
+
+        sb.Append(" {");
         var any = false;
         foreach (var a in el.Attributes)
         {

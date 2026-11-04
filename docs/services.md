@@ -51,6 +51,32 @@ In a `.nwui` template, declare the service with `@inject Type Name`. The field i
 }
 ```
 
+### Constructor injection
+
+A component can also take its services as constructor parameters:
+
+```csharp
+public sealed class Forecast(IWeatherApi api) : Component
+{
+    protected override Node Build()
+    {
+        var data = Resource.Create(ct => api.GetForecastAsync(ct));
+        return P(Text(() => data.Value ?? "Loading…"));
+    }
+}
+```
+
+In a `.nwui` template, `<Forecast />` compiles to `new Forecast(Inject<IWeatherApi>())`. The
+parent resolves each parameter while it builds, from the parent's scope. This also works for a
+template's code-behind (`public partial class Forecast(IWeatherApi api)` next to
+`Forecast.nwui`). In C#, pass the service yourself: `new Forecast(Inject<IWeatherApi>())`,
+also inside a `Route` lambda.
+
+The template generator injects a component's constructor only when it is the component's single
+public or internal constructor and it has parameters. With a parameterless constructor, or several
+constructors, the tag uses `new Forecast { ... }` as before. `ref`, `out` and `params` parameters
+are not injected.
+
 ## Keys and lookup
 
 - A service is registered under exactly the type argument. `Add(new WeatherApi())` registers

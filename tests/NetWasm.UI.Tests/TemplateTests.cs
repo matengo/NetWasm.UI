@@ -465,6 +465,43 @@ public partial class TemplateTests : RendererTest
     }
 
     [Fact]
+    public void Only_a_single_parameterized_constructor_is_injected()
+    {
+        const string components = """
+            namespace Lib.Api { public interface IClock { } }
+            public sealed class One(Lib.Api.IClock clock) : NetWasm.UI.Component
+            {
+                protected override NetWasm.UI.Node Build() => NetWasm.UI.Html.Text("1");
+            }
+
+            public sealed class Both : NetWasm.UI.Component
+            {
+                public Both() { }
+                public Both(Lib.Api.IClock clock) { }
+                protected override NetWasm.UI.Node Build() => NetWasm.UI.Html.Text("2");
+            }
+
+            public sealed class NotAComponent(int x) { }
+            """;
+        var compilation = CSharpCompilation.Create(
+            "T",
+            new[] { CSharpSyntaxTree.ParseText(components) },
+            References(),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var driver = CSharpGeneratorDriver.Create(
+            new[] { new TemplateGenerator().AsSourceGenerator() },
+            new[] { (AdditionalText)new InMemoryText("C:\\p\\Host.nwui",             "<div><One /><Both /></div>") });
+
+        var run = driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var genDiagnostics);
+
+        Assert.Empty(genDiagnostics);
+        Assert.Empty(output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
+        var source = Assert.Single(run.GetRunResult().GeneratedTrees).ToString();
+        Assert.Contains("new One(global::NetWasm.UI.Html.Inject<global::Lib.Api.IClock>()) {", source);
+        Assert.Contains("new Both {", source);
+    }
+
+    [Fact]
     public void Generator_reports_template_errors_as_diagnostics()
     {
         var compilation = CSharpCompilation.Create("T", Array.Empty<SyntaxTree>(), References());
