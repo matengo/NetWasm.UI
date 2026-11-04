@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-04
+
 ### Added
 
 - **Services and DI:** `Services` (`Add<T>`, `AddLazy<T>`), `Inject<T>()`/`TryInject<T>()`,

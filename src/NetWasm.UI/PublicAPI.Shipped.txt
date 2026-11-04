@@ -224,6 +224,10 @@ NetWasm.UI.Routing.Router.PathName.get -> string!
 NetWasm.UI.Routing.Routes
 NetWasm.UI.Routing.Routes.Routes(System.Collections.Generic.IReadOnlyList<NetWasm.UI.Routing.Route!>! routes, System.Func<NetWasm.UI.Node!>? notFound = null) -> void
 NetWasm.UI.Routing.Url
+NetWasm.UI.Services
+NetWasm.UI.Services.Add<T>(T instance) -> NetWasm.UI.Services!
+NetWasm.UI.Services.AddLazy<T>(System.Func<T>! factory) -> NetWasm.UI.Services!
+NetWasm.UI.Services.Services() -> void
 NetWasm.UI.Show
 NetWasm.UI.Show.Show(System.Func<bool>! condition, System.Func<NetWasm.UI.Node!>! render, System.Func<NetWasm.UI.Node!>? fallback = null) -> void
 NetWasm.UI.Slot
@@ -264,6 +268,7 @@ override NetWasm.UI.Reactive.Effect.Dispose() -> void
 override NetWasm.UI.Reactive.Resource<T>.ToString() -> string!
 override NetWasm.UI.Reactive.Selector<TKey>.Dispose() -> void
 override NetWasm.UI.Reactive.Signal<T>.ToString() -> string!
+static NetWasm.UI.App.Mount(NetWasm.UI.Component! root, string! selector, NetWasm.UI.Services! services) -> void
 static NetWasm.UI.App.Mount(NetWasm.UI.Component! root, string! selector) -> void
 static NetWasm.UI.App.OnError.get -> System.Action<System.Exception!>?
 static NetWasm.UI.App.OnError.set -> void
@@ -328,6 +333,7 @@ static NetWasm.UI.Html.Hr() -> NetWasm.UI.Element!
 static NetWasm.UI.Html.Href(string! value) -> NetWasm.UI.Attr!
 static NetWasm.UI.Html.Id(string! value) -> NetWasm.UI.Attr!
 static NetWasm.UI.Html.Img(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Inject<T>() -> T
 static NetWasm.UI.Html.Input(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
 static NetWasm.UI.Html.Label(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
 static NetWasm.UI.Html.Li(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
@@ -352,6 +358,8 @@ static NetWasm.UI.Html.Option(params NetWasm.UI.Content[]! content) -> NetWasm.U
 static NetWasm.UI.Html.P(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
 static NetWasm.UI.Html.Placeholder(string! value) -> NetWasm.UI.Attr!
 static NetWasm.UI.Html.Pre(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.Provide(NetWasm.UI.Services! services, System.Func<NetWasm.UI.Node!>! render) -> NetWasm.UI.Node!
+static NetWasm.UI.Html.Provide(NetWasm.UI.Services! services) -> void
 static NetWasm.UI.Html.Provide<T>(NetWasm.UI.Reactive.Context<T>! context, T value, System.Func<NetWasm.UI.Node!>! render) -> NetWasm.UI.Node!
 static NetWasm.UI.Html.Provide<T>(NetWasm.UI.Reactive.Context<T>! context, T value) -> void
 static NetWasm.UI.Html.Route(string! pattern, System.Func<NetWasm.UI.Node!>! render) -> NetWasm.UI.Routing.Route!
@@ -380,6 +388,7 @@ static NetWasm.UI.Html.Th(params NetWasm.UI.Content[]! content) -> NetWasm.UI.El
 static NetWasm.UI.Html.Thead(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
 static NetWasm.UI.Html.Title(string! value) -> NetWasm.UI.Attr!
 static NetWasm.UI.Html.Tr(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Html.TryInject<T>(out T value) -> bool
 static NetWasm.UI.Html.Type(string! value) -> NetWasm.UI.Attr!
 static NetWasm.UI.Html.Ul(params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
 static NetWasm.UI.Html.Use<T>(NetWasm.UI.Reactive.Context<T>! context) -> T

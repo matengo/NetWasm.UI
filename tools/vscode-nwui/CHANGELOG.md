@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
 - Highlight `@inject Type Name` like `@prop`.
 

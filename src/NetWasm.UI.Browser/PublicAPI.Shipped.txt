@@ -9,6 +9,7 @@ NetWasm.UI.Browser.BrowserHistory.BrowserHistory() -> void
 NetWasm.UI.Browser.BrowserHistory.Changed -> System.Action<string!>?
 NetWasm.UI.Browser.BrowserHistory.Navigate(string! path, bool replace) -> void
 NetWasm.UI.Browser.BrowserHistory.Path.get -> string!
+static NetWasm.UI.Browser.BrowserApp.Start(NetWasm.UI.Component! root, NetWasm.UI.Services! services, string! selector = "#app", string? basePath = null) -> void
 static NetWasm.UI.Browser.BrowserApp.Start(NetWasm.UI.Component! root, string! selector = "#app", string? basePath = null) -> void
 static NetWasm.UI.Browser.BrowserApp.Stop() -> void
 static NetWasm.UI.Browser.BrowserHistory.DocumentBasePath() -> string!
