@@ -37,6 +37,26 @@ public sealed class CounterView : Component
 - `Render()` builds it (once) and returns the root node; `Root` is that node; `Dispose()`
   removes it from the DOM and disposes everything created in its scope.
 
+### Static components
+
+A piece of UI without state doesn't need a class. A plain method that returns a `Node` works
+anywhere content is expected:
+
+```csharp
+private static Node Card(string title, string body) =>
+    Div(Class("card"),
+        H3(title),
+        P(body));
+
+Section(
+    Card("Fast", "Signals update only what changed."),
+    Card("Small", "About 150 KB Brotli for the demo app."));
+```
+
+It runs once when it is called and has no scope of its own. Its reactive parts, such as
+`Text(() => …)`, belong to the component that called it. Use a `Component` when you need
+signals that are local to the component, lifecycle hooks or `Dispose()`.
+
 ## Elements and content
 
 Element functions take `params Content[]`. `Content` converts implicitly from `string`, `Node`,
