@@ -1,0 +1,22 @@
+@* Value is a Signal the parent owns (two-way); the rest are reactive props. *@
+<div class="stepper">
+    <span class="stepper-label">@Label</span>
+    <button class="btn btn-sm" aria-label="Less" disabled="@(Value.Value <= Min)" @onclick="() => Add(-Step)">&minus;</button>
+    <output>@Value</output>
+    <button class="btn btn-sm" aria-label="More" disabled="@(Value.Value >= Max)" @onclick="() => Add(Step)">+</button>
+</div>
+
+@prop string Label = "";
+@prop int Step = 1;
+@prop int Min = 0;
+@prop int Max = 10;
+
+@code {
+    public Signal<int> Value { get; set; } = new(0);
+
+    private void Add(int delta)
+    {
+        var next = Value.Value + delta;
+        Value.Value = next < Min ? Min : next > Max ? Max : next;
+    }
+}

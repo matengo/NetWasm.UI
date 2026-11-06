@@ -9,6 +9,9 @@
     <Project Path="samples/Fetch/Fetch.csproj" />
     <Project Path="samples/Widgets/Widgets.csproj" />
   </Folder>
+  <Folder Name="/site/">
+    <Project Path="site/Site.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/NetWasm.UI.Browser/NetWasm.UI.Browser.csproj" />
     <Project Path="src/NetWasm.UI.Generator/NetWasm.UI.Generator.csproj" />

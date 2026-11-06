@@ -94,6 +94,19 @@ app.Run();
 `tools/DevServer` (`nwui-dev`) is a working Kestrel reference with compression, MIME types and
 fallback. It is a development server; do not use it in production.
 
+### GitHub Pages
+
+Pages serves files from a sub-path (`https://<user>.github.io/<repo>/`), gzips on the fly and
+has no SPA fallback, only a custom `404.html`. So, after publishing:
+
+1. Set `<base href="/<repo>/" />` in `index.html` and keep every asset URL relative.
+2. Copy `index.html` to `404.html`: an unknown path then loads the app, and the router renders
+   it (the response status is still 404).
+3. Add an empty `.nojekyll` and upload the folder without `*.dll` and `*.pdb`.
+
+[`.github/workflows/pages.yml`](../.github/workflows/pages.yml) does this for the project
+website in [`site/`](../site/).
+
 ## Caching
 
 NetWasm's runtime chunks have hashed names (`netwasm.runtime.<hash>.mjs`), but the app's own

@@ -46,6 +46,9 @@ npm test
 - **`packages`**: packs the NuGet packages, then creates, builds and publishes an app from the
   template against them.
 
+`.github/workflows/pages.yml` publishes the website in `site/` to GitHub Pages on every push to
+`main` that touches `site/` or `src/`. It needs Settings → Pages → Source = "GitHub Actions".
+
 ### Size budget
 
 The `test` job fails when the Counter sample exceeds `size-budget.json`. If your change makes it
@@ -101,6 +104,14 @@ profile name) and the secret `VSCE_PAT` for the Marketplace. Without them the st
 
 See [docs/benchmarks.md](docs/benchmarks.md). Run them before and after changes to the
 reactive core, the renderer or `dom.mjs`.
+
+### The website
+
+`site/` is the project website, a NetWasm.UI app. Run it with
+`dotnet run --project tools/DevServer -- site`. Each live example is a `.nwui` file in
+`site/Demos`, published next to the app as `source/<name>.nwui.txt` so the page can show its
+own source. The benchmark table in `site/Pages/BenchmarksPage.nwui` is copied from
+`docs/benchmarks.md`; update both together.
 
 ## Code guidelines
 

@@ -1,0 +1,30 @@
+@* Components with reactive props, two-way signals and named slots. Stepper.nwui and Card.nwui are below. *@
+<div class="demo-components">
+    <Card Title="Order">
+        <template slot="Actions">
+            <button class="btn btn-sm" @onclick="Reset">Reset</button>
+        </template>
+        <div class="order">
+            <Stepper Label="Coffee" Value="@coffee" Max="@(6)" />
+            <Stepper Label="Cake" Value="@cake" Max="@(4)" />
+            <Stepper Label="Cookies" Value="@cookies" Step="@(2)" Max="@(12)" />
+            <p class="total">Total: <strong>@total</strong> kr</p>
+        </div>
+    </Card>
+</div>
+
+@code {
+    private readonly Signal<int> coffee = new(1);
+    private readonly Signal<int> cake = new(0);
+    private readonly Signal<int> cookies = new(0);
+    private Computed<int> total = null!;
+
+    partial void OnInit() => total = new Computed<int>(() => coffee.Value * 35 + cake.Value * 45 + cookies.Value * 15);
+
+    private void Reset()
+    {
+        coffee.Value = 1;
+        cake.Value = 0;
+        cookies.Value = 0;
+    }
+}

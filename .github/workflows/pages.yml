@@ -1,0 +1,74 @@
+name: Site
+
+# Publishes site/ (the NetWasm.UI showcase, built with NetWasm.UI) to GitHub Pages.
+# One-time setup: Settings → Pages → Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - src/**
+      - global.json
+      - Directory.Build.props
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Publish (Oz)
+        run: dotnet publish site -c Release -p:NetWasmOptimization=Oz
+
+      - name: Prepare for Pages (base path, SPA fallback)
+        env:
+          BASE: /${{ github.event.repository.name }}/
+        run: |
+          mkdir _site
+          rsync -a --exclude '*.dll' --exclude '*.pdb' site/bin/Release/netwasm0.1/publish/ _site/
+          sed -i "s|<base href=\"/\" />|<base href=\"$BASE\" />|" _site/index.html
+          grep -q "<base href=\"$BASE\" />" _site/index.html
+          # Pages answers unknown paths with 404.html; the router then renders the deep link.
+          cp _site/index.html _site/404.html
+          touch _site/.nojekyll
+          ls -lR _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,64 @@
+@* A Resource keyed on a signal: each keystroke cancels the running search and starts a new one. *@
+<div class="demo-async">
+    <input placeholder="Search languages…" aria-label="Search" @bind="query" />
+    <p class="muted">@(results.Loading ? "Searching…" : Count(results.Latest) + " results")</p>
+    <ul class="chips">
+        @foreach (var name in results.Latest ?? Empty) {
+            <li class="chip">@name</li>
+        }
+    </ul>
+</div>
+
+@code {
+    private static readonly string[] Empty = [];
+    private static readonly string[] Languages =
+    [
+        "C#", "F#", "Visual Basic", "C", "C++", "Rust", "Go", "Zig", "Kotlin", "Java", "Scala",
+        "Swift", "TypeScript", "JavaScript", "Python", "Ruby", "Elixir", "Haskell", "OCaml", "Dart",
+    ];
+
+    private readonly Signal<string> query = new("");
+    private Resource<string[]> results = null!;
+
+    partial void OnInit() => results = Resource.Create(() => query.Value, SearchAsync);
+
+    // Stands in for a server call; the token is cancelled when the query changes again.
+    private static async Task<string[]> SearchAsync(string text, System.Threading.CancellationToken ct)
+    {
+        await Task.Delay(350, ct);
+        var hits = new List<string>();
+        foreach (var name in Languages)
+        {
+            if (Contains(name, text))
+            {
+                hits.Add(name);
+            }
+        }
+
+        return hits.ToArray();
+    }
+
+    private static string Count(string[]? items) => (items?.Length ?? 0).ToString();
+
+    // ASCII case-insensitive search: avoids pulling Unicode case tables into the Wasm.
+    private static bool Contains(string text, string part)
+    {
+        for (var i = 0; i + part.Length <= text.Length; i++)
+        {
+            var match = true;
+            for (var k = 0; k < part.Length && match; k++)
+            {
+                match = Lower(text[i + k]) == Lower(part[k]);
+            }
+
+            if (match)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static char Lower(char c) => c >= 'A' && c <= 'Z' ? (char)(c + 32) : c;
+}

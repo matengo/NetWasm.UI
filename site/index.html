@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <!-- "/" for local development; the GitHub Pages workflow rewrites it to "/NetWasm.UI/". -->
+  <base href="/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NetWasm.UI – Signal-driven C# UI at native Wasm size</title>
+  <meta name="description" content="A reflection-free, signal-driven C# UI framework for the browser, compiled ahead-of-time to WebAssembly with NetWasm. This site is built with it." />
+  <meta name="theme-color" content="#0b0b14" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="site.css" />
+  <link rel="modulepreload" href="app.mjs" />
+</head>
+<body>
+  <div class="boot" aria-hidden="true">
+    <div class="boot-mark">N</div>
+    <p>Loading C#…</p>
+  </div>
+  <noscript><p class="noscript">This site is a NetWasm.UI app: C# compiled to WebAssembly. Enable JavaScript to see it, or read the <a href="https://github.com/matengo/NetWasm.UI">README on GitHub</a>.</p></noscript>
+  <div id="app"></div>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

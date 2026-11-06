@@ -5,6 +5,9 @@ WebAssembly with [NetWasm](https://www.netwasm.com). Inspired by Solid and Svelt
 Blazor: components build their DOM once, fine-grained signals patch exactly the nodes that
 changed, and every state change crosses the Wasm→JS boundary **at most once**.
 
+**Website and live examples: [matengo.github.io/NetWasm.UI](https://matengo.github.io/NetWasm.UI/)**,
+itself a NetWasm.UI app ([source](site/)).
+
 > **Status: 0.1, an early but usable release.** The packages are on NuGet and the framework is
 > tested in Chromium, Firefox and WebKit. The public API may still change in 0.x releases; every
 > change is listed in the [CHANGELOG](CHANGELOG.md). See
@@ -137,6 +140,7 @@ From a clone of this repository:
 dotnet run --project tools/DevServer -- samples/Counter   # counter, todos, routing, forms, components
 dotnet run --project tools/DevServer -- samples/Fetch     # HttpClient + System.Text.Json with Suspense
 dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one page
+dotnet run --project tools/DevServer -- site              # the project website
 ```
 
 ## Documentation
@@ -168,6 +172,7 @@ dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one 
 | `samples/Counter`            | Demo app: counter, todos, routing, nested routes, forms and `/components`. |
 | `samples/Fetch`              | `HttpClient` + `System.Text.Json` with `Resource` and `Suspense`.    |
 | `samples/Widgets`            | Several independent apps (Wasm instances) on one page.              |
+| `site/`                      | The project website, built with NetWasm.UI and published to GitHub Pages. |
 | `templates/`                 | The `dotnet new netwasm-ui` template package.                        |
 | `tests/NetWasm.UI.Tests`     | xunit tests against an in-memory `FakeDomHost`.                      |
 | `tests/NetWasm.UI.E2E`       | Playwright browser tests against the samples (Chromium, Firefox, WebKit). |

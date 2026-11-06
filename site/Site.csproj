@@ -1,0 +1,42 @@
+<Project Sdk="NetWasm.Sdk">
+  <!-- The project website (https://matengo.github.io/NetWasm.UI/), built with NetWasm.UI itself.
+       Run it with the dev server from the repository root (see CONTRIBUTING.md). -->
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <OutputType>JsModule</OutputType>
+    <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
+    <RootNamespace>Site</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\NetWasm.UI\NetWasm.UI.csproj" />
+    <ProjectReference Include="..\src\NetWasm.UI.Browser\NetWasm.UI.Browser.csproj" />
+    <!-- Compiles *.nwui templates into components at build time. -->
+    <ProjectReference Include="..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                      UndefineProperties="TargetFramework" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="**\*.nwui" Exclude="bin\**;obj\**" />
+    <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
+  </ItemGroup>
+  <ItemGroup>
+    <NetWasmJavaScriptModule Include="..\src\NetWasm.UI.Browser\dom.mjs" Module="nwui.dom" />
+    <NetWasmJavaScriptModule Include="site.interop.mjs" Module="site.interop" />
+    <Content Include="index.html;app.mjs;site.css;favicon.svg" CopyToPublishDirectory="PreserveNewest" />
+    <!-- The examples page fetches and shows the real source of each demo. -->
+    <Content Include="Demos\*.nwui" Link="source\%(Filename).nwui.txt" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- SiteInfo.Version follows the repository version (Directory.Build.props), so release bumps update the site. -->
+  <Target Name="WriteSiteInfo" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <SiteInfoFile>$(IntermediateOutputPath)SiteInfo.g.cs</SiteInfoFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(SiteInfoFile)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="namespace Site%3B internal static class SiteInfo { public const string Version = &quot;$(VersionPrefix)&quot;%3B }" />
+    <ItemGroup>
+      <Compile Include="$(SiteInfoFile)" />
+      <FileWrites Include="$(SiteInfoFile)" />
+    </ItemGroup>
+  </Target>
+</Project>

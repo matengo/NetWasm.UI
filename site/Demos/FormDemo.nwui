@@ -1,0 +1,55 @@
+@* Fields with validators, accessible error messages and an async submit. Try taken@example.com. *@
+<form class="demo-form" novalidate @onsubmit="() => form.Submit(SaveAsync)">
+    <div class="field">
+        <label for="@name.Id">Name</label>
+        <input @bind="name" autocomplete="name" />
+        @render(FieldError(name))
+    </div>
+    <div class="field">
+        <label for="@email.Id">E-mail</label>
+        <input @bind="email" type="email" autocomplete="email" />
+        @render(FieldError(email))
+    </div>
+    <div class="field">
+        <label for="@password.Id">Password</label>
+        <input @bind="password" type="password" autocomplete="new-password" />
+        @render(FieldError(password))
+    </div>
+    <div class="field">
+        <label><input @bind="accept" /> I accept the terms</label>
+        @render(FieldError(accept))
+    </div>
+    <button class="btn btn-primary" type="submit" disabled="@form.Submitting">@(form.Submitting ? "Signing up…" : "Sign up")</button>
+    <p class="result" role="status">@result.Value</p>
+</form>
+
+@code {
+    private readonly Form form = new();
+    private readonly Signal<string> result = new("");
+    private Field<string> name = null!;
+    private Field<string> email = null!;
+    private Field<string> password = null!;
+    private Field<bool> accept = null!;
+
+    partial void OnInit()
+    {
+        name = form.Field("", Validators.Required("Enter your name."));
+        email = form.Field("", Validators.Required("Enter your e-mail."), Validators.Email());
+        password = form.Field("", Validators.Required("Choose a password."), Validators.MinLength(8));
+        accept = form.Field(false, Validators.MustBeChecked("You must accept the terms."));
+    }
+
+    private async Task SaveAsync()
+    {
+        // Stands in for a server call.
+        await Task.Delay(600);
+        if (email.Value == "taken@example.com")
+        {
+            email.SetError("That address is already registered.");
+            return;
+        }
+
+        result.Value = "Welcome, " + name.Value + "!";
+        form.Reset();
+    }
+}

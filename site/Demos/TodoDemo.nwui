@@ -1,0 +1,76 @@
+@* A keyed list: adding, toggling or removing an item touches only that item's nodes. *@
+<div class="demo-todos">
+    <form class="row" @onsubmit="Add">
+        <input placeholder="What needs doing?" aria-label="New todo" @bind="draft" />
+        <button class="btn btn-primary" type="submit" disabled="@(draft.Value.Trim().Length == 0)">Add</button>
+    </form>
+    <ul class="todo-list">
+        @foreach (var item in items) {
+            <li @key="item.Id" class="@(item.Done.Value ? "todo done" : "todo")">
+                <label><input @bind="item.Done" /> @item.Title</label>
+                <button class="remove" title="Remove" @onclick="() => Remove(item)">&times;</button>
+            </li>
+        }
+    </ul>
+    <p class="muted">@remaining of @items.Value.Count remaining</p>
+</div>
+
+@code {
+    public sealed class Todo(int id, string title)
+    {
+        public int Id { get; } = id;
+        public string Title { get; } = title;
+        public Signal<bool> Done { get; } = new(false);
+    }
+
+    private int nextId = 3;
+    private readonly Signal<string> draft = new("");
+    private readonly Signal<IReadOnlyList<Todo>> items = new(new List<Todo>
+    {
+        new(1, "Write a component in C#"),
+        new(2, "Compile it to WebAssembly"),
+        new(3, "Ship a tiny site"),
+    });
+
+    private Computed<int> remaining = null!;
+
+    partial void OnInit() => remaining = new Computed<int>(() =>
+    {
+        var n = 0;
+        foreach (var item in items.Value)
+        {
+            if (!item.Done.Value)
+            {
+                n++;
+            }
+        }
+
+        return n;
+    });
+
+    private void Add()
+    {
+        var title = draft.Value.Trim();
+        if (title.Length == 0)
+        {
+            return;
+        }
+
+        items.Value = new List<Todo>(items.Value) { new(++nextId, title) };
+        draft.Value = "";
+    }
+
+    private void Remove(Todo todo)
+    {
+        var rest = new List<Todo>();
+        foreach (var item in items.Value)
+        {
+            if (item != todo)
+            {
+                rest.Add(item);
+            }
+        }
+
+        items.Value = rest;
+    }
+}
