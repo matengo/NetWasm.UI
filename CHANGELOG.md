@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-07
+
 ### Added
 
 - [JavaScript interop](docs/js-interop.md) guide: `[JSImport]`, Promises, `JSObject`, callbacks
@@ -21,7 +23,9 @@ See [Compatibility and versioning](docs/compatibility.md).
 ### Changed
 
 - NetWasm.Sdk 0.10.7 → 0.11.1 (template and repository); `NetWasm.System.*` packages in the Fetch
-  sample → 0.11.0. The Counter sample's Wasm grows from 101 to 108 KB Brotli with the same code
+  sample → 0.11.0. **Breaking:** set `"NetWasm.Sdk": "0.11.1"` under `msbuild-sdks` in your
+  `global.json`, and any `NetWasm.System.*` packages to 0.11.0. The Counter sample's Wasm grows
+  from 101 to 108 KB Brotli with the same code
   (no SDK default changed; the growth is in the runtime/compiler), so `size-budget.json` is
   raised to 111 KB Wasm / 160 KB total.
 - The dev server (`nwui-dev`) now builds `Debug` with `NetWasmOptimization=O0` by default.

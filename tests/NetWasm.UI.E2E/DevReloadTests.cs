@@ -1,3 +1,4 @@
+using Microsoft.Playwright;
 using static Microsoft.Playwright.Assertions;
 
 namespace NetWasm.UI.E2E;
@@ -19,8 +20,21 @@ public sealed class DevReloadTests : PageTest
         await Page.AddInitScriptAsync(script);
     }
 
-    private Task DevReloadAsync() =>
-        Page.RunAndWaitForNavigationAsync(() => Page.EvaluateAsync("() => { globalThis.__nwuiDev.reload(); }"));
+    private async Task DevReloadAsync()
+    {
+        var loaded = new TaskCompletionSource();
+        void OnLoad(object? sender, IPage page) => loaded.TrySetResult();
+        Page.Load += OnLoad;
+        try
+        {
+            await Page.EvaluateAsync("() => { globalThis.__nwuiDev.reload(); }");
+            await loaded.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+        finally
+        {
+            Page.Load -= OnLoad;
+        }
+    }
 
     [Fact]
     public async Task Signals_survive_a_dev_reload_but_not_a_manual_one()
