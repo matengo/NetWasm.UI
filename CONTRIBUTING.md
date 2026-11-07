@@ -146,36 +146,37 @@ cannot apply. The dev server instead watches sources, re-runs `dotnet publish` a
 reload over a WebSocket. Build errors are shown as an overlay in the page. Saves that do not
 change file content (editor touches, formatters) are ignored via content hashing.
 
+State survives the reload. In `Debug`, `DevStateGenerator` emits a `[ModuleInitializer]`
+that calls `DevReload.Install()`. If the page has the reload client (`globalThis.__nwuiDev`), it
+sets the static `DevState.Tracker` delegate, which every `Signal<T>` constructor invokes; the
+tracker numbers signals in creation order and restores saved `int`/`bool`/`string` values whose
+initial value still matches. Before reloading, `reload-client.js` asks each app for its
+serialized signals and saves them, plus form fields, focus and scroll, in `sessionStorage`.
+Release builds never assign the delegate, so the tracker code is trimmed. NetWasm does not remove
+dead branches, so dev-only code must be unreachable rather than behind an `if`.
+
 Responses use `Cache-Control: no-cache` (not `no-store`), so unchanged files are revalidated with
 304s and the browser can keep its compiled Wasm.
 
-### Why a rebuild takes 15-20 s
+### Rebuild time
 
 The browser layout (`browser/*.mjs`, `netwasm.page.mjs`, `deployment.json`) is only produced by
-the SDK's publish target, so a plain `build` is not enough. Measured on the Counter sample after a
-one-line `.cs` change (NetWasm 0.10.0, Release):
+the SDK's publish target, so the dev server runs `dotnet publish` (a plain `build` is not faster).
+Since NetWasm 0.11, a `Debug` build with `O0` keeps each method's compiled code and recompiles
+only the methods that changed; that is the dev server default. In watch mode it also keeps the
+MSBuild nodes and the compiler server warm.
 
-| Step (MSBuild target)              | Oz           | Notes                                   |
-|------------------------------------|-------------:|-----------------------------------------|
-| `NetWasmCompileCoreModule`         |       ~7.2 s | AOT, scales with optimization level     |
-| `NetWasmLinkRawModule`             |       ~5.9 s | wasm-ld + binaryen                      |
-| `NetWasmSdkResolveBuildEnvironment`|       ~3.5 s | fixed: probes node/wasm-ld every run    |
-| `NetWasmBuildRawBindings`          |       ~2.6 s |                                         |
-| MSBuild + restore overhead         |       ~1.4 s |                                         |
-| `NetWasmSdkPublishJsModule`        |       ~0.3 s | the actual "publish" part is negligible |
-| **Total**                          |    **~21 s** |                                         |
+Counter sample, one-line `.cs` change, NetWasm.Sdk 0.11.1:
 
-| `NetWasmOptimization` | Publish after edit | `Counter.wasm` |
-|-----------------------|-------------------:|---------------:|
-| `Oz` (production)     |             ~21 s  |         316 KB |
-| `O1` (dev default)    |             ~14 s  |         519 KB |
-| `O0`                  |             ~12 s  |         615 KB |
+| Configuration | `dotnet publish` after edit | Save → reloaded page |
+|---|---:|---:|
+| `Debug`, `O0` (dev default, warm build servers) | ~2.5–3.5 s | ~3.5–4 s |
+| `Release`, `O1` (dev default before 0.11) | ~7 s | ~8 s |
+| `Release`, `Oz` (production) | ~12 s | – |
 
-(Measured before the `/components` sample was added; the app is bigger now, the ratios hold.)
-
-The `Debug` configuration is slower (~32 s) and larger (869 KB), so the dev server stays on
-Release. The remaining floor is in the toolchain itself (environment probing, non-incremental
-AOT) and is feedback for the NetWasm team rather than something this repository can shave.
+Of the ~3 s, the NetWasm compile itself is ~0.9 s; the rest is MSBuild evaluation, project
+references, linking and bindings. The `Debug`/`O0` Wasm is about 3× larger than `Oz`, which does
+not matter on localhost.
 
 ## Roadmap ideas
 
@@ -187,7 +188,7 @@ AOT) and is feedback for the NetWasm team rather than something this repository 
 - **Accessibility:** focus management after navigation, announcing route changes.
 - **Wasm size:** a size report per feature in CI; a slimmer JS host for page-only apps (needs
   NetWasm).
-- **Dev loop:** snapshot/restore signal state across live reloads, CSS swap without reload,
+- **Dev loop:** keep list/object signals across live reloads, CSS swap without reload,
   faster incremental NetWasm publish.
 - **Production caching:** NetWasm emits stable file names but a `buildFingerprint` in
   `deployment.json`. An opt-in publish step could move `browser/` to `v/<fingerprint>/` (import

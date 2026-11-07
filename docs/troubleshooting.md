@@ -54,7 +54,7 @@ cache `browser/*.wasm` because NetWasm file names do not change between builds; 
 - `NWSDK078`: a page app needs a `Main` method, even an empty one, next to its `[JSExport]`
   start method.
 - `[JSImport]` methods must be `static extern`. A host function used as `JSSubscription` must
-  return an object with a `dispose()` method.
+  return an object with a `dispose()` method. See [JavaScript interop](js-interop.md#pitfalls).
 - `nwui.dom` is missing at runtime. The `NwUi.Browser` package adds `dom.mjs` to apps
   with `OutputType` `JsModule` or `Exe`. With `NetWasmUIAddDomModule=false` you must pass your
   own host to `open()`; see [Embedding](embedding.md).
@@ -63,7 +63,7 @@ cache `browser/*.wasm` because NetWasm file names do not change between builds; 
 
 `wasm-opt` at `Oz` can take minutes for an app that uses `HttpClient` or `System.Text.Json`. Use
 `-p:NetWasmOptimization=O1` for Debug builds, as `samples/Fetch` does, and keep `Oz` for
-releases. The dev server uses `O1` unless you pass `--release`.
+releases. The dev server uses `Debug` and `O0` unless you pass `--release`.
 
 ## The Wasm got much bigger
 
@@ -80,6 +80,8 @@ new generic instantiations, and `Uri.EscapeDataString`. See
 - An exception thrown outside the framework (your own `JSImport` callbacks, timers) is not
   caught by an `ErrorBoundary`. See [Error handling](error-handling.md).
 - No hash routing, no SSR or hydration.
-- No hot reload: the dev server rebuilds (5–20 s) and reloads the page, and signal state is lost.
+- No hot reload: the dev server rebuilds (~3–4 s) and reloads the page. `int`/`bool`/`string`
+  signals, form fields, focus and scroll are restored; lists and objects are not. See
+  [Getting started](getting-started.md#developing).
 - `.nwui` editor support is syntax highlighting only (VS Code). Control flow is only
   `@if`/`@foreach`, and slots take no parameters (no `Slot<T>`).

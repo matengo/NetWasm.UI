@@ -196,6 +196,10 @@ export function createDomHost(options = {}) {
 
   /** @type {((handlerId: number, payload: Uint8Array) => void) | null} */
   let dispatch = null;
+  let rendered = false;
+  /** @type {number | undefined} */
+  let devId;
+  let devCaptured = "";
 
   // The batch is a view of Wasm memory that is only valid while applyBatch runs. Events the DOM fires
   // synchronously while a batch is applied (focus, blur on removal, ...) are queued and delivered after
@@ -488,6 +492,10 @@ export function createDomHost(options = {}) {
           const payload = pending.shift();
           dispatch?.(handlerId, payload);
         }
+        if (!rendered) {
+          rendered = true;
+          globalThis.__nwuiDev?.onRendered?.();
+        }
       }
     },
 
@@ -501,8 +509,31 @@ export function createDomHost(options = {}) {
     onPopState: fn => hist.onPopState(fn),
     basePath: () => options.basePath ?? documentBasePath(doc),
 
+    // Dev-server state across reloads; `globalThis.__nwuiDev` only exists when the reload client runs.
+    // Hosts are numbered in start order, so several apps on one page keep their own state.
+    devState() {
+      const dev = globalThis.__nwuiDev;
+      if (!dev) return "";
+      devId ??= dev.nextId++;
+      return "1" + (dev.restored?.signals?.[devId] ?? "");
+    },
+    devConnect(fn) {
+      const dev = globalThis.__nwuiDev;
+      if (!dev || devId === undefined) return { dispose() {} };
+      const save = () => {
+        devCaptured = "";
+        fn(0);
+        return devCaptured;
+      };
+      dev.savers[devId] = save;
+      return { dispose() { if (dev.savers[devId] === save) delete dev.savers[devId]; } };
+    },
+    devPut(state) { devCaptured = state; },
+
     /** Removes everything this host mounted and all its listeners. Call after the Wasm instance is closed. */
     dispose() {
+      const dev = globalThis.__nwuiDev;
+      if (dev && devId !== undefined) delete dev.savers[devId];
       for (const type of delegatedTypes) root.removeEventListener(type, onDelegated);
       delegatedTypes.clear();
       for (const l of listeners.values()) l.node.removeEventListener(l.event, l.fn);
@@ -528,3 +559,6 @@ export function currentPath() { return host().currentPath(); }
 export function navigate(path, replace) { host().navigate(path, replace); }
 export function onPopState(fn) { return host().onPopState(fn); }
 export function basePath() { return host().basePath(); }
+export function devState() { return host().devState(); }
+export function devConnect(fn) { return host().devConnect(fn); }
+export function devPut(state) { host().devPut(state); }

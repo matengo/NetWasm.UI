@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>NetWasm.UI – JS interop</title>
+  <link rel="icon" href="data:," />
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+    .meter { position: relative; height: 2rem; border: 1px solid #ccd; border-radius: .5rem; overflow: hidden; cursor: pointer; }
+    .meter-bar { height: 100%; background: #7ad; transition: width .2s; }
+    .meter-label { position: absolute; inset: 0; display: grid; place-items: center; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/app.mjs"></script>
+</body>
+</html>

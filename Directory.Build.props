@@ -7,6 +7,10 @@
     <!-- Services.AddLazy<TService, TImplementation>() interceptors (the NwUi package sets this for consumers). -->
     <InterceptorsNamespaces>$(InterceptorsNamespaces);NetWasm.UI.Generated</InterceptorsNamespaces>
   </PropertyGroup>
+  <!-- Debug builds keep signal values across dev-server reloads (the NwUi package sets this for consumers). -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="Configuration;NetWasmUIDevState" />
+  </ItemGroup>
 
   <!-- Package metadata. Only projects under src/ are packable (see src/Directory.Build.props). -->
   <PropertyGroup>

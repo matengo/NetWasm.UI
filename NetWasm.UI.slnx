@@ -7,6 +7,7 @@
   <Folder Name="/samples/">
     <Project Path="samples/Counter/Counter.csproj" />
     <Project Path="samples/Fetch/Fetch.csproj" />
+    <Project Path="samples/Interop/Interop.csproj" />
     <Project Path="samples/Widgets/Widgets.csproj" />
   </Folder>
   <Folder Name="/site/">

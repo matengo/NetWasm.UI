@@ -4,9 +4,9 @@ internal sealed class DevServerOptions
 {
     public string ProjectPath { get; private set; } = string.Empty;
     public string WatchRoot { get; private set; } = string.Empty;
-    public string Configuration { get; private set; } = "Release";
-    /// <summary>NetWasm optimization level. Oz (production default) takes ~2x longer than O1.</summary>
-    public string Optimization { get; private set; } = "O1";
+    public string Configuration { get; private set; } = "Debug";
+    /// <summary>NetWasm optimization level. Debug + O0 recompiles only changed methods (NetWasm 0.11+).</summary>
+    public string Optimization { get; private set; } = "O0";
     public int Port { get; private set; } = 8765;
     public bool NoWatch { get; private set; }
     public bool SkipInitialPublish { get; private set; }
@@ -37,6 +37,7 @@ internal sealed class DevServerOptions
                     o.Optimization = args[++i];
                     break;
                 case "--release":
+                    o.Configuration = "Release";
                     o.Optimization = "Oz";
                     break;
                 case "--no-watch":
@@ -96,9 +97,9 @@ internal sealed class DevServerOptions
 
           -p, --project <csproj|dir>   App project (default: current directory)
           -w, --watch-root <dir>       Directory to watch (default: repo root)
-          -c, --configuration <cfg>    Build configuration (default: Release)
-          -O, --optimization <lvl>     NetWasmOptimization: O0 | O1 | Oz (default: O1 – about 2x faster than Oz)
-              --release                Shorthand for -O Oz (production sizes)
+          -c, --configuration <cfg>    Build configuration (default: Debug)
+          -O, --optimization <lvl>     NetWasmOptimization: O0 | O1 | Oz (default: O0 – incremental, fastest rebuilds)
+              --release                Shorthand for -c Release -O Oz (production sizes)
               --port <n>               Port (default: 8765)
               --no-watch               Serve only, do not rebuild on change
               --no-publish             Skip the initial publish

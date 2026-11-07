@@ -1,0 +1,16 @@
+@* A JS library wrapped in a component (Meter.cs), driven by a signal in both directions. *@
+<main>
+    <h1>JS interop</h1>
+    @if (visible.Value) {
+        <Meter Level="@level" />
+    }
+    <p>Level: <strong id="level">@level</strong></p>
+    <button id="down" @onclick="() => level.Value--">-1</button>
+    <button id="up" @onclick="() => level.Value++">+1</button>
+    <button id="toggle" @onclick="() => visible.Value = !visible.Value">@(visible.Value ? "Hide" : "Show") meter</button>
+</main>
+
+@code {
+    private readonly Signal<int> level = new(3);
+    private readonly Signal<bool> visible = new(true);
+}

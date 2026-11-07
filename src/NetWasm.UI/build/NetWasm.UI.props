@@ -4,6 +4,10 @@
     <AdditionalFiles Include="**\*.nwui" Exclude="$(DefaultItemExcludes);bin\**;obj\**" />
     <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
   </ItemGroup>
+  <!-- Debug builds keep signal values across dev-server reloads (DevReload); NetWasmUIDevState=true/false overrides. -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="Configuration;NetWasmUIDevState" />
+  </ItemGroup>
   <!-- Services.AddLazy<TService, TImplementation>() is rewritten by generated interceptors in this namespace. -->
   <PropertyGroup>
     <InterceptorsNamespaces>$(InterceptorsNamespaces);NetWasm.UI.Generated</InterceptorsNamespaces>

@@ -4,12 +4,12 @@
 
 | NetWasm.UI | NetWasm.Sdk | Target framework | .NET SDK |
 |---|---|---|---|
-| 0.1.x | 0.10.7 | `netwasm0.1` | 10.0.3xx |
+| Unreleased | 0.11.1 | `netwasm0.1` | 10.0.3xx |
+| 0.1.x–0.4.x | 0.10.7 | `netwasm0.1` | 10.0.3xx |
 
 The NetWasm SDK version comes from `global.json` (`msbuild-sdks`). The template pins the version
 in this table. A newer NetWasm.Sdk patch release usually works. A new minor version
-(0.11) may change the import/export conventions; wait for a NetWasm.UI release that supports
-it.
+may change the import/export conventions; wait for a NetWasm.UI release that supports it.
 
 ## Browsers
 

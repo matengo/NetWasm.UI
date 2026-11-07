@@ -1,1 +1,3 @@
 #nullable enable
+NetWasm.UI.Browser.DevReload
+static NetWasm.UI.Browser.DevReload.Install() -> void

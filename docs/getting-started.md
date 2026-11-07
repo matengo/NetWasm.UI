@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - .NET SDK 10.0.3xx or later. `global.json` rolls forward to the latest feature band.
-- The NetWasm SDK is pinned in `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.10.7" }`). It
+- The NetWasm SDK is pinned in `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.11.1" }`). It
   downloads its host tooling on first restore.
 - A browser listed in [Compatibility](compatibility.md#browsers).
 
@@ -146,16 +146,32 @@ reload on `/counter` returns 404.
 | Option | Meaning |
 |---|---|
 | `--port <n>` | Port (default 8765) |
-| `-O O0\|O1\|Oz` | NetWasm optimization (default `O1`, for faster rebuilds) |
-| `--release` | Same as `-O Oz`: production sizes |
-| `-c Debug\|Release` | Configuration (default `Release`; Debug is slower and larger) |
+| `-O O0\|O1\|Oz` | NetWasm optimization (default `O0`: only changed methods are recompiled) |
+| `--release` | Same as `-c Release -O Oz`: production sizes |
+| `-c Debug\|Release` | Configuration (default `Debug`) |
 | `--no-watch` | Serve only |
 | `--no-publish` | Skip the initial publish |
 | `-w <dir>` | Watch root (default: the nearest folder containing `.git` or `global.json`) |
 
 There is no hot reload. NetWasm compiles ahead of time, so there is no runtime to patch. A
-rebuild after a one-line change takes about 5–20 s; see
-[CONTRIBUTING.md](../CONTRIBUTING.md#why-a-rebuild-takes-15-20-s) for where the time goes.
+rebuild after a one-line change takes about 3–4 s from save to reloaded page; see
+[CONTRIBUTING.md](../CONTRIBUTING.md#rebuild-time) for where the time goes.
+
+The reload keeps your state:
+
+- `Signal<int>`, `Signal<bool>` and `Signal<string>` values (also inside `Computed` inputs,
+  components and services);
+- text fields, checkboxes and selects, the focused element and the cursor position;
+- the scroll position.
+
+Signals are matched by the order they are created in and by their initial value. A signal whose
+initial value changed in the edit, or that is created in a different order (for example after
+you navigated elsewhere), starts fresh. Lists and other object values are not kept. Pressing F5
+always starts clean.
+
+State is kept only in `Debug` builds: the source generator then adds a module initializer that
+connects to the dev server. `--release` and production builds do not include it. Set
+`<NetWasmUIDevState>false</NetWasmUIDevState>` to turn it off, or `true` to force it on.
 
 ## Next
 

@@ -6,6 +6,29 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- [JavaScript interop](docs/js-interop.md) guide: `[JSImport]`, Promises, `JSObject`, callbacks
+  with `JSSubscription`, `[JSExport]`, and wrapping a JS library in a component.
+- `samples/Interop`: a JS library driven by a signal in both directions, with E2E tests.
+- Dev reloads keep state. After a rebuild, `nwui-dev` restores `int`, `bool` and `string`
+  signals, form fields, focus and scroll; F5 starts clean. Signals are matched by creation order
+  and initial value, so a signal whose initial value or position changed starts fresh. Lists and
+  objects are not kept. Active only in `Debug` builds (a generated module initializer calls
+  `DevReload.Install()`); `<NetWasmUIDevState>true|false</NetWasmUIDevState>` overrides. Release
+  builds do not include the code (+0.1 KB Brotli for the hook in `Signal<T>`).
+
+### Changed
+
+- NetWasm.Sdk 0.10.7 → 0.11.1 (template and repository); `NetWasm.System.*` packages in the Fetch
+  sample → 0.11.0. The Counter sample's Wasm grows from 101 to 108 KB Brotli with the same code
+  (no SDK default changed; the growth is in the runtime/compiler), so `size-budget.json` is
+  raised to 111 KB Wasm / 160 KB total.
+- The dev server (`nwui-dev`) now builds `Debug` with `NetWasmOptimization=O0` by default.
+  NetWasm 0.11 recompiles only changed methods there, and watch mode keeps the build servers
+  warm: save → reloaded page drops from ~8 s to ~3.5 s on the Counter sample. `--release` now
+  means `-c Release -O Oz`.
+
 ## [0.4.0] - 2026-11-04
 
 ### Added

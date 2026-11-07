@@ -107,7 +107,7 @@ public sealed class CounterView : Component
 ## Size and speed
 
 - **Size:** the whole demo app (counter, todos, router, forms, nested components) is about
-  **150 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
+  **157 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
   past its [size budget](size-budget.json).
 - **Speed:** in a [js-framework-benchmark-style comparison](docs/benchmarks.md)
   it is level with or faster than React on every case, and between 0.9× and 1.6× SolidJS's
@@ -119,7 +119,7 @@ public sealed class CounterView : Component
 | | |
 |---|---|
 | .NET SDK | 10.0.3xx. The NetWasm SDK is resolved from `global.json`. |
-| NetWasm.Sdk | 0.10.7, target framework `netwasm0.1` |
+| NetWasm.Sdk | 0.11.1, target framework `netwasm0.1` |
 | Browsers | Chrome/Edge 137+, Firefox 131+, Safari 18.4+ (needed for Wasm exception handling with `exnref`) |
 
 **Licensing.** NetWasm.UI is MIT. The NetWasm compiler and tools use the
@@ -140,6 +140,7 @@ From a clone of this repository:
 dotnet run --project tools/DevServer -- samples/Counter   # counter, todos, routing, forms, components
 dotnet run --project tools/DevServer -- samples/Fetch     # HttpClient + System.Text.Json with Suspense
 dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one page
+dotnet run --project tools/DevServer -- samples/Interop   # a JS library wrapped in a component
 dotnet run --project tools/DevServer -- site              # the project website
 ```
 
@@ -154,6 +155,7 @@ dotnet run --project tools/DevServer -- site              # the project website
 - [Forms and validation](docs/forms.md)
 - [Routing](docs/routing.md): parameters, nested routes, base path
 - [Error handling](docs/error-handling.md): `ErrorBoundary` and `App.OnError`
+- [JavaScript interop](docs/js-interop.md): `[JSImport]`, callbacks, wrapping JS libraries
 - [Embedding and several apps on one page](docs/embedding.md)
 - [Publishing and size](docs/deployment.md)
 - [Security](docs/security.md): Content Security Policy, Trusted Types, XSS
@@ -172,6 +174,7 @@ dotnet run --project tools/DevServer -- site              # the project website
 | `samples/Counter`            | Demo app: counter, todos, routing, nested routes, forms and `/components`. |
 | `samples/Fetch`              | `HttpClient` + `System.Text.Json` with `Resource` and `Suspense`.    |
 | `samples/Widgets`            | Several independent apps (Wasm instances) on one page.              |
+| `samples/Interop`            | `[JSImport]`, `JSObject`, callbacks and Promises: a JS library in a component. |
 | `site/`                      | The project website, built with NetWasm.UI and published to GitHub Pages. |
 | `templates/`                 | The `dotnet new netwasm-ui` template package.                        |
 | `tests/NetWasm.UI.Tests`     | xunit tests against an in-memory `FakeDomHost`.                      |
@@ -187,7 +190,7 @@ dotnet run --project tools/DevServer -- site              # the project website
 - No `System.Linq` in the core library. Apps may use the NetWasm LINQ package.
 - One app per Wasm module.
 - No server-side rendering (SSR) or hydration.
-- No hot reload; live reload takes 5–20 s.
+- No hot reload; live reload takes ~3–4 s and keeps simple signal values and form state.
 - `.nwui` has syntax highlighting but no IntelliSense.
 
 See [Troubleshooting](docs/troubleshooting.md#known-limitations).

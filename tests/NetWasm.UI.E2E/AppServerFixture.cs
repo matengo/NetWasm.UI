@@ -181,8 +181,17 @@ public sealed class FetchServerFixture : AppServerFixture
     }
 }
 
+/// <summary>Serves <c>samples/Interop</c>: a JS library wrapped in a component via [JSImport].</summary>
+public sealed class InteropServerFixture : AppServerFixture
+{
+    public InteropServerFixture()
+        : base("Interop")
+    {
+    }
+}
+
 [CollectionDefinition(Name)]
-public sealed class AppCollection : ICollectionFixture<AppServerFixture>, ICollectionFixture<WidgetsServerFixture>, ICollectionFixture<FetchServerFixture>
+public sealed class AppCollection : ICollectionFixture<AppServerFixture>, ICollectionFixture<WidgetsServerFixture>, ICollectionFixture<FetchServerFixture>, ICollectionFixture<InteropServerFixture>
 {
     public const string Name = "app";
 }

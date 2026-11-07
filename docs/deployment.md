@@ -7,8 +7,9 @@ dotnet publish -c Release
 # → bin/Release/netwasm0.1/publish/
 ```
 
-`Release` uses `NetWasmOptimization=Oz` (smallest output). The dev server uses `O1` for faster
-rebuilds; run it with `--release` to see production sizes.
+`Release` uses `NetWasmOptimization=Oz` (smallest output). The dev server builds `Debug` with `O0`
+for fast incremental rebuilds, so its Wasm is several times larger; run it with `--release` to see
+production sizes.
 
 ## What to deploy
 
@@ -28,14 +29,16 @@ A first visit downloads these files:
 
 ## Size
 
-This is the whole demo app in Release with NetWasm.Sdk 0.10.7. It has a counter, todos, the
+This is the whole demo app in Release with NetWasm.Sdk 0.11.1. It has a counter, todos, the
 router with nested routes, an async form and `/components`:
 
 | Artifact | Raw | Brotli | Gzip |
 |---|---:|---:|---:|
-| `Counter.wasm` | 589 KB | 102 KB | 138 KB |
-| NetWasm JS host (`netwasm.page.mjs`, runtime chunks, adapter) | 222 KB | 49 KB | 56 KB |
-| **Whole page** | **812 KB** | **151 KB** | **195 KB** |
+| `Counter.wasm` | 616 KB | 108 KB | 149 KB |
+| NetWasm JS host (`netwasm.page.mjs`, runtime chunks, adapter) | 217 KB | 48 KB | 55 KB |
+| **Whole page** | **833 KB** | **157 KB** | **204 KB** |
+
+The same code built with NetWasm.Sdk 0.10.7 gave a 592 KB raw / 101 KB Brotli `Counter.wasm`.
 
 About 15–20 KB of the Wasm is the `async`/`Task` machinery that the form's async submit pulls
 in. An app without `async` is correspondingly smaller. See [Benchmarks](benchmarks.md) for a

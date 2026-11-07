@@ -50,9 +50,12 @@ internal sealed class Publisher(DevServerOptions options)
         }
     }
 
-    private static async Task<(int Code, string Output)> RunDotnetAsync(string arguments)
+    private async Task<(int Code, string Output)> RunDotnetAsync(string arguments)
     {
-        var psi = new ProcessStartInfo("dotnet", arguments + " -nodeReuse:false")
+        // Watch mode keeps MSBuild nodes and the compiler server warm between rebuilds. Without
+        // watch (CI, E2E) they are off: they would inherit the output pipes and outlive the server.
+        var reuse = !options.NoWatch;
+        var psi = new ProcessStartInfo("dotnet", arguments + (reuse ? string.Empty : " -nodeReuse:false"))
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -60,10 +63,12 @@ internal sealed class Publisher(DevServerOptions options)
             CreateNoWindow = true,
         };
 
-        // Build servers would inherit the output pipes and keep them open after dotnet exits.
-        psi.Environment["MSBUILDDISABLENODEREUSE"] = "1";
-        psi.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
-        psi.Environment["UseSharedCompilation"] = "false";
+        if (!reuse)
+        {
+            psi.Environment["MSBUILDDISABLENODEREUSE"] = "1";
+            psi.Environment["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0";
+            psi.Environment["UseSharedCompilation"] = "false";
+        }
 
         var sb = new StringBuilder();
         void Append(string? line)

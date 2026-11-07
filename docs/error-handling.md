@@ -68,7 +68,8 @@ DOM changes made before the exception are still applied. For example, an event h
 updates a signal and then throws still updates the page.
 
 Code that runs outside the framework is not caught. That includes your own `JSImport`
-callbacks and timers that do not go through an event handler.
+callbacks and timers that do not go through an event handler. See
+[Callbacks from JavaScript](js-interop.md#callbacks-from-javascript).
 
 ## Global hook
 

@@ -19,6 +19,7 @@ public sealed class Signal<T> : IReadOnlySignal<T>
     {
         value = initial;
         this.comparer = comparer ?? EqualityComparer<T>.Default;
+        DevState.Tracker?.Invoke(this);
     }
 
     public T Value

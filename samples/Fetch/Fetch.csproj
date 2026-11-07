@@ -9,8 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- NetWasm ports of HttpClient (fetch-based) and System.Text.Json (source generation only). -->
-    <PackageReference Include="NetWasm.System.Net.Http" Version="0.10.7" />
-    <PackageReference Include="NetWasm.System.Text.Json" Version="0.10.7" />
+    <PackageReference Include="NetWasm.System.Net.Http" Version="0.11.0" />
+    <PackageReference Include="NetWasm.System.Text.Json" Version="0.11.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />

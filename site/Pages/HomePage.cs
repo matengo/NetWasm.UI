@@ -10,7 +10,7 @@ public sealed class HomePage : Component
         dotnet new install NwUi.Templates
         dotnet new netwasm-ui -o MyApp
         cd MyApp
-        dotnet nwui-dev            # http://localhost:8765, rebuilds and reloads on save
+        dotnet nwui-dev            # http://localhost:8765, reloads on save and keeps your state
         """;
 
     private const string TemplateSample = """
@@ -94,7 +94,7 @@ public sealed class HomePage : Component
             Class("stats"),
             Div(
                 Class("container stats-grid"),
-                Stat("~150 KB", "a whole app with router and forms, Brotli, Wasm and JS together"),
+                Stat("~160 KB", "a whole app with router and forms, Brotli, Wasm and JS together"),
                 Stat("≤ 1", "Wasm→JS call per state change, however many nodes it touches"),
                 Stat("0", "reflection, runtime template engines or virtual DOM"),
                 Stat("3–21×", "faster than Blazor WebAssembly, with a ~12× smaller download")));
@@ -211,7 +211,7 @@ public sealed class HomePage : Component
                             Package("NwUi.Browser", "The package an app references: the browser host and the DOM module. Brings in NwUi."),
                             Package("NwUi", "The core: signals, components, router, forms and the .nwui template compiler."),
                             Package("NwUi.Templates", "dotnet new netwasm-ui."),
-                            Package("NwUi.DevServer", "dotnet nwui-dev: publishes, serves with Brotli and SPA fallback, and live-reloads.")))),
+                            Package("NwUi.DevServer", "dotnet nwui-dev: publishes, serves with Brotli and SPA fallback, and live-reloads in ~3 s, keeping signal and form state.")))),
                 P(
                     Class("fine-print"),
                     "Requires the .NET SDK 10.0.3xx and a browser with Wasm exception handling (Chrome/Edge 137+, Firefox 131+, Safari 18.4+). ",

@@ -9,6 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="NetWasm.UI.Tests" />
+    <!-- Dev-reload state (DevState). Both packages are always released with the same version. -->
+    <InternalsVisibleTo Include="NetWasm.UI.Browser" />
   </ItemGroup>
 
   <!-- The .nwui source generator ships in this package (analyzers/dotnet/cs) together with
