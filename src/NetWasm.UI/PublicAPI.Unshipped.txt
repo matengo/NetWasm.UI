@@ -2,3 +2,7 @@
 static NetWasm.UI.Html.SetInterval(System.Action! tick, int milliseconds) -> System.IDisposable!
 NetWasm.UI.Services.AddLazy<T>() -> NetWasm.UI.Services!
 NetWasm.UI.Services.AddLazy<TService, TImplementation>() -> NetWasm.UI.Services!
+NetWasm.UI.Reactive.ReactiveAttribute
+NetWasm.UI.Reactive.ReactiveAttribute.Initial.get -> object?
+NetWasm.UI.Reactive.ReactiveAttribute.ReactiveAttribute() -> void
+NetWasm.UI.Reactive.ReactiveAttribute.ReactiveAttribute(object? initial) -> void

@@ -20,7 +20,7 @@
         @if (selected.Value == 0) {
             <p class="hint">Select a user.</p>
         } else {
-            <p class="bio">@(details.Loading ? "Loading…" : details.Error is { } e ? "Failed: " + e.Message : details.Latest?.Bio)</p>
+            <p class="bio">@(details.Loading ? "Loading…" : details.Error is { } e ? "Failed: " + e.Message : details.Latest?.Bio ?? "")</p>
         }
     </section>
     <button id="missing" @onclick="() => selected.Value = 99">Load a missing user</button>

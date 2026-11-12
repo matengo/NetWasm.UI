@@ -22,6 +22,42 @@ var name = new Signal<string>("", StringComparer.OrdinalIgnoreCase);   // custom
 A write that does not change the value (by the comparer, `EqualityComparer<T>.Default` if none
 is given) notifies nobody.
 
+## Reactive properties
+
+`[Reactive]` turns a `partial` property into a signal, so you read and write it like a plain
+property:
+
+```csharp
+public partial class CounterStore
+{
+    [Reactive] public partial int Count { get; set; }
+    [Reactive("Ada")] public partial string Name { get; private set; }
+}
+
+store.Count++;              // a signal write
+Text(() => store.Count)     // a signal read, so it updates
+Text(store.CountSignal)     // the signal itself
+```
+
+The source generator writes the property and a private `Signal<T>` field behind it, with the same
+equality rules as `Signal<T>`. It also adds a `NameSignal` property for APIs that take a signal,
+such as `Text(signal)`, form bindings or a component's `Signal<T>` prop. When the setter is more
+restricted than the property (`private set`), `NameSignal` is an `IReadOnlySignal<T>`.
+
+- Works in C# files and in `@code` blocks of `.nwui` templates. In a template, `@Count` reads it.
+- The property and every class around it must be `partial`, with `{ get; set; }` and no body.
+  `static` properties and record classes work; structs do not. Other cases are build error
+  `NWUI020` (C#) or `NWUI002` (templates).
+- The initial value is `default` or a constant in the attribute: a number, string, `bool`, `char`
+  or enum value. For anything else, such as a list, use a `Signal<T>` field. Setting the value in
+  the constructor also works, but then [dev reloads](../CONTRIBUTING.md#live-reload-not-hot-reload)
+  no longer keep it.
+- Passing a lambda (`Text(() => Count)`) allocates one more closure per binding than passing the
+  signal (`Text(CountSignal)`). In large lists, pass the signal.
+- In-place changes to a mutable value are not seen, just as with `Signal<T>`: replace the value,
+  or call `CountSignal.Touch()`.
+- C# 13 or later (the default with the .NET 10 and 11 SDKs). The attribute is not kept in the compiled app.
+
 ## Computed
 
 ```csharp

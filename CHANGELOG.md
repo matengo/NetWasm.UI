@@ -6,6 +6,26 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `[Reactive]` partial properties: `[Reactive] public partial int Count { get; set; }` is
+  implemented by the source generator with a `Signal<T>`, so `Count++` is a signal write and
+  reading `Count` in a binding subscribes to it. A `CountSignal` property returns the signal
+  itself. The initial value goes in the attribute (`[Reactive(5)]`). Works in C# files and in
+  `.nwui` `@code` blocks; invalid declarations are build error `NWUI020` (C#) or `NWUI002`
+  (templates). The Counter sample's Components page uses it. See
+  [Reactive properties](docs/reactivity.md#reactive-properties).
+
+### Changed
+
+- NetWasm.Sdk 0.11.1 → 0.12.2 (template and repository); `NetWasm.System.*` packages in the Fetch
+  sample → 0.12.1. **Breaking:** set `"NetWasm.Sdk": "0.12.2"` under `msbuild-sdks` in your
+  `global.json`, and any `NetWasm.System.*` packages to 0.12.1. The Counter sample's Wasm shrinks
+  from 111.2 to 108.4 KB Brotli.
+- `global.json` (repository and template) rolls forward to the latest installed major version,
+  so the .NET 11 SDK is used when installed. The minimum is still the .NET SDK 10.0.303; use
+  .NET 11 if you want C# 15.
+
 ## [0.5.0] - 2026-11-07
 
 ### Added

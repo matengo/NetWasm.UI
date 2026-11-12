@@ -1,0 +1,14 @@
+@* [Reactive] partial properties in @code: the template compiler implements them with signals. *@
+<p class="clicker">
+    <button @onclick="() => Clicks++">@Label: @Clicks</button>
+    @if (Clicks >= 2) {
+        <strong>busy</strong>
+    }
+</p>
+
+@code {
+    [Reactive(1)] public partial int Clicks { get; set; }
+    [Reactive("Clicks")] public partial string Label { get; private set; }
+
+    public void Rename(string label) => Label = label;
+}

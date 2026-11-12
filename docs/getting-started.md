@@ -2,8 +2,9 @@
 
 ## Prerequisites
 
-- .NET SDK 10.0.3xx or later. `global.json` rolls forward to the latest feature band.
-- The NetWasm SDK is pinned in `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.11.1" }`). It
+- .NET SDK 10.0.303 or later; .NET 11 works too and is needed for C# 15. `global.json` rolls
+  forward to the latest installed SDK.
+- The NetWasm SDK is pinned in `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.12.2" }`). It
   downloads its host tooling on first restore.
 - A browser listed in [Compatibility](compatibility.md#browsers).
 

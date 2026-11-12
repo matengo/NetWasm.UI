@@ -1,20 +1,21 @@
-@* Signals, a Computed and a conditional block. Only the text nodes that read a signal update. *@
+@* A [Reactive] property, a Computed and a conditional block. Only the text nodes that read Count update. *@
 <div class="demo-counter">
-    <p class="big">@count</p>
-    <p>doubled: <strong>@doubled</strong> · @(count.Value % 2 == 0 ? "even" : "odd")</p>
+    <p class="big">@Count</p>
+    <p>doubled: <strong>@doubled</strong> · @(Count % 2 == 0 ? "even" : "odd")</p>
     <div class="row">
-        <button class="btn" @onclick="() => count.Value--">&minus;1</button>
-        <button class="btn btn-primary" @onclick="() => count.Value++">+1</button>
-        <button class="btn" disabled="@(count.Value == 0)" @onclick="() => count.Value = 0">Reset</button>
+        <button class="btn" @onclick="() => Count--">&minus;1</button>
+        <button class="btn btn-primary" @onclick="() => Count++">+1</button>
+        <button class="btn" disabled="@(Count == 0)" @onclick="() => Count = 0">Reset</button>
     </div>
-    @if (count.Value >= 10) {
+    @if (Count >= 10) {
         <p class="note">Double digits! This paragraph is inserted by an @@if block.</p>
     }
 </div>
 
 @code {
-    private readonly Signal<int> count = new(0);
+    // A signal behind a plain property: Count++ writes it, reading Count in the template tracks it.
+    [Reactive] private partial int Count { get; set; }
     private Computed<int> doubled = null!;
 
-    partial void OnInit() => doubled = new Computed<int>(() => count.Value * 2);
+    partial void OnInit() => doubled = new Computed<int>(() => Count * 2);
 }

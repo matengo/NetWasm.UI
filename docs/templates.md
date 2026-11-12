@@ -80,6 +80,9 @@ using static NetWasm.UI.Html;
 
 - `Build()` calls `partial void OnInit()` first, inside the component's scope. Implement it in
   `@code` to call `Use`, `Provide` or `OnMount`, or to create `Computed`s.
+- State can be a `Signal<T>` field or a `[Reactive] private partial int Count { get; set; }`
+  property, which you read as `@Count` and write as `Count++`. See
+  [Reactive properties](reactivity.md#reactive-properties).
 - Whitespace follows JSX: text on one line is kept, multi-line text is trimmed per line and joined
   with single spaces, and whitespace-only lines disappear.
 - Each template, `@if`/`else` block and `@foreach` body must have exactly one root node. `@if` and

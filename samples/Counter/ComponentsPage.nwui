@@ -19,12 +19,12 @@
 </Page>
 
 @code {
-    private Signal<int> Hits { get; } = new(0);
+    [Reactive] private partial int Hits { get; set; }
 
     private void Hit()
     {
-        Hits.Value++;
-        if (Hits.Value == 3)
+        Hits++;
+        if (Hits == 3)
         {
             throw new System.InvalidOperationException("click number 3 failed");
         }

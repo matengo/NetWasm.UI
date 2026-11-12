@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace NetWasm.UI.Generator;
 
@@ -141,8 +143,40 @@ internal sealed class TemplateEmitter
             User(block, string.Empty, string.Empty, header);
         }
 
-        header.Append("\n#line default\n}\n");
+        header.Append("\n#line default\n");
+        foreach (var block in file.CodeBlocks)
+        {
+            EmitReactive(block, header);
+        }
+
+        header.Append("}\n");
         return header.ToString();
+    }
+
+    /// <summary>Implements the <c>[Reactive] partial</c> properties of a <c>@code</c> block (see <see cref="ReactiveMember"/>).</summary>
+    private static void EmitReactive(Directive block, StringBuilder target)
+    {
+        const string Prefix = "class __C {";
+        var tree = CSharpSyntaxTree.ParseText(Prefix + block.Code + "\n}");
+        foreach (var node in tree.GetRoot().DescendantNodes())
+        {
+            if (node is not PropertyDeclarationSyntax { Parent: ClassDeclarationSyntax { Identifier.ValueText: "__C" } } p
+                || ReactiveMember.Find(p) is not { } attribute)
+            {
+                continue;
+            }
+
+            var problem = ReactiveMember.CheckShape(p);
+            if (problem is not null)
+            {
+                throw new TemplateException(
+                    "NWUI002", "[Reactive] property '" + p.Identifier.ValueText + "' " + problem, block.Start + p.Identifier.SpanStart - Prefix.Length, p.Identifier.Span.Length);
+            }
+
+            var args = attribute.ArgumentList?.Arguments;
+            var initial = args is { Count: 1 } ? args.Value[0].Expression.ToString() : "default!";
+            target.Append('\n').Append(ReactiveMember.Emit(p, p.Type.ToString(), initial));
+        }
     }
 
     // ---- nodes ----

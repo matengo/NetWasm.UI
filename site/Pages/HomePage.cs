@@ -146,7 +146,7 @@ public sealed class HomePage : Component
                     "Each feature is ordinary C# the compiler can see, so you pay only for what you use."),
                 Div(
                     Class("features"),
-                    Feature("reactivity.md", "Fine-grained signals", "Signal, Computed and Effect with batching, context and stores. Only the nodes that read a signal update."),
+                    Feature("reactivity.md", "Fine-grained signals", "Signal, Computed and Effect with batching, context and stores, or [Reactive] properties you just read and write. Only the nodes that read a signal update."),
                     Feature("templates.md", ".nwui templates", "HTML with @if, @foreach, @bind, slots, props and components. Static subtrees are cloned, not rebuilt."),
                     Feature("routing.md", "Router", "Route parameters, nested layouts, NavLink, base paths and the History API. This site uses it."),
                     Feature("forms.md", "Forms and validation", "Fields with validators, touched and ARIA state, async submit and server errors."),
@@ -214,7 +214,7 @@ public sealed class HomePage : Component
                             Package("NwUi.DevServer", "dotnet nwui-dev: publishes, serves with Brotli and SPA fallback, and live-reloads in ~3 s, keeping signal and form state.")))),
                 P(
                     Class("fine-print"),
-                    "Requires the .NET SDK 10.0.3xx and a browser with Wasm exception handling (Chrome/Edge 137+, Firefox 131+, Safari 18.4+). ",
+                    "Requires the .NET SDK 10.0.3xx or 11 and a browser with Wasm exception handling (Chrome/Edge 137+, Firefox 131+, Safari 18.4+). ",
                     "NetWasm.UI is MIT. The NetWasm compiler uses the ",
                     AppRoot.External("https://github.com/zion-sati/NetWasm", "NetWasm Community License"),
                     "; the apps you build can use any license.")));

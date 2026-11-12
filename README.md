@@ -15,7 +15,7 @@ itself a NetWasm.UI app ([source](site/)).
 
 ## Get started in 30 seconds
 
-You need the [.NET SDK 10.0.3xx](https://dotnet.microsoft.com/download).
+You need the [.NET SDK 10.0.3xx or 11](https://dotnet.microsoft.com/download).
 
 ```shell
 dotnet new install NwUi.Templates
@@ -83,6 +83,17 @@ compiles them at build time:
 }
 ```
 
+Prefer plain properties? `[Reactive]` puts a signal behind a `partial` property, in `@code` or
+any C# class ([Reactive properties](docs/reactivity.md#reactive-properties)):
+
+```razor
+<button @onclick="() => Count++">Clicked @Count times</button>
+
+@code {
+    [Reactive] private partial int Count { get; set; }
+}
+```
+
 You can also write components directly in C#, which is what the generator emits:
 
 ```csharp
@@ -118,8 +129,8 @@ public sealed class CounterView : Component
 
 | | |
 |---|---|
-| .NET SDK | 10.0.3xx. The NetWasm SDK is resolved from `global.json`. |
-| NetWasm.Sdk | 0.11.1, target framework `netwasm0.1` |
+| .NET SDK | 10.0.3xx or 11.0.x (C# 15 needs 11). The NetWasm SDK is resolved from `global.json`. |
+| NetWasm.Sdk | 0.12.2, target framework `netwasm0.1` |
 | Browsers | Chrome/Edge 137+, Firefox 131+, Safari 18.4+ (needed for Wasm exception handling with `exnref`) |
 
 **Licensing.** NetWasm.UI is MIT. The NetWasm compiler and tools use the

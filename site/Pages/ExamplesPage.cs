@@ -21,7 +21,7 @@ public sealed class ExamplesPage : Component
 
     private static readonly Demo[] Demos =
     [
-        new("counter", "Counter", "Signals, a Computed and an @if block. Only the text nodes that read a signal change.",
+        new("counter", "Counter", "A [Reactive] property, a Computed and an @if block. Only the text nodes that read the count change.",
             ["CounterDemo"], () => new CounterDemo().Render()),
         new("todos", "Todos", "A keyed @foreach with two-way binding. Adding or toggling an item touches only that item's nodes.",
             ["TodoDemo"], () => new TodoDemo().Render()),
