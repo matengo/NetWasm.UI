@@ -8,7 +8,7 @@ changed, and every state change crosses the Wasm→JS boundary **at most once**.
 **Website and live examples: [matengo.github.io/NetWasm.UI](https://matengo.github.io/NetWasm.UI/)**,
 itself a NetWasm.UI app ([source](site/)).
 
-> **Status: 0.5, an early but usable release.** The packages are on NuGet and the framework is
+> **Status: 0.6, an early but usable release.** The packages are on NuGet and the framework is
 > tested in Chromium, Firefox and WebKit. The public API may still change in 0.x releases; every
 > change is listed in the [CHANGELOG](CHANGELOG.md). See
 > [Compatibility and versioning](docs/compatibility.md).
