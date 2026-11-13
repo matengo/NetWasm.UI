@@ -384,10 +384,7 @@ public sealed class TemplateInstance : IDisposable
     /// <summary>Releases the host nodes of all holes. Called by the owning scope.</summary>
     public void Dispose()
     {
-        for (var i = 0; i < kinds.Length; i++)
-        {
-            Renderer.Release(first + i);
-        }
+        Renderer.ReleaseBlock(first, kinds.Length);
     }
 
     /// <summary>Returns the node id of <paramref name="hole"/> after checking its kind.</summary>

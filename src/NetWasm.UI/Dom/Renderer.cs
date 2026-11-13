@@ -14,6 +14,11 @@ public static class Renderer
     private static readonly BatchWriter batch = new();
     private static readonly Dictionary<int, UI.Listener> handlers = new();
     private static int nextNodeId = 1;
+    // Released node ids are reused, so the host's node table stays dense in a long-running app: single nodes one id at
+    // a time, template clones a block of their size (a list's rows reuse the blocks of rows it removed). An id is
+    // reused only after its Release op, so the host never sees two live nodes with one id.
+    private static readonly Stack<int> freeNodeIds = new();
+    private static readonly Dictionary<int, Stack<int>> freeNodeBlocks = new();
     private static int nextHandlerId = 1;
 
     public static bool IsInitialized => host is not null;
@@ -39,6 +44,8 @@ public static class Renderer
         batch.Clear();
         handlers.Clear();
         nextNodeId = 1;
+        freeNodeIds.Clear();
+        freeNodeBlocks.Clear();
         nextHandlerId = 1;
         FlushCount = 0;
         Generation++;
@@ -65,7 +72,7 @@ public static class Renderer
         }
     }
 
-    internal static int AllocateNodeId() => nextNodeId++;
+    internal static int AllocateNodeId() => freeNodeIds.TryPop(out var id) ? id : nextNodeId++;
 
     // ---- node creation ----
 
@@ -105,8 +112,12 @@ public static class Renderer
     /// <summary>Clones a defined template; returns the id of its root, holes get the following ids.</summary>
     internal static int CloneTemplate(int templateId, int nodeCount)
     {
-        var first = nextNodeId;
-        nextNodeId += nodeCount;
+        if (!freeNodeBlocks.TryGetValue(nodeCount, out var blocks) || !blocks.TryPop(out var first))
+        {
+            first = nextNodeId;
+            nextNodeId += nodeCount;
+        }
+
         batch.Op(Op.CloneTemplate);
         batch.Int(templateId);
         batch.Int(first);
@@ -179,6 +190,25 @@ public static class Renderer
     {
         batch.Op(Op.Release);
         batch.Int(id);
+        freeNodeIds.Push(id);
+    }
+
+    /// <summary>Releases the nodes of a template clone, whose ids <see cref="CloneTemplate"/> handed out as one block.</summary>
+    internal static void ReleaseBlock(int first, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            batch.Op(Op.Release);
+            batch.Int(first + i);
+        }
+
+        if (!freeNodeBlocks.TryGetValue(count, out var blocks))
+        {
+            blocks = new Stack<int>();
+            freeNodeBlocks.Add(count, blocks);
+        }
+
+        blocks.Push(first);
     }
 
     internal static void Mount(int id, string selector)
