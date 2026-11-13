@@ -23,6 +23,10 @@ See [Compatibility and versioning](docs/compatibility.md).
 - NetWasm 0.13.0 programs no longer carry type names, so `GetType().Name` reads `type#<id>` unless
   `NetWasmTypeNames` writes the names beside the program (on in Debug). NetWasm.UI does not read
   type names.
+- `nwui.dom` keeps the page's nodes in an array indexed by node id instead of a `Map`, and the
+  renderer reuses the ids of released nodes (a template clone reuses a released block of its size),
+  so the array stays dense in a long-running app. A node handle used after its scope disposed it
+  now reaches whichever node reuses the id rather than failing; as before, such use is a bug.
 
 ## [0.8.0] - 2026-11-13
 

@@ -182,8 +182,10 @@ export function createDomHost(options = {}) {
   const hist = options.history ?? windowHistory();
   const key = Symbol("nwui");
 
-  /** @type {Map<number, Node>} */
-  const nodes = new Map();
+  // Node ids are small integers that the renderer reuses once released, so an array indexes them without hashing
+  // and stays dense however long the app runs.
+  /** @type {(Node | undefined)[]} */
+  const nodes = [];
   /** @type {Map<number, { node: Node, event: string, fn: EventListener }>} */
   const listeners = new Map();
   // Handler ids per node, so releasing a node only visits its own listeners.
@@ -306,7 +308,7 @@ export function createDomHost(options = {}) {
   function cloneTemplate(id, firstId) {
     const t = templates.get(id);
     const clone = t.root.cloneNode(true);
-    nodes.set(firstId, clone);
+    nodes[firstId] = clone;
     const paths = t.paths;
     for (let h = 0; h < paths.length; h++) {
       const path = paths[h];
@@ -315,7 +317,7 @@ export function createDomHost(options = {}) {
         n = n.firstChild;
         for (let j = path[k]; j > 0; j--) n = n.nextSibling;
       }
-      nodes.set(firstId + 1 + h, n);
+      nodes[firstId + 1 + h] = n;
     }
   }
 
@@ -345,78 +347,78 @@ export function createDomHost(options = {}) {
       switch (op) {
         case OP.CreateElement: {
           const id = r.i32();
-          nodes.set(id, doc.createElement(r.str()));
+          nodes[id] = doc.createElement(r.str());
           break;
         }
         case OP.CreateText: {
           const id = r.i32();
-          nodes.set(id, doc.createTextNode(r.str()));
+          nodes[id] = doc.createTextNode(r.str());
           break;
         }
         case OP.CreateAnchor: {
-          nodes.set(r.i32(), doc.createComment(""));
+          nodes[r.i32()] = doc.createComment("");
           break;
         }
         case OP.SetText: {
-          const n = nodes.get(r.i32());
+          const n = nodes[r.i32()];
           n.data = r.str();
           break;
         }
         case OP.SetAttribute: {
-          const n = nodes.get(r.i32());
+          const n = nodes[r.i32()];
           const name = r.str();
           n.setAttribute(name, r.str());
           break;
         }
         case OP.RemoveAttribute: {
-          const n = nodes.get(r.i32());
+          const n = nodes[r.i32()];
           n.removeAttribute(r.str());
           break;
         }
         case OP.SetProperty: {
-          const n = nodes.get(r.i32());
+          const n = nodes[r.i32()];
           const name = r.str();
           n[name] = r.str();
           break;
         }
         case OP.SetBoolProperty: {
-          const n = nodes.get(r.i32());
+          const n = nodes[r.i32()];
           const name = r.str();
           n[name] = r.u8() !== 0;
           break;
         }
         case OP.AppendChild: {
-          const parent = nodes.get(r.i32());
-          const child = nodes.get(r.i32());
+          const parent = nodes[r.i32()];
+          const child = nodes[r.i32()];
           // A comment parent is an insertion point (template <!--@--> hole): the child goes before it.
           if (parent.nodeType === 8) parent.parentNode.insertBefore(child, parent);
           else parent.appendChild(child);
           break;
         }
         case OP.InsertBefore: {
-          const ref = nodes.get(r.i32());
-          const child = nodes.get(r.i32());
+          const ref = nodes[r.i32()];
+          const child = nodes[r.i32()];
           ref.parentNode.insertBefore(child, ref);
           break;
         }
         case OP.Remove: {
-          const n = nodes.get(r.i32());
+          const n = nodes[r.i32()];
           n.parentNode?.removeChild(n);
           mounted.delete(n);
           break;
         }
         case OP.Release: {
           const id = r.i32();
-          const n = nodes.get(id);
+          const n = nodes[id];
           if (n) {
             releaseListeners(n);
             if (n[key]) n[key] = undefined;
           }
-          nodes.delete(id);
+          nodes[id] = undefined;
           break;
         }
         case OP.AddListener: {
-          const n = nodes.get(r.i32());
+          const n = nodes[r.i32()];
           const event = r.str();
           const handlerId = r.i32();
           const flags = r.u8();
@@ -438,7 +440,7 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.RemoveListener: {
-          const n = nodes.get(r.i32());
+          const n = nodes[r.i32()];
           const handlerId = r.i32();
           if (removeDelegated(n, handlerId)) break;
           const l = listeners.get(handlerId);
@@ -449,7 +451,7 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.Mount: {
-          const n = nodes.get(r.i32());
+          const n = nodes[r.i32()];
           const selector = r.str();
           const target = mountTarget(selector);
           if (!target) throw new Error(`NetWasm.UI: mount target '${selector}' not found`);
@@ -464,7 +466,7 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.Focus: {
-          nodes.get(r.i32())?.focus?.();
+          nodes[r.i32()]?.focus?.();
           break;
         }
         case OP.DefineTemplate: {
@@ -546,7 +548,7 @@ export function createDomHost(options = {}) {
       listeners.clear();
       for (const n of mounted) n.parentNode?.removeChild(n);
       mounted.clear();
-      nodes.clear();
+      nodes.length = 0;
       templates.clear();
       pending.length = 0;
       dispatch = null;

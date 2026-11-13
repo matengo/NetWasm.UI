@@ -110,6 +110,7 @@ public sealed class FakeDomHost : IDomHost
                 {
                     var id = ReadInt(ops, ref pos);
                     var tag = ReadString(ops, ref pos);
+                    ExpectFree(id);
                     Nodes[id] = new FakeNode { Id = id, Kind = "element", Tag = tag };
                     Log.Add(("CreateElement", $"{id} {tag}"));
                     break;
@@ -118,6 +119,7 @@ public sealed class FakeDomHost : IDomHost
                 {
                     var id = ReadInt(ops, ref pos);
                     var text = ReadString(ops, ref pos);
+                    ExpectFree(id);
                     Nodes[id] = new FakeNode { Id = id, Kind = "text", Text = text };
                     Log.Add(("CreateText", $"{id} '{text}'"));
                     break;
@@ -125,6 +127,7 @@ public sealed class FakeDomHost : IDomHost
                 case Op.CreateAnchor:
                 {
                     var id = ReadInt(ops, ref pos);
+                    ExpectFree(id);
                     Nodes[id] = new FakeNode { Id = id, Kind = "anchor" };
                     Log.Add(("CreateAnchor", $"{id}"));
                     break;
@@ -260,6 +263,7 @@ public sealed class FakeDomHost : IDomHost
                     var holes = templates[id].Clone();
                     for (var i = 0; i < holes.Count; i++)
                     {
+                        ExpectFree(first + i);
                         holes[i].Id = first + i;
                         Nodes[first + i] = holes[i];
                     }
@@ -270,6 +274,16 @@ public sealed class FakeDomHost : IDomHost
                 default:
                     throw new InvalidOperationException($"Unknown op {op} at {pos - 1}");
             }
+        }
+    }
+
+    // The renderer reuses released node ids; a reused id must have been released first, as dom.mjs replaces the node
+    // an id names.
+    private void ExpectFree(int id)
+    {
+        if (Nodes.ContainsKey(id))
+        {
+            throw new InvalidOperationException($"Node id {id} is created while its node is still live.");
         }
     }
 
