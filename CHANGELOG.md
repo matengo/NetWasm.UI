@@ -6,6 +6,12 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `TemplateInstance.With(hole, content)` overloads for one, two and three pieces of content, so the
+  common case allocates no `params` array. Existing code, including the generated `.nwui`
+  templates, picks them up when it is rebuilt.
+
 ### Changed
 
 - NetWasm.Sdk 0.13.0 (was 0.12.2). The Counter sample's Wasm is 17% smaller (Brotli, at `Oz`, with

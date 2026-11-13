@@ -341,19 +341,52 @@ public sealed class TemplateInstance : IDisposable
     /// <summary>Adds attributes, listeners or children to an element hole, or inserts content at a <c>&lt;!--@--&gt;</c> hole.</summary>
     public TemplateInstance With(int hole, params Content[] content)
     {
-        if (hole < 0 || hole >= kinds.Length || kinds[hole] == Template.TextHole)
-        {
-            throw new ArgumentOutOfRangeException(nameof(hole), "Hole " + hole.ToString() + " is not an element or insertion point.");
-        }
-
-        // An insertion point is a comment; the host turns "append to it" into "insert before it".
-        var target = hole == 0 ? Root : new Element(first + hole, tags[hole]);
+        var target = WithTarget(hole);
         for (var i = 0; i < content.Length; i++)
         {
             content[i].ApplyTo(target);
         }
 
         return this;
+    }
+
+    /// <summary>Adds one attribute, listener or child to an element hole, or inserts one piece of content at a
+    /// <c>&lt;!--@--&gt;</c> hole, without allocating a <c>params</c> array.</summary>
+    public TemplateInstance With(int hole, Content content)
+    {
+        content.ApplyTo(WithTarget(hole));
+        return this;
+    }
+
+    /// <summary>Applies two pieces of content to a hole, in order, without allocating a <c>params</c> array.</summary>
+    public TemplateInstance With(int hole, Content first, Content second)
+    {
+        var target = WithTarget(hole);
+        first.ApplyTo(target);
+        second.ApplyTo(target);
+        return this;
+    }
+
+    /// <summary>Applies three pieces of content to a hole, in order, without allocating a <c>params</c> array.</summary>
+    public TemplateInstance With(int hole, Content first, Content second, Content third)
+    {
+        var target = WithTarget(hole);
+        first.ApplyTo(target);
+        second.ApplyTo(target);
+        third.ApplyTo(target);
+        return this;
+    }
+
+    // The element a hole's content applies to. An insertion point is a comment; the host turns "append to it" into
+    // "insert before it".
+    private Element WithTarget(int hole)
+    {
+        if (hole < 0 || hole >= kinds.Length || kinds[hole] == Template.TextHole)
+        {
+            throw new ArgumentOutOfRangeException(nameof(hole), "Hole " + hole.ToString() + " is not an element or insertion point.");
+        }
+
+        return hole == 0 ? Root : new Element(first + hole, tags[hole]);
     }
 
     /// <summary>Sets the text of a <c>&lt;!--$--&gt;</c> hole.</summary>

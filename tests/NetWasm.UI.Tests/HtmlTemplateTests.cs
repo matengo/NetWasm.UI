@@ -48,6 +48,41 @@ public class HtmlTemplateTests : RendererTest
         Assert.Contains("<h2>World</h2>", Dom.Html);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void With_a_fixed_number_of_contents_renders_as_the_params_overload_does(int count)
+    {
+        static Content[] Contents() => [Class("one"), Attr("title", "two"), Span("three")];
+        var fixedArity = Contents();
+        App.Mount(new Host(() => Div(
+            (count switch
+            {
+                1 => Card.Clone().With(2, fixedArity[0]),
+                2 => Card.Clone().With(2, fixedArity[0], fixedArity[1]),
+                _ => Card.Clone().With(2, fixedArity[0], fixedArity[1], fixedArity[2]),
+            }).Root,
+            Card.Clone().With(2, Contents()[..count]).Root)), "#app");
+
+        var cards = Dom.Html["<div>".Length..^"</div>".Length];
+        Assert.Equal(cards[..(cards.Length / 2)], cards[(cards.Length / 2)..]);
+        Assert.Contains("class=\"one\"", cards);
+    }
+
+    [Fact]
+    public void With_rejects_a_text_hole_and_a_hole_out_of_range_for_every_overload()
+    {
+        var instance = Card.Clone();
+        foreach (var hole in new[] { 1, -1, 4 })
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => instance.With(hole, Class("a")));
+            Assert.Throws<ArgumentOutOfRangeException>(() => instance.With(hole, Class("a"), Class("b")));
+            Assert.Throws<ArgumentOutOfRangeException>(() => instance.With(hole, Class("a"), Class("b"), Class("c")));
+            Assert.Throws<ArgumentOutOfRangeException>(() => instance.With(hole, [Class("a"), Class("b"), Class("c"), Class("d")]));
+        }
+    }
+
     [Fact]
     public void Defines_the_template_once_and_clones_it_per_use()
     {
