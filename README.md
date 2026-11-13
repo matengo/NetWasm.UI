@@ -207,7 +207,9 @@ dotnet run --project tools/DevServer -- site              # the project website
 - No reflection in `netwasm0.1`.
 - No `System.Linq` in the core library. Apps may use the NetWasm LINQ package.
 - One app per Wasm module.
-- No server-side rendering (SSR) or hydration.
+- No server-side rendering (SSR) per request. Pages can be
+  [prerendered](docs/deployment.md#prerendering) at publish time, but the app replaces that
+  markup when it starts (no hydration yet), so handlers only work once the Wasm has loaded.
 - No hot reload; live reload takes ~3–4 s and keeps simple signal values and form state.
 - `.nwui` has syntax highlighting but no IntelliSense.
 

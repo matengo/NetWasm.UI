@@ -79,7 +79,8 @@ new generic instantiations, and `Uri.EscapeDataString`. See
   instance.
 - An exception thrown outside the framework (your own `JSImport` callbacks, timers) is not
   caught by an `ErrorBoundary`. See [Error handling](error-handling.md).
-- No hash routing, no SSR or hydration.
+- No hash routing, and no SSR per request. [Prerendering](deployment.md#prerendering) at
+  publish time is supported, but without hydration: the app replaces the prerendered markup.
 - No hot reload: the dev server rebuilds (~3–4 s) and reloads the page. `int`/`bool`/`string`
   signals, form fields, focus and scroll are restored; lists and objects are not. See
   [Getting started](getting-started.md#developing).
