@@ -320,6 +320,7 @@ public sealed class TemplateInstance : IDisposable
     private readonly byte[] kinds;
     private readonly string[] tags;
     private Element? root;
+    private bool released;
 
     internal TemplateInstance(int first, byte[] kinds, string[] tags)
     {
@@ -414,9 +415,16 @@ public sealed class TemplateInstance : IDisposable
         return this;
     }
 
-    /// <summary>Releases the host nodes of all holes. Called by the owning scope.</summary>
+    /// <summary>Releases the host nodes of all holes. Called by the owning scope; later calls do nothing.</summary>
     public void Dispose()
     {
+        // Released ids are reused, so releasing the block twice would hand it to two clones.
+        if (released)
+        {
+            return;
+        }
+
+        released = true;
         Renderer.ReleaseBlock(first, kinds.Length);
     }
 

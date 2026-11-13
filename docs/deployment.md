@@ -175,16 +175,17 @@ Hydration, where the app attaches to the existing nodes, is planned as the next 
 
 ## Size
 
-This is the whole demo app in Release with NetWasm.Sdk 0.11.1. It has a counter, todos, the
-router with nested routes, an async form and `/components`:
+This is the whole demo app in Release with NetWasm.Sdk 0.13.0 and NetWasmGC. It has a counter,
+todos, the router with nested routes, an async form and `/components`:
 
 | Artifact | Raw | Brotli | Gzip |
 |---|---:|---:|---:|
-| `Counter.wasm` | 616 KB | 108 KB | 149 KB |
-| NetWasm JS host (`netwasm.page.mjs`, runtime chunks, adapter) | 217 KB | 48 KB | 55 KB |
-| **Whole page** | **833 KB** | **157 KB** | **204 KB** |
+| `Counter.wasm` | 426 KB | 92 KB | 119 KB |
+| NetWasm JS host (`netwasm.page.mjs`, runtime chunks, adapter) | 210 KB | 48 KB | 55 KB |
+| **Whole page** | **636 KB** | **140 KB** | **174 KB** |
 
-The same code built with NetWasm.Sdk 0.10.7 gave a 592 KB raw / 101 KB Brotli `Counter.wasm`.
+The same code gave a 616 KB raw / 108 KB Brotli `Counter.wasm` with NetWasm.Sdk 0.11.1, and
+592 KB / 101 KB with 0.10.7.
 
 About 15–20 KB of the Wasm is the `async`/`Task` machinery that the form's async submit pulls
 in. An app without `async` is correspondingly smaller. See [Benchmarks](benchmarks.md) for a

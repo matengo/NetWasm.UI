@@ -29,6 +29,10 @@ See [Compatibility and versioning](docs/compatibility.md).
   renderer reuses the ids of released nodes (a template clone reuses a released block of its size),
   so the array stays dense in a long-running app. A node handle used after its scope disposed it
   now reaches whichever node reuses the id rather than failing; as before, such use is a bug.
+- `Node.Dispose()` and `TemplateInstance.Dispose()` release their ids at most once, so disposing
+  twice cannot hand one id to two live nodes. Disposing a template-hole handle (`Root`,
+  `Element(hole)`) does nothing; its `TemplateInstance` releases it.
+- Counter size budget tightened to 96 KiB Wasm / 144 KiB total (Brotli).
 
 ## [0.8.0] - 2026-11-13
 

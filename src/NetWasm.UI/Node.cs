@@ -31,7 +31,12 @@ public abstract class Node : IContent, IDisposable
     private protected Node(int id, bool owned)
     {
         Id = id;
+        released = owned;
     }
+
+    // Released ids are reused, so a node releases its id at most once. Template-hole handles start out released:
+    // their TemplateInstance releases the ids.
+    private bool released;
 
     public int Id { get; }
 
@@ -40,8 +45,17 @@ public abstract class Node : IContent, IDisposable
     /// <summary>Detaches the node from the DOM. The handle stays valid until the owning scope disposes it.</summary>
     public void Remove() => Renderer.Remove(Id);
 
-    /// <summary>Releases the host-side handle. Called by the owning <see cref="Scope"/>.</summary>
-    public virtual void Dispose() => Renderer.Release(Id);
+    /// <summary>Releases the host-side handle. Called by the owning <see cref="Scope"/>; later calls do nothing.</summary>
+    public virtual void Dispose()
+    {
+        if (released)
+        {
+            return;
+        }
+
+        released = true;
+        Renderer.Release(Id);
+    }
 }
 
 /// <summary>A text node whose content is either static or bound to a reactive expression.</summary>

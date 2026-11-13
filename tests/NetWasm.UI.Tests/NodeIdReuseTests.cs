@@ -54,6 +54,30 @@ public class NodeIdReuseTests : RendererTest
     }
 
     [Fact]
+    public void Disposing_twice_releases_an_id_once()
+    {
+        var node = new Element("div");
+        node.Dispose();
+        node.Dispose();
+        var instance = Row.Clone();
+        instance.Root.Dispose();
+        instance.Dispose();
+        instance.Dispose();
+        Renderer.Flush();
+
+        // Each id was freed once, so these creations get distinct ids; FakeDomHost throws on a live id.
+        var a = new Element("p");
+        var b = new Element("p");
+        var c = Row.Clone();
+        var d = Row.Clone();
+        Renderer.Flush();
+
+        Assert.NotEqual(a.Id, b.Id);
+        Assert.NotEqual(c.Root.Id, d.Root.Id);
+        Assert.Equal(1, Dom.Log.Count(l => l.Op == "Release" && l.Detail == node.Id.ToString()));
+    }
+
+    [Fact]
     public void Reset_forgets_released_ids()
     {
         new Element("div").Dispose();

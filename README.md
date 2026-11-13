@@ -118,7 +118,7 @@ public sealed class CounterView : Component
 ## Size and speed
 
 - **Size:** the whole demo app (counter, todos, router, forms, nested components) is about
-  **157 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
+  **140 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
   past its [size budget](size-budget.json).
 - **Speed:** in a [js-framework-benchmark-style comparison](docs/benchmarks.md)
   it is level with or faster than React on every case, and between 0.9× and 1.6× SolidJS's

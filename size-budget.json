@@ -1,6 +1,6 @@
 {
   "Counter": {
-    "wasmBrotli": 113664,
-    "totalBrotli": 163840
+    "wasmBrotli": 98304,
+    "totalBrotli": 147456
   }
 }
