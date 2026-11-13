@@ -6,6 +6,12 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `TemplateInstance.With(hole, content)` overloads for one, two and three pieces of content, so the
+  common case allocates no `params` array. Existing code, including the generated `.nwui`
+  templates, picks them up when it is rebuilt.
+
 ## [0.8.0] - 2026-11-13
 
 ### Added

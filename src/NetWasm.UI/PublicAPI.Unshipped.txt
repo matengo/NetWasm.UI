@@ -6,3 +6,6 @@ NetWasm.UI.Reactive.ReactiveAttribute
 NetWasm.UI.Reactive.ReactiveAttribute.Initial.get -> object?
 NetWasm.UI.Reactive.ReactiveAttribute.ReactiveAttribute() -> void
 NetWasm.UI.Reactive.ReactiveAttribute.ReactiveAttribute(object? initial) -> void
+NetWasm.UI.TemplateInstance.With(int hole, NetWasm.UI.Content content) -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.TemplateInstance.With(int hole, NetWasm.UI.Content first, NetWasm.UI.Content second) -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.TemplateInstance.With(int hole, NetWasm.UI.Content first, NetWasm.UI.Content second, NetWasm.UI.Content third) -> NetWasm.UI.TemplateInstance!
