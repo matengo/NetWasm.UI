@@ -3,6 +3,9 @@
     <TargetFramework>netwasm0.1</TargetFramework>
     <OutputType>JsModule</OutputType>
     <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
+    <!-- NetWasmGC: faster allocation and collection than the default Compact collector, for about 1.6 KB more
+         download (Brotli). Remove this line to keep Compact. -->
+    <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
     <RootNamespace>Counter</RootNamespace>
   </PropertyGroup>
   <ItemGroup>

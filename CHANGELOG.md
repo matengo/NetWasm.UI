@@ -6,6 +6,18 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Changed
+
+- NetWasm.Sdk 0.13.0 (was 0.12.2). The Counter sample's Wasm is 17% smaller (Brotli, at `Oz`, with
+  the same collector).
+- The template, the samples, the site and the benchmark app use NetWasm's NetWasmGC collector
+  (`<NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>`): it allocates small objects inline
+  and collects faster than the default Compact collector, for about 1.6 KB more download. An app
+  that removes the property keeps Compact.
+- NetWasm 0.13.0 programs no longer carry type names, so `GetType().Name` reads `type#<id>` unless
+  `NetWasmTypeNames` writes the names beside the program (on in Debug). NetWasm.UI does not read
+  type names.
+
 ## [0.8.0] - 2026-11-13
 
 ### Added
