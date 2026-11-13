@@ -9,4 +9,7 @@
   <ItemGroup Condition="'$(NetWasmUIAddDomModule)' != 'false' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
     <NetWasmJavaScriptModule Include="$(MSBuildThisFileDirectory)dom.mjs" Module="nwui.dom" />
   </ItemGroup>
+
+  <!-- Publish-time <link rel=preload/modulepreload> injection into index.html (NetWasmUIPreload=false to disable). -->
+  <Import Project="$(MSBuildThisFileDirectory)NetWasm.UI.Preload.targets" />
 </Project>

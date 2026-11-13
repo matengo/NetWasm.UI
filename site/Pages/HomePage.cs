@@ -153,7 +153,8 @@ public sealed class HomePage : Component
                     Feature("async.md", "Async and Suspense", "Resource<T> turns a Task into reactive state; Suspense and ErrorBoundary handle loading and failure."),
                     Feature("services.md", "Dependency injection", "Reflection-free Services, Inject<T>() and @inject, wired at compile time by a generator."),
                     Feature("js-interop.md", "JavaScript interop", "[JSImport], callbacks and Promises: wrap any JS library in a component."),
-                    Feature("security.md", "Secure by default", "Text is never parsed as HTML. Works under a strict Content Security Policy and Trusted Types."))));
+                    Feature("security.md", "Secure by default", "Text is never parsed as HTML. Works under a strict Content Security Policy and Trusted Types."),
+            Feature("deployment.md#startup-preloading", "Fast startup", "Publish adds preload tags to index.html, so the runtime and the Wasm download in parallel instead of one import at a time."))));
 
     private static Node Feature(string doc, string title, string text) =>
         AppRoot.External(AppRoot.Docs + doc, Class("feature"), H3(title), P(text), Span(Class("feature-more"), "Read the docs →"));

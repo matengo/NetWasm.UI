@@ -22,4 +22,7 @@
     <NetWasmJavaScriptModule Include="meter.mjs" Module="interop.meter" />
     <Content Include="index.html;app.mjs;vendor\*.mjs" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Publish-time preload tags, as the NwUi.Browser package adds them for consumers. -->
+  <Import Project="..\..\src\NetWasm.UI.Browser\build\NetWasm.UI.Preload.targets" />
 </Project>

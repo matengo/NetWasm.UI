@@ -123,6 +123,7 @@ jobs:
           dotnet publish -c Release -p:NetWasmOptimization=O1
           test -f bin/Release/netwasm0.1/publish/index.html
           test -f bin/Release/netwasm0.1/publish/browser/SmokeApp.wasm
+          grep -q '<link rel="modulepreload" href="/browser/SmokeApp.mjs" />' bin/Release/netwasm0.1/publish/index.html
 
       - uses: actions/upload-artifact@v4
         with:

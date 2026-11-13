@@ -1,0 +1,35 @@
+<Project>
+  <!-- Startup preloading: after publish, injects <link rel="modulepreload"> for the NetWasm module chain and
+       <link rel="preload" as="fetch" crossorigin> for deployment.json, the .wasm and its sidecars into the published
+       index.html. Without it the browser discovers them one import level at a time (~7 serial round-trips before the
+       .wasm request starts). The block sits between nwui:preload markers and is regenerated on every publish, since
+       the runtime chunk names are content-hashed.
+       NetWasmUIPreload=false            disables it.
+       NetWasmUIPreloadHtml              the page to rewrite (default: $(PublishDir)index.html; skipped if missing).
+       NetWasmUIPreloadUrlPrefix         prefix for the links (default: "" when the page has <base href>, else "/"). -->
+  <Target Name="NetWasmUIInjectPreloads" AfterTargets="Publish"
+          Condition="'$(NetWasmUIPreload)' != 'false' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
+    <PropertyGroup>
+      <NetWasmUIPreloadHtml Condition="'$(NetWasmUIPreloadHtml)' == ''">$(PublishDir)index.html</NetWasmUIPreloadHtml>
+    </PropertyGroup>
+    <PropertyGroup Condition="Exists('$(NetWasmUIPreloadHtml)') and Exists('$(PublishDir)browser\deployment.json')">
+      <_NwUiHtml>$([MSBuild]::Escape($([System.IO.File]::ReadAllText('$(NetWasmUIPreloadHtml)'))))</_NwUiHtml>
+      <_NwUiHtml>$([System.Text.RegularExpressions.Regex]::Replace($(_NwUiHtml), '[ \t]*&lt;!-- nwui:preload --&gt;[\s\S]*?&lt;!-- /nwui:preload --&gt;\r?\n?', ''))</_NwUiHtml>
+      <_NwUiHasBase>$([System.Text.RegularExpressions.Regex]::IsMatch($(_NwUiHtml), '&lt;base\s[^&gt;]*href', RegexOptions.IgnoreCase))</_NwUiHasBase>
+      <NetWasmUIPreloadUrlPrefix Condition="'$(NetWasmUIPreloadUrlPrefix)' == '' and '$(_NwUiHasBase)' != 'True'">/</NetWasmUIPreloadUrlPrefix>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_NwUiHtml)' != ''">
+      <_NwUiFetchPreload Include="$(PublishDir)browser\deployment.json" />
+      <_NwUiFetchPreload Include="$(PublishDir)browser\*.wasm;$(PublishDir)browser\*.raw-adapter.mjs" />
+      <_NwUiFetchPreload Include="$(PublishDir)browser\*.json" Exclude="$(PublishDir)browser\deployment.json" />
+      <_NwUiModulePreload Include="$(PublishDir)browser\*.mjs" Exclude="$(PublishDir)browser\*.raw-adapter.mjs" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(_NwUiHtml)' != ''">
+      <_NwUiLinks>@(_NwUiFetchPreload->'&lt;link rel="preload" as="fetch" crossorigin href="$(NetWasmUIPreloadUrlPrefix)browser/%(Filename)%(Extension)" /&gt;', '%0A  ')</_NwUiLinks>
+      <_NwUiLinks>$(_NwUiLinks)%0A  @(_NwUiModulePreload->'&lt;link rel="modulepreload" href="$(NetWasmUIPreloadUrlPrefix)browser/%(Filename)%(Extension)" /&gt;', '%0A  ')</_NwUiLinks>
+      <_NwUiHtml>$(_NwUiHtml.Replace('&lt;/head&gt;', '  &lt;!-- nwui:preload --&gt;%0A  $(_NwUiLinks)%0A  &lt;!-- /nwui:preload --&gt;%0A&lt;/head&gt;'))</_NwUiHtml>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(_NwUiHtml)' != ''" File="$(NetWasmUIPreloadHtml)"
+                      Lines="$(_NwUiHtml.TrimEnd())" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+</Project>

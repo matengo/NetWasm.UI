@@ -124,6 +124,10 @@ public sealed class CounterView : Component
   it is level with or faster than React on every case, and between 0.9× and 1.6× SolidJS's
   time. Against Blazor WebAssembly (interpreter) it is 3–21× faster, with a ~12× smaller
   download and ~9× faster startup.
+- **Startup:** `dotnet publish` adds preload tags for the runtime modules and the Wasm to
+  `index.html`, so everything downloads in parallel instead of one import level at a time. On a
+  slow network the demo app renders about 1.2 s sooner. See
+  [Startup preloading](docs/deployment.md#startup-preloading).
 
 ## Requirements
 

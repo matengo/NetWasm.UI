@@ -27,6 +27,46 @@ A first visit downloads these files:
 - the raw adapter;
 - `<App>.wasm`.
 
+## Startup preloading
+
+Without hints, the browser discovers these files one import level at a time: `app.mjs` →
+`<App>.mjs` → `netwasm.page.mjs` → the runtime chunks → `deployment.json`, and only then the
+Wasm. That is about seven round-trips before the largest file starts downloading. Compiling and
+instantiating the Wasm takes only a few milliseconds by comparison.
+
+So `NwUi.Browser` rewrites the published `index.html` after `dotnet publish`. Before `</head>` it
+adds `<link rel="modulepreload">` for every module in `browser/`, and
+`<link rel="preload" as="fetch" crossorigin>` for `deployment.json`, the Wasm, the raw adapter
+and the JSON sidecars. Everything then downloads in parallel from the first response:
+
+```html
+  <!-- nwui:preload -->
+  <link rel="preload" as="fetch" crossorigin href="/browser/deployment.json" />
+  <link rel="preload" as="fetch" crossorigin href="/browser/MyApp.wasm" />
+  ...
+  <link rel="modulepreload" href="/browser/netwasm.runtime.page.BV4DeFLi.mjs" />
+  <!-- /nwui:preload -->
+```
+
+The block is regenerated on every publish, because the runtime chunk names are content-hashed.
+Links start with `/`, or are relative when the page has a `<base href>`.
+
+Measured with `samples/Counter` (Chromium, uncompressed static server, median of runs):
+
+| Network | Without preload | With preload |
+|---|---:|---:|
+| Local | Wasm request at ~290 ms, first render ~470 ms | Wasm request at ~25 ms, first render ~310 ms |
+| 150 ms RTT, 1.6 Mbit/s, CPU ×4 | Wasm request at ~2,550 ms, first render ~5.9 s | Wasm request at ~190 ms, first render ~4.7 s |
+
+On the slow network, bandwidth becomes the limit once the waterfall is gone. Brotli matters more
+than anything else there (see [Hosting](#hosting)).
+
+| Property | Default | Meaning |
+|---|---|---|
+| `NetWasmUIPreload` | `true` | Set to `false` to leave `index.html` untouched. |
+| `NetWasmUIPreloadHtml` | `$(PublishDir)index.html` | The page to rewrite. Skipped if it does not exist. |
+| `NetWasmUIPreloadUrlPrefix` | `/`, or empty with `<base href>` | Prefix for the link URLs. |
+
 ## Size
 
 This is the whole demo app in Release with NetWasm.Sdk 0.11.1. It has a counter, todos, the
@@ -115,8 +155,14 @@ website in [`site/`](../site/).
 NetWasm's runtime chunks have hashed names (`netwasm.runtime.<hash>.mjs`), but the app's own
 files have **stable names** (`browser/App.wasm`, `browser/App.mjs`), so a long
 `Cache-Control: max-age` would keep old code after a deploy. Until fingerprinted output is
-supported, use `Cache-Control: no-cache` with ETags: browsers revalidate (cheap 304s) and keep
-the compiled Wasm in their code cache when it has not changed.
+supported, use `Cache-Control: no-cache` with ETags: browsers revalidate (cheap 304s) and only
+download what changed. The hashed `netwasm.runtime.*.mjs` chunks can be served with
+`Cache-Control: public, max-age=31536000, immutable`.
+
+Browsers recompile the Wasm on every visit. The NetWasm runtime verifies each artifact's SHA-256
+before it calls `WebAssembly.compile`, so the browser's compiled-code cache (which needs
+`WebAssembly.compileStreaming`) does not apply. For `samples/Counter` the compile takes about
+6 ms, so this costs little.
 
 `browser/deployment.json` contains a `buildFingerprint`. A planned opt-in publish step will move
 `browser/` to `v/<fingerprint>/` so hosts can use `Cache-Control: immutable`.

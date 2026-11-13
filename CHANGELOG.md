@@ -6,6 +6,15 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- Startup preloading: `dotnet publish` adds `<link rel="modulepreload">` and
+  `<link rel="preload" as="fetch">` tags for the NetWasm module chain, `deployment.json` and the
+  Wasm to the published `index.html`. This removes about seven serial round-trips before the Wasm
+  download starts. On a 150 ms RTT network, `samples/Counter` renders about 1.2 s sooner. Set
+  `NetWasmUIPreload=false` to opt out. See
+  [Startup preloading](docs/deployment.md#startup-preloading).
+
 ## [0.6.0] - 2026-11-12
 
 ### Added

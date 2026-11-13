@@ -45,6 +45,10 @@
             <h3>Far ahead of Blazor</h3>
             <p>3–21× faster than Blazor WebAssembly, with a ~12× smaller download and ~9× faster startup.</p>
         </div>
+        <div class="callout">
+            <h3>No loading waterfall</h3>
+            <p>Since 0.7, publish preloads the runtime and the Wasm. On a 150 ms network the demo app renders ~1.2 s sooner (5.9 → 4.7 s).</p>
+        </div>
     </div>
 
     <p><a class="btn" href="https://github.com/matengo/NetWasm.UI/blob/main/docs/benchmarks.md" target="_blank" rel="noopener">Method, raw numbers and what is still open →</a></p>

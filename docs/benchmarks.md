@@ -88,4 +88,7 @@ The fixes made after earlier runs are listed in the [CHANGELOG](../CHANGELOG.md)
 - `O3` is ~1.2–1.4× faster than `Oz` on reactive work and level with or faster on most DOM
   cases, but the Wasm grows from ~306 to ~536 KB raw (+11 % total Brotli download). `Oz` stays
   the default.
-- Startup includes downloading and compiling ~306 KB of Wasm vs. 17 KB of JS.
+- Startup includes downloading and compiling ~306 KB of Wasm vs. 17 KB of JS. On a local server
+  the download and compile take only a few ms. Most of the time goes to the serial module chain
+  before the Wasm request, which [startup preloading](deployment.md#startup-preloading) (added
+  after these runs) removes.
