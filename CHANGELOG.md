@@ -11,6 +11,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 - `TemplateInstance.With(hole, content)` overloads for one, two and three pieces of content, so the
   common case allocates no `params` array. Existing code, including the generated `.nwui`
   templates, picks them up when it is rebuilt.
+- `benchmarks/Runner --gc NetWasm,Compact` adds the Oz app built with each named NetWasm collector,
+  so a run compares collectors side by side.
 
 ### Changed
 
