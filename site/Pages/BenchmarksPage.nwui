@@ -47,7 +47,7 @@
         </div>
         <div class="callout">
             <h3>No loading waterfall</h3>
-            <p>Since 0.7, publish preloads the runtime and the Wasm. On a 150 ms network the demo app renders ~1.2 s sooner (5.9 → 4.7 s).</p>
+            <p>Since 0.7, publish preloads the runtime and the Wasm. On ordinary broadband the demo app renders in 315 ms instead of 703 ms, more than twice as fast.</p>
         </div>
     </div>
 

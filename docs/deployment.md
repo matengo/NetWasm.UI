@@ -51,15 +51,19 @@ and the JSON sidecars. Everything then downloads in parallel from the first resp
 The block is regenerated on every publish, because the runtime chunk names are content-hashed.
 Links start with `/`, or are relative when the page has a `<base href>`.
 
-Measured with `samples/Counter` (Chromium, uncompressed static server, median of runs):
+Measured with `samples/Counter` in Chromium, served with Brotli (156 KB in total), with a cold
+cache. The table shows the median of 7 runs, as the time to first render, with the time the
+Wasm request started in parentheses:
 
 | Network | Without preload | With preload |
 |---|---:|---:|
-| Local | Wasm request at ~290 ms, first render ~470 ms | Wasm request at ~25 ms, first render ~310 ms |
-| 150 ms RTT, 1.6 Mbit/s, CPU ×4 | Wasm request at ~2,550 ms, first render ~5.9 s | Wasm request at ~190 ms, first render ~4.7 s |
+| Local server | 137 ms (Wasm at 60 ms) | 88 ms (Wasm at 10 ms) |
+| Broadband: 40 ms RTT, 20 Mbit/s | 703 ms (Wasm at 550 ms) | **315 ms** (Wasm at 61 ms) |
+| 4G: 80 ms RTT, 9 Mbit/s, CPU ×2 | 1,187 ms (Wasm at 903 ms) | **558 ms** (Wasm at 108 ms) |
 
-On the slow network, bandwidth becomes the limit once the waterfall is gone. Brotli matters more
-than anything else there (see [Hosting](#hosting)).
+The higher the latency, the bigger the gain, because each import level costs one round-trip.
+Once the waterfall is gone, the download size is the limit, so serve Brotli (see
+[Hosting](#hosting)).
 
 | Property | Default | Meaning |
 |---|---|---|
