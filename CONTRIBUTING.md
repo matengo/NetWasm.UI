@@ -77,7 +77,7 @@ dotnet pack src/NetWasm.UI -c Release -o $feed
 dotnet pack src/NetWasm.UI.Browser -c Release -o $feed
 dotnet pack tools/DevServer -c Release -o $feed
 dotnet pack templates/NetWasm.UI.Templates -c Release -o $feed
-dotnet new install "$feed\NwUi.Templates.0.6.0.nupkg"
+dotnet new install "$feed\NwUi.Templates.0.7.0.nupkg"
 dotnet new netwasm-ui -o $env:TEMP\MyApp --skipRestore
 dotnet restore $env:TEMP\MyApp -s $feed -s https://api.nuget.org/v3/index.json
 ```

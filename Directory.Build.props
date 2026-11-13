@@ -14,7 +14,7 @@
 
   <!-- Package metadata. Only projects under src/ are packable (see src/Directory.Build.props). -->
   <PropertyGroup>
-    <VersionPrefix>0.6.0</VersionPrefix>
+    <VersionPrefix>0.7.0</VersionPrefix>
     <Authors>NetWasm.UI contributors</Authors>
     <Copyright>Copyright (c) 2026 NetWasm.UI contributors</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

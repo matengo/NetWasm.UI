@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-13
+
 ### Added
 
 - Startup preloading: `dotnet publish` adds `<link rel="modulepreload">` and
