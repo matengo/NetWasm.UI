@@ -8,6 +8,24 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [0.8.0] - 2026-11-13
 
+The first screen can now be rendered into the HTML at publish time, so visitors see content
+before the Wasm has loaded:
+
+```xml
+<PropertyGroup>
+  <NetWasmUIPrerender>true</NetWasmUIPrerender>
+  <NetWasmUIPrerenderShell>404.html</NetWasmUIPrerenderShell>
+</PropertyGroup>
+<ItemGroup>
+  <NetWasmUIPrerenderRoute Include="/about;/blog" />
+</ItemGroup>
+```
+
+This is a snapshot, not hydration: links work right away, but event handlers start with the
+app, which then replaces the markup. Hydration is planned next. The build runs the published
+Wasm in the Node that NetWasm ships, so nothing more needs to be installed. See
+[Why Node and not .NET?](docs/deployment.md#why-node-and-not-net).
+
 ### Added
 
 - Prerendering (opt-in): with `NetWasmUIPrerender=true`, `dotnet publish` runs the app in Node

@@ -102,5 +102,7 @@ jobs:
           case "$VERSION" in *-*) PRERELEASE="--prerelease";; esac
           # The CHANGELOG section for this version is the release text.
           awk -v v="## [$VERSION]" 'index($0, v) == 1 {on=1; next} on && /^## \[/ {exit} on' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          # Links like (docs/x.md) are relative to the repository root; on the release page they must be absolute.
+          sed -i -E "s#\]\((\./)?([^)#:][^):]*)\)#](https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/\2)#g" "$RUNNER_TEMP/notes.md"
           gh release create "$GITHUB_REF_NAME" "$RUNNER_TEMP"/feed/*.nupkg tools/vscode-nwui/nwui.vsix \
             --title "NetWasm.UI $VERSION" --notes-file "$RUNNER_TEMP/notes.md" $PRERELEASE
