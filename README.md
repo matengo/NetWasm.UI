@@ -8,7 +8,7 @@ changed, and every state change crosses the Wasm→JS boundary **at most once**.
 **Website and live examples: [matengo.github.io/NetWasm.UI](https://matengo.github.io/NetWasm.UI/)**,
 itself a NetWasm.UI app ([source](site/)).
 
-> **Status: 0.8, an early but usable release.** The packages are on NuGet and the framework is
+> **Status: 0.9, an early but usable release.** The packages are on NuGet and the framework is
 > tested in Chromium, Firefox and WebKit. The public API may still change in 0.x releases; every
 > change is listed in the [CHANGELOG](CHANGELOG.md). See
 > [Compatibility and versioning](docs/compatibility.md).
@@ -121,8 +121,8 @@ public sealed class CounterView : Component
   **140 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
   past its [size budget](size-budget.json).
 - **Speed:** in a [js-framework-benchmark-style comparison](docs/benchmarks.md)
-  it is level with or faster than React on every case, and between 0.9× and 1.6× SolidJS's
-  time. Against Blazor WebAssembly (interpreter) it is 3–21× faster, with a ~12× smaller
+  it is level with or faster than React on every case, and between 0.8× and 1.6× SolidJS's
+  time. Against Blazor WebAssembly (interpreter) it is 3–20× faster, with a ~18× smaller
   download and ~9× faster startup.
 - **Startup:** `dotnet publish` adds preload tags for the runtime modules and the Wasm to
   `index.html`, so everything downloads in parallel instead of one import level at a time. On

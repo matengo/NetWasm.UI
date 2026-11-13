@@ -6,6 +6,17 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-13
+
+NetWasm 0.13.0 with its NetWasmGC collector, and the first per-row speedups from the profile in
+[#2](https://github.com/matengo/NetWasm.UI/issues/2), contributed by @zion-sati. The demo app's
+Wasm drops from 108 to 92 KB (Brotli), and allocation-heavy work is up to 2× faster. See
+[Benchmarks](docs/benchmarks.md#results).
+
+**Upgrading:** set `"NetWasm.Sdk": "0.13.0"` under `msbuild-sdks` in your `global.json`, and any
+`NetWasm.System.*` packages to 0.13.0. To use NetWasmGC like the template does, add
+`<NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>` to your app's project file.
+
 ### Added
 
 - `TemplateInstance.With(hole, content)` overloads for one, two and three pieces of content, so the

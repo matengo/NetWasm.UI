@@ -97,7 +97,7 @@ public sealed class HomePage : Component
                 Stat("~140 KB", "a whole app with router and forms, Brotli, Wasm and JS together"),
                 Stat("≤ 1", "Wasm→JS call per state change, however many nodes it touches"),
                 Stat("0", "reflection, runtime template engines or virtual DOM"),
-                Stat("3–21×", "faster than Blazor WebAssembly, with a ~12× smaller download")));
+                Stat("3–20×", "faster than Blazor WebAssembly, with a ~18× smaller download")));
 
     private static Node Stat(string value, string label) =>
         Div(Class("stat"), Strong(value), Span(label));
@@ -168,15 +168,15 @@ public sealed class HomePage : Component
                     SectionHead(
                         "Speed, measured",
                         "Level with React. Close to Solid.",
-                        "In a js-framework-benchmark-style comparison NetWasm.UI is level with or faster than React on every case and between 0.9× and 1.6× SolidJS's time. Lower is better."),
+                        "In a js-framework-benchmark-style comparison NetWasm.UI is level with or faster than React on every case and between 0.8× and 1.6× SolidJS's time. Lower is better."),
                     Link("/benchmarks", Class("btn"), "All benchmark results →")),
                 Div(
                     Class("bars"),
                     P(Class("bars-title"), "Create 1,000 rows, ms (script + layout)"),
-                    Bar("NetWasm.UI", 57.0, 251.9, true),
-                    Bar("SolidJS", 60.7, 251.9, false),
-                    Bar("React", 77.1, 251.9, false),
-                    Bar("Blazor WASM", 251.9, 251.9, false))));
+                    Bar("NetWasm.UI", 54.7, 236.3, true),
+                    Bar("SolidJS", 71.0, 236.3, false),
+                    Bar("React", 67.7, 236.3, false),
+                    Bar("Blazor WASM", 236.3, 236.3, false))));
 
     private static Node Bar(string name, double value, double max, bool highlight)
     {
