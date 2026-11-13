@@ -137,7 +137,7 @@ public sealed class CounterView : Component
 | | |
 |---|---|
 | .NET SDK | 10.0.3xx or 11.0.x (C# 15 needs 11). The NetWasm SDK is resolved from `global.json`. |
-| NetWasm.Sdk | 0.12.2, target framework `netwasm0.1` |
+| NetWasm.Sdk | 0.13.0, target framework `netwasm0.1` |
 | Browsers | Chrome/Edge 137+, Firefox 131+, Safari 18.4+ (needed for Wasm exception handling with `exnref`) |
 
 **Licensing.** NetWasm.UI is MIT. The NetWasm compiler and tools use the
