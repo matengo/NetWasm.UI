@@ -90,8 +90,16 @@ html[data-ready] .boot, body:has(#app > *) .boot { display: none; }
 .lead { color: var(--muted); font-size: 1.12rem; max-width: 62ch; }
 .cta { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.75rem 0 1.5rem; }
 .cta-center { justify-content: center; }
-.size-badge p { display: inline-block; margin: 0; padding: .55rem .9rem; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: .9rem; }
-.size-badge strong { color: var(--text); }
+.size-badge p { position: relative; display: inline-block; margin: 0; padding: .55rem .9rem; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: .9rem; }
+.size-badge strong { color: var(--text); font-variant-numeric: tabular-nums; }
+/* Every word is laid out from the start (so the badge never resizes) and fades in when "typed". */
+.size-badge .w { visibility: hidden; opacity: 0; }
+.size-badge .w.on { visibility: visible; opacity: 1; transition: opacity .18s ease-out; }
+.size-badge .w.tip { position: relative; }
+.size-badge .w.tip::after { content: ""; position: absolute; top: .15em; bottom: .1em; width: 2px; margin-left: -.2em; background: var(--accent); animation: caret .8s steps(1) infinite; }
+.size-badge-wait { position: absolute; inset: .55rem .9rem; transition: opacity .15s, visibility 0s; }
+.size-badge-wait.done { opacity: 0; visibility: hidden; transition: opacity .15s, visibility 0s .15s; }
+@keyframes caret { 50% { opacity: 0; } }
 
 .hero-demo { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 30px 80px -30px rgba(124, 92, 255, .45); overflow: hidden; }
 .hero-demo-head { display: flex; align-items: center; gap: .4rem; padding: .7rem .9rem; border-bottom: 1px solid var(--border); background: var(--surface-2); }

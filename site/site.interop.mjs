@@ -28,6 +28,10 @@ export function wasmBytes() {
   return entries().filter(e => e.name.endsWith(".wasm")).reduce((sum, e) => sum + bytes(e), 0);
 }
 
+export function reducedMotion() {
+  return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
 export function setTitle(title) {
   document.title = title;
 }

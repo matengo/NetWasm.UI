@@ -20,6 +20,9 @@ internal static class SiteJs
     [JSImport("wasmBytes", Module)]
     public static extern int WasmBytes();
 
+    [JSImport("reducedMotion", Module)]
+    public static extern bool ReducedMotion();
+
     [JSImport("setTitle", Module)]
     public static extern void SetTitle(string title);
 }
