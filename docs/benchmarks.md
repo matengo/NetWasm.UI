@@ -17,6 +17,7 @@ dotnet run --project benchmarks/Runner -c Release -- --runs 10
 # options: --skip-build, --no-o3, --no-aot, --headed
 #          --apps netwasm-oz,solid   only these apps (output folders under benchmarks/.out)
 #          --cases create,diamond    only cases/workloads whose name contains one of these
+#          --gc NetWasm,Compact      also run the Oz app built with each of these NetWasm collectors
 ```
 
 Blazor AOT needs the `wasm-tools` workload (`dotnet workload install wasm-tools`) and takes a few

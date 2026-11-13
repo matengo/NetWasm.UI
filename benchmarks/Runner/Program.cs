@@ -7,7 +7,8 @@ using Microsoft.Playwright;
 
 // Builds the NetWasm.UI, SolidJS, React and Blazor benchmark apps, serves them with Kestrel and measures them in Chromium.
 // Usage: dotnet run --project benchmarks/Runner -c Release -- [--runs N] [--skip-build] [--no-o3] [--no-aot] [--headed]
-//        [--apps netwasm-oz,solid] [--cases create,diamond,startup]
+//        [--gc NetWasm,Compact] [--apps netwasm-oz,solid] [--cases create,diamond,startup]
+// --gc adds an Oz app built with each named NetWasm collector (NetWasmGarbageCollector), to compare collectors.
 // --no-aot skips Blazor AOT, which needs the wasm-tools workload and takes minutes to build.
 // --apps and --cases narrow a run for quick iteration: apps by path, cases by any part of their name.
 
@@ -16,6 +17,7 @@ var skipBuild = false;
 var headed = false;
 var withO3 = true;
 var withAot = true;
+string[] collectors = [];
 string[]? onlyApps = null;
 string[]? onlyCases = null;
 for (var i = 0; i < args.Length; i++)
@@ -27,6 +29,7 @@ for (var i = 0; i < args.Length; i++)
         case "--headed": headed = true; break;
         case "--no-o3": withO3 = false; break;
         case "--no-aot": withAot = false; break;
+        case "--gc": collectors = args[++i].Split(','); break;
         case "--apps": onlyApps = args[++i].Split(','); break;
         case "--cases": onlyCases = args[++i].Split(','); break;
         default: Console.Error.WriteLine("Unknown option: " + args[i]); return 1;
@@ -40,6 +43,11 @@ var apps = new List<(string Name, string Path, string Dir)>
 {
     ("NetWasm.UI (Oz)", "netwasm-oz", Path.Combine(outDir, "netwasm-oz")),
 };
+foreach (var collector in collectors)
+{
+    var path = "netwasm-oz-" + collector.ToLowerInvariant();
+    apps.Add(("NetWasm.UI (Oz, " + collector + ")", path, Path.Combine(outDir, path)));
+}
 if (withO3)
 {
     apps.Add(("NetWasm.UI (O3)", "netwasm-o3", Path.Combine(outDir, "netwasm-o3")));
@@ -64,11 +72,18 @@ bool Selected(string name) => onlyCases is null || onlyCases.Any(c => name.Conta
 if (!skipBuild)
 {
     var project = Path.Combine(bench, "NetWasmBench", "NetWasmBench.csproj");
-    foreach (var (path, opt) in new[] { ("netwasm-oz", "Oz"), ("netwasm-o3", "O3") })
+    var builds = new List<(string Path, string Optimization, string? Collector)> { ("netwasm-oz", "Oz", null), ("netwasm-o3", "O3", null) };
+    builds.AddRange(collectors.Select(collector => ("netwasm-oz-" + collector.ToLowerInvariant(), "Oz", (string?)collector)));
+    foreach (var (path, opt, collector) in builds)
     {
         if (apps.Any(a => a.Path == path))
         {
-            Run("dotnet", root, "publish", project, "-c", "Release", "-o", Path.Combine(outDir, path), "-p:NetWasmOptimization=" + opt, "--nologo", "-v", "q");
+            // A collector build has its own obj and bin directories, so no build reuses or overwrites another's output.
+            string[] gc = collector is null ? [] :
+                ["-p:NetWasmGarbageCollector=" + collector, "-p:IntermediateOutputPath=obj/Release-" + collector + "/",
+                    "-p:OutputPath=bin/Release-" + collector + "/"];
+            Run("dotnet", root, ["publish", project, "-c", "Release", "-o", Path.Combine(outDir, path),
+                "-p:NetWasmOptimization=" + opt, .. gc, "--nologo", "-v", "q"]);
         }
     }
 

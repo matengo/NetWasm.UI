@@ -6,6 +6,11 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `benchmarks/Runner --gc NetWasm,Compact` adds the Oz app built with each named NetWasm collector,
+  so a run compares collectors side by side.
+
 ## [0.8.0] - 2026-11-13
 
 ### Added
