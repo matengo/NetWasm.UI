@@ -13,5 +13,6 @@
     <None Include="dom.mjs" Pack="true" PackagePath="build;buildTransitive" />
     <None Include="build\NetWasm.UI.Browser.targets" Pack="true" PackagePath="build\NwUi.Browser.targets;buildTransitive\NwUi.Browser.targets" />
     <None Include="build\NetWasm.UI.Preload.targets" Pack="true" PackagePath="build;buildTransitive" />
+    <None Include="build\NetWasm.UI.Prerender.targets;build\prerender.mjs" Pack="true" PackagePath="build;buildTransitive" />
   </ItemGroup>
 </Project>

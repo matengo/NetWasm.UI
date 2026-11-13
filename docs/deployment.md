@@ -71,6 +71,108 @@ Once the waterfall is gone, the download size is the limit, so serve Brotli (see
 | `NetWasmUIPreloadHtml` | `$(PublishDir)index.html` | The page to rewrite. Skipped if it does not exist. |
 | `NetWasmUIPreloadUrlPrefix` | `/`, or empty with `<base href>` | Prefix for the link URLs. |
 
+## Prerendering
+
+Preloading shortens the wait, but the page is still empty until the Wasm has run. With
+prerendering, `dotnet publish` runs the published app once per listed route, in Node against
+an in-memory DOM, and writes the rendered HTML into the mount element. The browser shows that
+content from the first response. When the app starts, it replaces the markup with its own live
+DOM:
+
+```xml
+<PropertyGroup>
+  <NetWasmUIPrerender>true</NetWasmUIPrerender>
+  <!-- Optional: a bare copy of the page for the SPA fallback (see below). -->
+  <NetWasmUIPrerenderShell>404.html</NetWasmUIPrerenderShell>
+</PropertyGroup>
+<ItemGroup>
+  <!-- "/" is always rendered into index.html; /about is written to about.html. -->
+  <NetWasmUIPrerenderRoute Include="/about;/blog" />
+  <NetWasmUIPrerenderRoute Include="/docs" Output="docs/index.html" />
+</ItemGroup>
+```
+
+```html
+<div id="app" data-nwui-prerender><!--nwui:prerender--><main>…</main><!--/nwui:prerender--></div>
+```
+
+`/about` is written to `about.html`, because GitHub Pages, Netlify and Cloudflare Pages serve
+`/about` from that file. If the app sets `document.title` while it renders, that title goes
+into the page as well.
+
+This is a snapshot, not hydration. Links work as plain links before the app starts, but event
+handlers do nothing until then, and the app re-creates the DOM rather than adopting it.
+Keep in mind:
+
+- **Render from initial state.** The snapshot is taken once rendering stops, after at most 3 s.
+  Only file reads relative to the page succeed. Anything from `localStorage`, the user,
+  or a remote API shows its initial or loading state.
+- **Browser APIs are absent.** `document` is a stub (`title`, `baseURI`), and there is no
+  `window`. Guard custom `[JSImport]` modules that use them. A route that throws is reported as a
+  build warning, and its page is left as it was.
+- **Unlisted paths get the bare page**, if the host serves `NetWasmUIPrerenderShell` (e.g.
+  `404.html`) for unknown paths. Without a shell, they get `index.html`, so the home page
+  shows briefly before the router renders the deep link.
+- **Hide loading screens with CSS.** Use `body:has(#app > *) .loading { display: none; }`.
+
+It needs Node with Wasm exception handling. By default, the build uses the Node that NetWasm
+bundles, and falls back to `node` on the `PATH` (22 or later).
+
+| Property | Default | Meaning |
+|---|---|---|
+| `NetWasmUIPrerender` | `false` | Set to `true` to prerender. |
+| `NetWasmUIPrerenderRoute` items | | Extra routes. `Output` metadata picks the file. |
+| `NetWasmUIPrerenderRoutes` | | The same as a `;`-separated property, e.g. `-p:NetWasmUIPrerenderRoutes="/about%3B/blog"`. |
+| `NetWasmUIPrerenderHtml` | `index.html` | The page to render into (in the publish folder). |
+| `NetWasmUIPrerenderBasePath` | from `<base href>`, else `/` | The path the site is served under, for the rendered links. |
+| `NetWasmUIPrerenderShell` | | Also writes the page without prerendered content to this file. |
+| `NetWasmUIPrerenderExport` | `start` | The `[JSExport]` that starts the app. |
+| `NetWasmUIPrerenderModule` | `browser/<App>.mjs` | The app module. |
+| `NetWasmUIPrerenderNode` | NetWasm's Node, else `node` | The Node executable. |
+
+The mount element must be an empty element selected by `#id`, as in `BrowserApp.Start(root, "#app")`.
+
+### Why Node and not .NET?
+
+The core library also builds for regular .NET (`net10.0`), so the first screen could be rendered
+by CoreCLR. The unit tests already do that against a fake DOM. The build runs the published
+Wasm in Node instead, for these reasons:
+
+- **The snapshot comes from the shipped code.** Node runs the files that the browser
+  downloads. That includes the NetWasm-compiled and trimmed Wasm, the generated JavaScript glue,
+  and the app's own `[JSImport]` modules. A CoreCLR render would test a second build, and its BCL,
+  trimming and globalization can differ.
+- **No change to the app.** A .NET render would need the app to multi-target `netwasm0.1`
+  and `net11.0`. Every `[JSImport]` (history, storage, custom modules) would have to be stubbed or
+  guarded, because CoreCLR has no JavaScript host.
+- **No extra dependency.** NetWasm already ships Node for its own tooling, and the targets use
+  it (`NetWasmRunNodeCommand`). Nothing more needs to be installed.
+
+A .NET renderer would have these advantages:
+
+- **No Node step.** It would probably be faster, because no Wasm is compiled and no process is
+  started per route.
+- **Server-side rendering.** The same renderer could run inside ASP.NET Core and render per
+  request, not just at publish time. This is the main reason to build one.
+- **Plain .NET exceptions.** Errors in an app's render would come with managed stack traces.
+
+It would cost two builds per app, a C# HTML serializer (the counterpart of `serialize` in
+`prerender.mjs`), and possible differences between the two runtimes. So publish-time
+prerendering stays in Node. If server-side rendering is added later, it will get a C# renderer of
+its own. [Hydration](#current-limits) works the same way with either approach, because it only
+depends on the HTML that reaches the browser.
+
+### Current limits
+
+The app replaces the prerendered markup when it starts, rather than adopting it (hydration).
+This has two consequences:
+
+- Between first paint and the end of startup, the page is static.
+- Elements are created twice: once in the HTML and once by the app. Focus, scroll position
+  inside the mount and text typed into a prerendered input are lost.
+
+Hydration, where the app attaches to the existing nodes, is planned as the next step.
+
 ## Size
 
 This is the whole demo app in Release with NetWasm.Sdk 0.11.1. It has a counter, todos, the
@@ -148,7 +250,9 @@ has no SPA fallback, only a custom `404.html`. So, after publishing:
 
 1. Set `<base href="/<repo>/" />` in `index.html` and keep every asset URL relative.
 2. Copy `index.html` to `404.html`: an unknown path then loads the app, and the router renders
-   it (the response status is still 404).
+   it (the response status is still 404). With [prerendering](#prerendering), set
+   `NetWasmUIPrerenderShell` to `404.html` instead, and set `NetWasmUIPrerenderBasePath` to
+   `/<repo>/` and the `<base href>` in every page.
 3. Add an empty `.nojekyll` and upload the folder without `*.dll` and `*.pdb`.
 
 [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) does this for the project

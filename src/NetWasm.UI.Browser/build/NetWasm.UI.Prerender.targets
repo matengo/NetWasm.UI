@@ -1,0 +1,39 @@
+<Project>
+  <!-- Publish-time prerendering (opt-in): runs the published app in Node against an in-memory DOM and writes the
+       rendered HTML into the mount element (#app) of index.html, so the page shows content before the Wasm has
+       loaded. When the app starts it replaces that HTML (dom.mjs clears a target marked data-nwui-prerender).
+       The prerendered markup is static: links work as normal links, handlers start working once the app runs.
+       NetWasmUIPrerender=true            enables it.
+       NetWasmUIPrerenderRoute items      extra routes, e.g. <NetWasmUIPrerenderRoute Include="/about" /> writes
+                                          about.html; Output="about/index.html" picks the file. "/" is always rendered.
+       NetWasmUIPrerenderRoutes           the same as a ;-separated property, e.g. -p:NetWasmUIPrerenderRoutes="/about%3B/blog".
+       NetWasmUIPrerenderHtml             the page to render into (default: index.html in the publish folder).
+       NetWasmUIPrerenderBasePath         the path the site is served under (default: from <base href>, else "/").
+       NetWasmUIPrerenderShell            also writes the page without prerendered content, e.g. 404.html for an
+                                          SPA fallback that must not show the home page first.
+       NetWasmUIPrerenderExport           the [JSExport] that starts the app (default: start).
+       NetWasmUIPrerenderModule           the app module (default: browser/$(TargetName).mjs).
+       NetWasmUIPrerenderNode             the Node executable (default: NetWasm's bundled Node, else node).
+       A route that fails to render is reported as a warning and its page is left as it was. -->
+  <Target Name="NetWasmUIPrerender" AfterTargets="Publish" DependsOnTargets="NetWasmUIInjectPreloads"
+          Condition="'$(NetWasmUIPrerender)' == 'true' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
+    <ItemGroup>
+      <NetWasmUIPrerenderRoute Include="$(NetWasmUIPrerenderRoutes)" Condition="'$(NetWasmUIPrerenderRoutes)' != ''" />
+    </ItemGroup>
+    <PropertyGroup>
+      <NetWasmUIPrerenderHtml Condition="'$(NetWasmUIPrerenderHtml)' == ''">index.html</NetWasmUIPrerenderHtml>
+      <NetWasmUIPrerenderExport Condition="'$(NetWasmUIPrerenderExport)' == ''">start</NetWasmUIPrerenderExport>
+      <NetWasmUIPrerenderModule Condition="'$(NetWasmUIPrerenderModule)' == ''">browser/$(TargetName).mjs</NetWasmUIPrerenderModule>
+      <NetWasmUIPrerenderNode Condition="'$(NetWasmUIPrerenderNode)' == '' and '$(NetWasmRunNodeCommand)' != '' and Exists('$(NetWasmRunNodeCommand)')">$(NetWasmRunNodeCommand)</NetWasmUIPrerenderNode>
+      <NetWasmUIPrerenderNode Condition="'$(NetWasmUIPrerenderNode)' == ''">node</NetWasmUIPrerenderNode>
+      <_NwUiPrerenderRoutes>/</_NwUiPrerenderRoutes>
+      <_NwUiPrerenderRoutes Condition="'@(NetWasmUIPrerenderRoute)' != ''">/;@(NetWasmUIPrerenderRoute->'%(Identity)=%(Output)', ';')</_NwUiPrerenderRoutes>
+      <_NwUiPrerenderArgs>--dir &quot;$(PublishDir.TrimEnd('\/'))&quot; --module &quot;$(NetWasmUIPrerenderModule)&quot; --html &quot;$(NetWasmUIPrerenderHtml)&quot; --export &quot;$(NetWasmUIPrerenderExport)&quot; --routes &quot;$(_NwUiPrerenderRoutes)&quot;</_NwUiPrerenderArgs>
+      <_NwUiPrerenderArgs Condition="'$(NetWasmUIPrerenderBasePath)' != ''">$(_NwUiPrerenderArgs) --base &quot;$(NetWasmUIPrerenderBasePath)&quot;</_NwUiPrerenderArgs>
+      <_NwUiPrerenderArgs Condition="'$(NetWasmUIPrerenderShell)' != ''">$(_NwUiPrerenderArgs) --shell &quot;$(NetWasmUIPrerenderShell)&quot;</_NwUiPrerenderArgs>
+    </PropertyGroup>
+    <Exec Command="&quot;$(NetWasmUIPrerenderNode)&quot; &quot;$(MSBuildThisFileDirectory)prerender.mjs&quot; $(_NwUiPrerenderArgs)"
+          CustomWarningRegularExpression="^NetWasm\.UI prerender warning:"
+          ContinueOnError="WarnAndContinue" StandardOutputImportance="normal" />
+  </Target>
+</Project>

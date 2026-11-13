@@ -6,6 +6,19 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-13
+
+### Added
+
+- Prerendering (opt-in): with `NetWasmUIPrerender=true`, `dotnet publish` runs the app in Node
+  for `/` and each `NetWasmUIPrerenderRoute`, and writes the rendered HTML into the mount
+  element of `index.html`, `about.html` and so on. Content shows before the Wasm has loaded, and
+  the app replaces it when it starts. `NetWasmUIPrerenderShell` writes a bare page, e.g.
+  `404.html`, for the SPA fallback. See [Prerendering](docs/deployment.md#prerendering).
+- The project website prerenders its home, examples and benchmarks pages.
+- `nwui-dev` serves `/about` from `about.html` when it exists, then `404.html`, then
+  `index.html`, as static hosts do.
+
 ## [0.7.0] - 2026-11-13
 
 ### Added

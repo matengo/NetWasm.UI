@@ -12,4 +12,7 @@
 
   <!-- Publish-time <link rel=preload/modulepreload> injection into index.html (NetWasmUIPreload=false to disable). -->
   <Import Project="$(MSBuildThisFileDirectory)NetWasm.UI.Preload.targets" />
+
+  <!-- Opt-in publish-time prerendering of the first screen into index.html (NetWasmUIPrerender=true). -->
+  <Import Project="$(MSBuildThisFileDirectory)NetWasm.UI.Prerender.targets" />
 </Project>

@@ -42,4 +42,15 @@
 
   <!-- Publish-time preload tags, as the NwUi.Browser package adds them for consumers. -->
   <Import Project="..\src\NetWasm.UI.Browser\build\NetWasm.UI.Preload.targets" />
+
+  <!-- Publish-time prerendering: the first screen of each listed page is in its HTML before the Wasm loads.
+       404.html stays a bare page, so deep links GitHub Pages answers with it do not flash the home page. -->
+  <PropertyGroup>
+    <NetWasmUIPrerender>true</NetWasmUIPrerender>
+    <NetWasmUIPrerenderShell>404.html</NetWasmUIPrerenderShell>
+  </PropertyGroup>
+  <ItemGroup>
+    <NetWasmUIPrerenderRoute Include="/examples;/benchmarks" />
+  </ItemGroup>
+  <Import Project="..\src\NetWasm.UI.Browser\build\NetWasm.UI.Prerender.targets" />
 </Project>

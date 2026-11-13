@@ -42,10 +42,10 @@ code { font-family: var(--mono); font-size: .92em; }
 .muted { color: var(--muted); }
 .fine-print { color: var(--muted); font-size: .88rem; margin-top: 1rem; }
 
-/* Boot screen, shown until app.mjs sets data-ready. */
+/* Boot screen, shown until app.mjs sets data-ready, or not at all on a prerendered page (#app has content). */
 .boot { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: .75rem; color: var(--muted); }
 .boot-mark { width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; font: 800 28px var(--sans); color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); animation: pulse 1.2s ease-in-out infinite; }
-html[data-ready] .boot { display: none; }
+html[data-ready] .boot, body:has(#app > *) .boot { display: none; }
 .noscript { padding: 2rem; text-align: center; }
 @keyframes pulse { 50% { transform: scale(.9); opacity: .7; } }
 

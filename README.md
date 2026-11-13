@@ -8,7 +8,7 @@ changed, and every state change crosses the Wasm→JS boundary **at most once**.
 **Website and live examples: [matengo.github.io/NetWasm.UI](https://matengo.github.io/NetWasm.UI/)**,
 itself a NetWasm.UI app ([source](site/)).
 
-> **Status: 0.7, an early but usable release.** The packages are on NuGet and the framework is
+> **Status: 0.8, an early but usable release.** The packages are on NuGet and the framework is
 > tested in Chromium, Firefox and WebKit. The public API may still change in 0.x releases; every
 > change is listed in the [CHANGELOG](CHANGELOG.md). See
 > [Compatibility and versioning](docs/compatibility.md).
@@ -127,7 +127,10 @@ public sealed class CounterView : Component
 - **Startup:** `dotnet publish` adds preload tags for the runtime modules and the Wasm to
   `index.html`, so everything downloads in parallel instead of one import level at a time. On
   ordinary broadband the demo app renders in about 315 ms instead of 700 ms. See
-  [Startup preloading](docs/deployment.md#startup-preloading).
+  [Startup preloading](docs/deployment.md#startup-preloading). With
+  `NetWasmUIPrerender=true`, the first screen of each listed page is rendered into its HTML at
+  publish time, so content shows before the Wasm has loaded. See
+  [Prerendering](docs/deployment.md#prerendering).
 
 ## Requirements
 

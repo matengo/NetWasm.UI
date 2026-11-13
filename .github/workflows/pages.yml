@@ -44,18 +44,22 @@ jobs:
           restore-keys: nuget-${{ runner.os }}-
 
       - name: Publish (Oz)
-        run: dotnet publish site -c Release -p:NetWasmOptimization=Oz
+        # The prerendered links need the path Pages serves the site under.
+        run: dotnet publish site -c Release -p:NetWasmOptimization=Oz -p:NetWasmUIPrerenderBasePath=/${{ github.event.repository.name }}/
 
-      - name: Prepare for Pages (base path, SPA fallback)
+      - name: Prepare for Pages (base path)
         env:
           BASE: /${{ github.event.repository.name }}/
         run: |
           mkdir _site
           rsync -a --exclude '*.dll' --exclude '*.pdb' site/bin/Release/netwasm0.1/publish/ _site/
-          sed -i "s|<base href=\"/\" />|<base href=\"$BASE\" />|" _site/index.html
-          grep -q "<base href=\"$BASE\" />" _site/index.html
-          # Pages answers unknown paths with 404.html; the router then renders the deep link.
-          cp _site/index.html _site/404.html
+          # index.html, examples.html and benchmarks.html are prerendered; 404.html is the bare page that Pages
+          # answers unknown paths (deep links) with, and the router then renders them.
+          for page in index examples benchmarks 404; do
+            sed -i "s|<base href=\"/\" />|<base href=\"$BASE\" />|" "_site/$page.html"
+            grep -q "<base href=\"$BASE\" />" "_site/$page.html"
+            grep -q 'data-nwui-prerender' "_site/$page.html" || [ "$page" = 404 ]
+          done
           touch _site/.nojekyll
           ls -lR _site
 

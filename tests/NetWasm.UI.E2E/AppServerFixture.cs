@@ -231,11 +231,11 @@ public abstract class PageTest : IAsyncLifetime
         Assert.True(errors.Count == 0, "Browser errors:\n" + string.Join("\n", errors));
     }
 
-    /// <summary>Navigates and waits until the app has mounted (the nav is rendered by Wasm).</summary>
+    /// <summary>Navigates and waits until the app has mounted (the nav is rendered by Wasm, not prerendered).</summary>
     protected async Task OpenAsync(string path)
     {
         await Page.GotoAsync(path);
-        await Page.Locator("nav a").First.WaitForAsync();
+        await Page.Locator("#app:not([data-nwui-prerender]) nav a").First.WaitForAsync();
     }
 
     protected ILocator Nav(string href) => Page.Locator($"nav a[href=\"{href}\"]");

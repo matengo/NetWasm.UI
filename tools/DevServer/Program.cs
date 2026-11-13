@@ -69,8 +69,9 @@ contentTypes.Mappings[".mjs"] = "text/javascript";
 contentTypes.Mappings[".mts"] = "text/typescript";
 contentTypes.Mappings[".wasm"] = "application/wasm";
 
-// Serve HTML ourselves so the reload client can be injected. Extension-less paths that do not
-// exist on disk fall back to index.html (SPA routing).
+// Serve HTML ourselves so the reload client can be injected. Extension-less paths resolve like static hosts
+// such as GitHub Pages: /about serves about.html (a prerendered page) when it exists, then 404.html (a bare
+// page for deep links), then index.html (SPA routing).
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? "/";
@@ -80,12 +81,12 @@ app.Use(async (context, next) =>
     }
     else if (!Path.HasExtension(path) && !path.StartsWith("/__netwasm_ui/", StringComparison.Ordinal))
     {
-        path = "/index.html";
+        path = new[] { path + ".html", "/404.html" }.FirstOrDefault(p => File.Exists(PublishedFile(p))) ?? "/index.html";
     }
 
     if (path.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
     {
-        var file = Path.Combine(publishDir, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        var file = PublishedFile(path);
         if (File.Exists(file))
         {
             var html = await File.ReadAllTextAsync(file);
@@ -137,6 +138,8 @@ if (!options.NoWatch)
 Console.WriteLine($"Listening: http://localhost:{options.Port}  (Brotli/gzip on, {(options.NoWatch ? "watch off" : "watch on")})");
 await app.RunAsync();
 return 0;
+
+string PublishedFile(string path) => Path.Combine(publishDir, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
 
 static string ReadEmbedded(string name)
 {

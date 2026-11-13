@@ -45,7 +45,7 @@ To add NetWasm.UI to an existing NetWasm project, you need the same pieces as th
     <RootNamespace>MyApp</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi.Browser" Version="0.7.0" />
+    <PackageReference Include="NwUi.Browser" Version="0.8.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="wwwroot\**" CopyToPublishDirectory="PreserveNewest" Link="%(RecursiveDir)%(Filename)%(Extension)" />

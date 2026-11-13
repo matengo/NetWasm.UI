@@ -453,7 +453,13 @@ export function createDomHost(options = {}) {
           const selector = r.str();
           const target = mountTarget(selector);
           if (!target) throw new Error(`NetWasm.UI: mount target '${selector}' not found`);
-          target.appendChild(n);
+          // Publish-time prerendered HTML (NetWasmUIPrerender) is replaced in the same task: no blank frame.
+          if (target.nodeType === 1 && target.hasAttribute("data-nwui-prerender")) {
+            target.removeAttribute("data-nwui-prerender");
+            target.replaceChildren(n);
+          } else {
+            target.appendChild(n);
+          }
           mounted.add(n);
           break;
         }
@@ -551,7 +557,8 @@ export function createDomHost(options = {}) {
 // ---- default host (bundled use) ----
 
 let defaultHost = null;
-const host = () => defaultHost ??= createDomHost();
+// The publish-time prerenderer (build/prerender.mjs) runs the app in Node and supplies its own host here.
+const host = () => defaultHost ??= (globalThis.__nwuiPrerenderHost ?? createDomHost());
 
 export function applyBatch(bytes) { host().applyBatch(bytes); }
 export function subscribe(fn) { return host().subscribe(fn); }

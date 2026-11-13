@@ -73,7 +73,7 @@ Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs` and `FakeDomHos
 | AppendChild, InsertBefore | parent/reference, child | `InsertBefore` uses `reference.parentNode`; appending to a comment inserts before it (template insertion points) |
 | Remove / Release | id | `Remove` detaches but keeps the handle; `Release` drops it and its listeners |
 | AddListener / RemoveListener | id, event, handlerId, flags | flags: 1 = preventDefault, 2 = stopPropagation, 4 = preventDefault only for a plain primary click |
-| Mount | id, selector | `document.querySelector(selector).appendChild` |
+| Mount | id, selector | `document.querySelector(selector).appendChild`; `replaceChildren` if the target has `data-nwui-prerender` |
 | Focus | id | |
 | DefineTemplate | templateId, html | parses the HTML into a `<template>` once and records the paths to its holes |
 | CloneTemplate | templateId, firstId | clones it; the root gets `firstId`, hole *i* gets `firstId + i` |
@@ -120,6 +120,37 @@ The generator parses `.nwui` into a small tree (elements, text, `@expr`, `@if`, 
 components, slots) and emits `Template`/`Html`/`TemplateRuntime` calls into a `partial class` with a
 `Build()` override. Native elements become static templates (see above). User C# is emitted under `#line` directives so compiler errors point at the
 template. See [Templates](templates.md).
+
+## Prerendering
+
+The user-facing side is in [Prerendering](deployment.md#prerendering).
+`NetWasm.UI.Prerender.targets` runs after `Publish` and after the preload injection. It calls
+`build/prerender.mjs` in Node once for all routes.
+
+1. **Parent process.** It reads the published page, removes any earlier
+   `<!--nwui:prerender-->…<!--/nwui:prerender-->` block, and writes `--shell` if requested. It then
+   runs one child process per route (`spawnSync`). Each route needs its own process, because the
+   bundled `nwui.dom` module keeps its default host in a module-level variable. A route that fails
+   prints `NetWasm.UI prerender warning: …` and exits with code 0. MSBuild reports that line as a
+   warning and leaves the page as it was.
+2. **Child process.** It enables Wasm exception handling (`--experimental-wasm-exnref`) if Node
+   needs it, and adds the browser APIs that the NetWasm loader uses: `fetch` for `file:` URLs,
+   `Blob`/`URL.createObjectURL` as `data:` URLs, and a stub `document` with `title`, `baseURI`
+   and `querySelector`. It sets `globalThis.__nwuiPrerenderHost` to an in-memory DOM host, which
+   `dom.mjs` uses in place of `createDomHost()`. The host reports the route, under the base path,
+   as the current location, so the router renders that page. Then the child imports the app
+   module and calls the start export.
+3. **In-memory DOM.** The host decodes the same [render protocol](#render-protocol) as `dom.mjs`,
+   into a tree of plain objects. `DefineTemplate` parses the template HTML with a small
+   parser, and finds the holes by the same rules as the browser. Listeners are ignored.
+   Properties such as `value`, `checked` and `disabled` become attributes, so they appear in the
+   HTML.
+4. **Snapshot.** The child waits until no batch has arrived for 100 ms, for at most 3 s. That
+   lets timers, resolved promises and local fetches render. It then serializes the mounted
+   children and the last `document.title`, and prints them as JSON.
+5. **Injection.** The parent writes the HTML between the markers inside the mount element. It
+   adds `data-nwui-prerender` to the element, and replaces `<title>`. Mount then replaces the
+   prerendered children instead of appending to them.
 
 ## Globals
 

@@ -22,6 +22,15 @@
     <Content Include="index.html;app.mjs" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- Publish-time preload tags, as the NwUi.Browser package adds them for consumers. -->
+  <!-- Publish-time preload tags and prerendered pages, as the NwUi.Browser package adds them for consumers.
+       Other paths (e.g. /greet/world) get the bare 404.html and render once the Wasm has loaded. -->
+  <PropertyGroup>
+    <NetWasmUIPrerender>true</NetWasmUIPrerender>
+    <NetWasmUIPrerenderShell>404.html</NetWasmUIPrerenderShell>
+  </PropertyGroup>
+  <ItemGroup>
+    <NetWasmUIPrerenderRoute Include="/counter;/todos" />
+  </ItemGroup>
   <Import Project="..\..\src\NetWasm.UI.Browser\build\NetWasm.UI.Preload.targets" />
+  <Import Project="..\..\src\NetWasm.UI.Browser\build\NetWasm.UI.Prerender.targets" />
 </Project>
