@@ -25,7 +25,7 @@ namespace NetWasm.UI;
 /// static readonly Template Row = new("&lt;tr&gt;&lt;td class=\"id\"&gt;&lt;!--$--&gt;&lt;/td&gt;&lt;td&gt;&lt;a $&gt;&lt;!--$--&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;");
 ///
 /// Node RowView(Row row) => Row.Clone()
-///     .Text(1, row.Id.ToString())
+///     .Text(1, row.Id)
 ///     .With(2, OnClick(() => Select(row)))
 ///     .Text(3, () => row.Label.Value)
 ///     .Root;
@@ -394,6 +394,20 @@ public sealed class TemplateInstance : IDisposable
     public TemplateInstance Text(int hole, string text)
     {
         Renderer.SetText(Expect(hole, Template.TextHole, "a text hole ('<!--$-->')"), text);
+        return this;
+    }
+
+    /// <summary>Sets the text of a <c>&lt;!--$--&gt;</c> hole to a number without building a string.</summary>
+    public TemplateInstance Text(int hole, int value)
+    {
+        Renderer.SetTextInt(Expect(hole, Template.TextHole, "a text hole ('<!--$-->')"), value);
+        return this;
+    }
+
+    /// <summary>Binds a <c>&lt;!--$--&gt;</c> hole to a number; the host formats it.</summary>
+    public TemplateInstance Text(int hole, Func<int> value)
+    {
+        _ = new IntTextBinding(Expect(hole, Template.TextHole, "a text hole ('<!--$-->')"), value);
         return this;
     }
 

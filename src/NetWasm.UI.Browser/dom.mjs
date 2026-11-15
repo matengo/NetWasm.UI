@@ -29,6 +29,7 @@ const OP = {
   Focus: 16,
   DefineTemplate: 17,
   CloneTemplate: 18,
+  SetTextInt: 19,
 };
 
 const FLAG_PREVENT_DEFAULT = 1;
@@ -362,6 +363,11 @@ export function createDomHost(options = {}) {
         case OP.SetText: {
           const n = nodes[r.i32()];
           n.data = r.str();
+          break;
+        }
+        case OP.SetTextInt: {
+          const n = nodes[r.i32()];
+          n.data = "" + r.i32();
           break;
         }
         case OP.SetAttribute: {

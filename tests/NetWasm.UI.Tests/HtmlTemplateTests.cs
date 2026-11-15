@@ -48,6 +48,23 @@ public class HtmlTemplateTests : RendererTest
         Assert.Contains("<h2>World</h2>", Dom.Html);
     }
 
+    [Fact]
+    public void Number_text_holes_send_integers_and_the_generated_lambda_picks_the_int_overload()
+    {
+        var count = new Signal<int>(-7);
+        App.Mount(new Host(() => Div(
+            Card.Clone().Text(1, 42).Root,
+            Card.Clone().Text(1, () => count.Value).Root)), "#app");
+
+        Assert.Contains("<h2>42</h2>", Dom.Html);
+        Assert.Contains("<h2>-7</h2>", Dom.Html);
+        Assert.Equal(2, Dom.Log.Count(l => l.Op == "SetTextInt"));
+
+        count.Value = 1234567;
+        Assert.Contains("<h2>1234567</h2>", Dom.Html);
+        Assert.Equal(0, Dom.Log.Count(l => l.Op == "SetText"));
+    }
+
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
