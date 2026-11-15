@@ -111,9 +111,19 @@ quiet runs above show that was noise. The fixes made after earlier runs are list
   with the list size. The browser's DOM work is the same as Solid's; the gap is per-row work in
   C# and in the batch-applying JavaScript (see the profile in
   [#2](https://github.com/matengo/NetWasm.UI/issues/2)). 0.9.0 removed the `params` array in
-  `With` and the `Map` lookup in `nwui.dom`. Next: handlers that take data instead of a closure,
-  numbers written straight into text holes, generated per-template walkers, and fewer objects
-  per row (typed keys, a lazy row `Scope`, cheaper `Element` handles).
+  `With` and the `Map` lookup in `nwui.dom`. Since then, integer text holes go to the host as
+  numbers (`SetTextInt`) and clearing or replacing a list removes its rows with one op
+  (`RemoveRange`; clear 1,000 rows 10.1 → 9.1 ms script).
+- Where the time for create 10,000 rows goes, measured warm in the benchmark app (Oz, about
+  34 ms in total, see [#8](https://github.com/matengo/NetWasm.UI/issues/8)): ~22 ms in the
+  JavaScript that applies the batch, almost all of it the browser's own `cloneNode` and
+  `insertBefore`, and ~12 ms in Wasm. Of the Wasm part, building the data, the list and the
+  clones takes ~5 ms, the class and text bindings ~2 ms and the two click listeners per row ~4 ms.
+  Prototypes of the remaining ideas each saved 1 ms or less, below the run-to-run noise, so they
+  were not merged: handlers that take data instead of a closure (0.2 ms), an array instead of a
+  dictionary for the handler table (1 ms), and generated per-template walkers (the hole walk is
+  ~3 ms in total and a walker saves at most 1 ms). Removing 10,000 laid-out rows takes the
+  browser ~33 ms on its own, so clearing a large list is now at that floor.
 - `O3` is faster than `Oz` on some reactive work but not on most DOM cases, and grows the total
   Brotli download by ~12 % (114 → 128 KB). `Oz` stays the default.
 - Startup includes downloading and compiling the Wasm (~470 KB raw download in total vs. 17 KB of
