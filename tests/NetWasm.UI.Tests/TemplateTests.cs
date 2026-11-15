@@ -112,6 +112,51 @@ public partial class TemplateTests : RendererTest
     }
 
     [Fact]
+    public void Splatting_passes_html_attributes_and_events_from_component_tags_to_the_root_element()
+    {
+        var host = new SplatHost();
+        App.Mount(host, "#app");
+
+        var save = Dom.Query("button", n => n.Attributes.ContainsKey("aria-label"))!;
+        Assert.Equal(
+            "<button aria-label=\"Save\" class=\"btn btn-default w-4\" data-x type=\"submit\">Save</button>",
+            save.ToHtml());
+        Fire(save, "click");
+        Assert.Equal(1, host.Saves.Value);
+
+        // IconButton forwards its attributes to UiButton after adding its own class.
+        var icon = Dom.Query("button", n => n.Attributes.GetValueOrDefault("id") == "ib")!;
+        Assert.Equal(
+            "<button class=\"btn btn-ghost icon big\" id=\"ib\" type=\"button\"><span class=\"i\">*</span></button>",
+            icon.ToHtml());
+        Fire(icon, "click");
+        Assert.Equal(1, host.Icons.Value);
+
+        host.Big.Value = false;
+        Assert.Equal("btn btn-ghost icon", icon.Attributes["class"]);
+
+        // On an element: class/style join the element's own, a later static attribute wins over the splat.
+        Assert.Equal("<p class=\"static more\" style=\"color:red\" title=\"last\">x</p>", Dom.Query("p")!.ToHtml());
+    }
+
+    [Fact]
+    public void Splat_in_code_joins_classes_and_attaches_a_listener_per_application()
+    {
+        var clicks = 0;
+        var attributes = new Content[] { Class("extra"), OnClick(() => clicks++) };
+        App.Mount(new Lambda(() => Div(
+            Button(Class("a"), Splat(attributes, baseClass: "a")),
+            Button(Splat(attributes)))), "#app");
+
+        var buttons = Dom.QueryAll("button");
+        Assert.Equal("a extra", buttons[0].Attributes["class"]);
+        Assert.Equal("extra", buttons[1].Attributes["class"]);
+        Fire(buttons[0], "click");
+        Fire(buttons[1], "click");
+        Assert.Equal(2, clicks);
+    }
+
+    [Fact]
     public void Dashboard_components_render_links_and_context()
     {
         Router.Install(new MemoryHistory("/about"));
@@ -311,6 +356,8 @@ public partial class TemplateTests : RendererTest
     [InlineData("<div>@ </div>", "NWUI001", "'@@'")]
     [InlineData("<div>@for (;;) { }</div>", "NWUI003", "not supported")]
     [InlineData("<div @foo=\"x\"></div>", "NWUI003", "Unknown directive")]
+    [InlineData("<div><Foo @bind=\"x\" /></div>", "NWUI003", "not supported on components")]
+    [InlineData("<div @attributes></div>", "NWUI001", "'@attributes' needs a value")]
     [InlineData("<div><Foo><template>x</template></Foo></div>", "NWUI002", "needs slot=")]
     [InlineData("<div><Foo><template slot=\"A\" class=\"x\"></template></Foo></div>", "NWUI003", "only 'slot' is")]
     [InlineData("<div><Foo><template slot=\"1a\"></template></Foo></div>", "NWUI001", "not a valid slot name")]

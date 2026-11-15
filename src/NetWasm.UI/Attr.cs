@@ -24,6 +24,15 @@ public sealed class Attr : IContent
         this.dynamic = dynamic;
     }
 
+    internal string? Name => name;
+
+    /// <summary>True for a plain static or reactive attribute value (not a property or custom apply).</summary>
+    internal bool IsValue => apply is null;
+
+    internal string? StaticValue => value;
+
+    internal Func<string?>? DynamicValue => dynamic;
+
     void IContent.ApplyTo(Element parent)
     {
         if (apply is not null)
@@ -90,7 +99,18 @@ public sealed class Listener : IContent, IDisposable
         this.flags = flags;
     }
 
+    private Listener(Listener source)
+    {
+        EventName = source.EventName;
+        handler = source.handler;
+        simple = source.simple;
+        flags = source.flags;
+    }
+
     public int HandlerId => handlerId;
+
+    /// <summary>A not-yet-attached listener with the same handler and flags.</summary>
+    internal Listener Copy() => new(this);
 
     internal string EventName { get; }
 

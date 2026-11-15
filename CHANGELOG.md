@@ -6,6 +6,20 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- Attribute splatting: on a component tag, lowercase or dashed attributes (`class`, `aria-*`,
+  `data-*`…) and `@on…` handlers go to the new `Component.Attributes`, and `@attributes="expr"`
+  applies them to an element (or forwards them to another component). `class` and `style` join
+  the element's own value. From C#, use `Html.Splat`. See
+  [Attribute splatting](docs/templates.md#attribute-splatting).
+
+### Changed
+
+- **Breaking:** on a component tag, an attribute whose name starts lowercase or contains `-` is no
+  longer assigned to a property of that name; it goes to `Attributes`. Rename such properties to
+  PascalCase. A component property named `Attributes` now hides the base one.
+
 ## [0.10.0] - 2026-11-15
 
 NetWasm.Sdk 0.14.2. NetWasm now includes its framework (LINQ, `System.Text.Json`, `HttpClient`,

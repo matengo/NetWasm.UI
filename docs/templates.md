@@ -66,6 +66,8 @@ using static NetWasm.UI.Html;
 | `@if (c) { … } else if (c2) { … } else { … }` | `When(...)`; a chain shares one memoized selector |
 | `@foreach (var x in items) { <li @key="x.Id">…</li> }` | keyed `Each(...)`; `items` may be a list expression or an `IReadOnlySignal<IReadOnlyList<T>>`; without `@key` the item itself is the key |
 | `<Badge Label="hi" Count="@n" />` | `new Badge { Label = "hi", Count = n }` (an uppercase tag is a component; constructor parameters are filled with `Inject<T>()`, see [constructor injection](services.md#constructor-injection)) |
+| `<Button Variant="ghost" class="w-4" aria-label="Save" @onclick="Save" />` | lowercase or dashed names and `@on…` handlers on a component tag go to `Attributes`; see [Attribute splatting](#attribute-splatting) |
+| `@attributes="expr"` | applies a `Content[]` (such as a component's `Attributes`) to the element or passes it on to the component |
 | `<Card>…</Card>` | `new Card { ChildContent = new Slot(() => …) }`; place it inside `Card` with `@render(ChildContent)` |
 | `<Card><template slot="Header">…</template>…</Card>` | a named slot: `Header = new Slot(() => …)`; the rest still goes to `ChildContent` |
 | `<Link href="/x">…</Link>`, `<NavLink href="/x" activeClass="on">…</NavLink>` | `Html.Link` / `Html.NavLink` |
@@ -131,6 +133,42 @@ Read a prop with `@Label`, in `@if (Max > 3)`, in `disabled="@(…)"` or as `Max
 `Func`; those reads are tracked. Reading `Max.Value` in `OnInit` or other `@code` gives a
 snapshot, because `Build` is untracked. From C#: `new Stepper { Max = maxSignal }`,
 `Max = new(() => …)` or `Max = 5`.
+
+## Attribute splatting
+
+On a component tag, attributes whose name starts with a lowercase letter or contains `-`
+(`class`, `id`, `title`, `aria-*`, `data-*`) and `@on…` handlers (with their modifiers) are not
+properties. They are collected, in source order, into the component's `Attributes`
+(`Content[]`, empty by default). PascalCase names stay property assignments. The component puts
+them on its root element (or any element) with `@attributes`:
+
+```html
+@* Button.nwui *@
+<button class="btn btn-@Variant" type="button" @attributes="Attributes">@render(ChildContent)</button>
+
+@code {
+    public string Variant { get; set; } = "default";
+    public Slot? ChildContent { get; set; }
+}
+```
+
+```html
+<Button Variant="ghost" class="w-4" aria-label="Save" data-x @onclick="Save">Save</Button>
+@* → <button class="btn btn-ghost w-4" type="button" aria-label="Save" data-x>Save</button> *@
+```
+
+- Attributes are applied in source order, so a later one wins: `type="submit"` on the tag
+  replaces the template's `type="button"`, and a static attribute written after `@attributes`
+  wins over the splat.
+- `class` and `style` are joined with the element's own value (and with each other) instead of
+  replacing it. Bound values such as `class="@(on ? "a" : null)"` stay reactive.
+- Handlers add up: the component's own `@onclick` and the caller's both run.
+- `@attributes` also works on a component tag, to forward a set: a wrapper can write
+  `<Button Variant="ghost" class="icon" @attributes="Attributes" />`.
+- A component that never applies `Attributes` ignores them, and a property whose name starts
+  lowercase is captured as an attribute, so name props in PascalCase.
+- From C#, set `Attributes = new Content[] { Class("x"), OnClick(Save) }` and apply them with
+  `Splat(Attributes, baseClass: "btn")`.
 
 ## Child content
 
