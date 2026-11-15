@@ -76,15 +76,16 @@ new generic instantiations, and `Uri.EscapeDataString`. See
 
 ## Known limitations
 
-- `netwasm0.1` has no reflection. The core library does not use `System.Linq`, to stay small;
-  apps can use it, at a size cost.
+- `netwasm0.1` has no reflection, so libraries that rely on it throw at run time (see
+  [Libraries and packages](libraries.md)). The core library does not use `System.Linq`, to stay
+  small; apps can use it, at a size cost.
 - `Scheduler`, `Renderer`, the tracker and `Router.Current` are static: one app per Wasm module
   instance.
 - An exception thrown outside the framework (your own `JSImport` callbacks, timers) is not
   caught by an `ErrorBoundary`. See [Error handling](error-handling.md).
 - No hash routing, and no SSR per request. [Prerendering](deployment.md#prerendering) at
   publish time is supported, but without hydration: the app replaces the prerendered markup.
-- No hot reload: the dev server rebuilds (~3–4 s) and reloads the page. `int`/`bool`/`string`
+- No hot reload: the dev server rebuilds (~3 s) and reloads the page. `int`/`bool`/`string`
   signals, form fields, focus and scroll are restored; lists and objects are not. See
   [Getting started](getting-started.md#developing).
 - `.nwui` editor support is syntax highlighting only (VS Code). Control flow is only

@@ -155,7 +155,7 @@ reload on `/counter` returns 404.
 | `-w <dir>` | Watch root (default: the nearest folder containing `.git` or `global.json`) |
 
 There is no hot reload. NetWasm compiles ahead of time, so there is no runtime to patch. A
-rebuild after a one-line change takes about 3–4 s from save to reloaded page; see
+rebuild after a one-line change takes about 3 s from save to reloaded page; see
 [CONTRIBUTING.md](../CONTRIBUTING.md#rebuild-time) for where the time goes.
 
 The reload keeps your state:

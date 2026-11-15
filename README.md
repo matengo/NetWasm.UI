@@ -212,8 +212,10 @@ dotnet run --project tools/DevServer -- site              # the project website
 - No server-side rendering (SSR) per request. Pages can be
   [prerendered](docs/deployment.md#prerendering) at publish time, but the app replaces that
   markup when it starts (no hydration yet), so handlers only work once the Wasm has loaded.
-- No hot reload; live reload takes ~3–4 s and keeps simple signal values and form state.
-- `.nwui` has syntax highlighting but no IntelliSense.
+- No hash routing; the server must fall back to `index.html` for app routes.
+- No hot reload; live reload takes ~3 s and keeps simple signal values and form state.
+- `.nwui` has syntax highlighting but no IntelliSense. Control flow is only `@if`/`@foreach`,
+  and slots take no parameters.
 
 See [Troubleshooting](docs/troubleshooting.md#known-limitations).
 
