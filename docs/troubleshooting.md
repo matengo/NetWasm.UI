@@ -77,8 +77,7 @@ new generic instantiations, and `Uri.EscapeDataString`. See
 ## Known limitations
 
 - `netwasm0.1` has no reflection, so libraries that rely on it throw at run time (see
-  [Libraries and packages](libraries.md)). The core library does not use `System.Linq`, to stay
-  small; apps can use it, at a size cost.
+  [Libraries and packages](libraries.md)).
 - `Scheduler`, `Renderer`, the tracker and `Router.Current` are static: one app per Wasm module
   instance.
 - An exception thrown outside the framework (your own `JSImport` callbacks, timers) is not

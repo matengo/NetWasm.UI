@@ -207,7 +207,6 @@ dotnet run --project tools/DevServer -- site              # the project website
 
 - No reflection in `netwasm0.1`, so libraries that rely on it throw at run time. See
   [Libraries and packages](docs/libraries.md).
-- No `System.Linq` in the core library, to keep it small. Apps can use it.
 - One app per Wasm module.
 - No server-side rendering (SSR) per request. Pages can be
   [prerendered](docs/deployment.md#prerendering) at publish time, but the app replaces that
