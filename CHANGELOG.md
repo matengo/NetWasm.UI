@@ -21,6 +21,9 @@ See [Compatibility and versioning](docs/compatibility.md).
 - **Breaking:** on a component tag, an attribute whose name starts lowercase or contains `-` is no
   longer assigned to a property of that name; it goes to `Attributes`. Rename such properties to
   PascalCase. A component property named `Attributes` now hides the base one.
+- Clearing or replacing a keyed list (`Each`/`For`) removes the old rows with one `RemoveRange` op
+  instead of one `Remove` per row. When the list is its parent's only content, the browser host
+  empties the parent in one call.
 
 ## [0.10.0] - 2026-11-15
 

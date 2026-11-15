@@ -306,6 +306,14 @@ function createPrerenderHost({ path, base }) {
           break;
         }
         case 12: nodes.delete(r.i32()); break;
+        case 20: {
+          const first = nodes.get(r.i32());
+          const end = nodes.get(r.i32());
+          const p = first.parent;
+          const from = p.children.indexOf(first);
+          for (const c of p.children.splice(from, p.children.indexOf(end) - from)) c.parent = null;
+          break;
+        }
         case 13: r.i32(); r.str(); r.i32(); r.u8(); break;
         case 14: r.i32(); r.i32(); break;
         case 15: {

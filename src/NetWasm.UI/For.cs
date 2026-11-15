@@ -119,16 +119,34 @@ internal sealed class KeyedList : IDisposable
             }
         }
 
-        // Remove entries of the old middle that disappeared.
+        // Remove entries of the old middle that disappeared. Each item is one node and they sit in order
+        // before the next item (or the anchor), so when none of the old middle survives (clear, replace)
+        // one range op detaches them all.
         if (oldIndex is not null)
         {
+            var bulk = oldEnd - start > 1;
+            for (var i = start; bulk && i < oldEnd; i++)
+            {
+                bulk = !newKeys!.Contains(order[i]);
+            }
+
+            if (bulk)
+            {
+                var endId = oldEnd < oldCount ? entries[order[oldEnd]].Node.Id : anchor.Id;
+                Renderer.RemoveRange(entries[order[start]].Node.Id, endId);
+            }
+
             for (var i = start; i < oldEnd; i++)
             {
                 var k = order[i];
-                if (!newKeys!.Contains(k))
+                if (bulk || !newKeys!.Contains(k))
                 {
                     var entry = entries[k];
-                    entry.Node.Remove();
+                    if (!bulk)
+                    {
+                        entry.Node.Remove();
+                    }
+
                     entry.Scope.Dispose();
                     entries.Remove(k);
                 }

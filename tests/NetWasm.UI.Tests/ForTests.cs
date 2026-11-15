@@ -93,6 +93,36 @@ public class ForTests : RendererTest
         Assert.Equal("7,8", Items(Dom.Html));
     }
 
+    [Theory]
+    [InlineData(new[] { 9 }, "1,9,5")]          // middle replaced: range ends at the suffix item
+    [InlineData(new int[0], "1,5")]              // middle dropped
+    public void Drops_a_run_of_items_with_one_range_op(int[] middle, string expected)
+    {
+        var v = new ListView(1, 2, 3, 4, 5);
+        App.Mount(v, "#app");
+        Dom.Log.Clear();
+
+        Set(v, [1, .. middle, 5]);
+
+        Assert.Equal(expected, Items(Dom.Html));
+        Assert.Single(Dom.Log, l => l.Op == "RemoveRange");
+        Assert.DoesNotContain(Dom.Log, l => l.Op == "Remove");
+    }
+
+    [Fact]
+    public void Removes_items_one_by_one_when_some_of_the_middle_survives()
+    {
+        var v = new ListView(1, 2, 3, 4);
+        App.Mount(v, "#app");
+        Dom.Log.Clear();
+
+        Set(v, 3, 1);
+
+        Assert.Equal("3,1", Items(Dom.Html));
+        Assert.Equal(2, Dom.Log.Count(l => l.Op == "Remove"));
+        Assert.DoesNotContain(Dom.Log, l => l.Op == "RemoveRange");
+    }
+
     [Fact]
     public void Item_level_reactivity_survives_reorder()
     {

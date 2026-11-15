@@ -30,6 +30,7 @@ const OP = {
   DefineTemplate: 17,
   CloneTemplate: 18,
   SetTextInt: 19,
+  RemoveRange: 20,
 };
 
 const FLAG_PREVENT_DEFAULT = 1;
@@ -411,6 +412,22 @@ export function createDomHost(options = {}) {
           const n = nodes[r.i32()];
           n.parentNode?.removeChild(n);
           mounted.delete(n);
+          break;
+        }
+        case OP.RemoveRange: {
+          const first = nodes[r.i32()];
+          const end = nodes[r.i32()];
+          const parent = first.parentNode;
+          if (!first.previousSibling && end.parentNode === parent && !end.nextSibling) {
+            // The range is everything but the end marker (a list that is its parent's only content).
+            parent.textContent = "";
+            parent.appendChild(end);
+          } else {
+            const range = doc.createRange();
+            range.setStartBefore(first);
+            range.setEndBefore(end);
+            range.deleteContents();
+          }
           break;
         }
         case OP.Release: {
