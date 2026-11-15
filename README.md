@@ -8,7 +8,7 @@ changed, and every state change crosses the Wasm→JS boundary **at most once**.
 **Website and live examples: [matengo.github.io/NetWasm.UI](https://matengo.github.io/NetWasm.UI/)**,
 itself a NetWasm.UI app ([source](site/)).
 
-> **Status: 0.9, an early but usable release.** The packages are on NuGet and the framework is
+> **Status: 0.10, an early but usable release.** The packages are on NuGet and the framework is
 > tested in Chromium, Firefox and WebKit. The public API may still change in 0.x releases; every
 > change is listed in the [CHANGELOG](CHANGELOG.md). See
 > [Compatibility and versioning](docs/compatibility.md).
@@ -118,7 +118,7 @@ public sealed class CounterView : Component
 ## Size and speed
 
 - **Size:** the whole demo app (counter, todos, router, forms, nested components) is about
-  **140 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
+  **135 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
   past its [size budget](size-budget.json).
 - **Speed:** in a [js-framework-benchmark-style comparison](docs/benchmarks.md)
   it is level with or faster than React on every case, and between 0.8× and 1.5× SolidJS's
@@ -137,7 +137,7 @@ public sealed class CounterView : Component
 | | |
 |---|---|
 | .NET SDK | 10.0.3xx or 11.0.x (C# 15 needs 11). The NetWasm SDK is resolved from `global.json`. |
-| NetWasm.Sdk | 0.13.0, target framework `netwasm0.1` |
+| NetWasm.Sdk | 0.14.2, target framework `netwasm0.1` |
 | Browsers | Chrome/Edge 137+, Firefox 131+, Safari 18.4+ (needed for Wasm exception handling with `exnref`) |
 
 **Licensing.** NetWasm.UI is MIT. The NetWasm compiler and tools use the
@@ -174,6 +174,7 @@ dotnet run --project tools/DevServer -- site              # the project website
 - [Routing](docs/routing.md): parameters, nested routes, base path
 - [Error handling](docs/error-handling.md): `ErrorBoundary` and `App.OnError`
 - [JavaScript interop](docs/js-interop.md): `[JSImport]`, callbacks, wrapping JS libraries
+- [Libraries and packages](docs/libraries.md): NuGet, .NET Standard and component libraries
 - [Embedding and several apps on one page](docs/embedding.md)
 - [Publishing and size](docs/deployment.md)
 - [Security](docs/security.md): Content Security Policy, Trusted Types, XSS
@@ -204,8 +205,9 @@ dotnet run --project tools/DevServer -- site              # the project website
 
 ## Known limitations
 
-- No reflection in `netwasm0.1`.
-- No `System.Linq` in the core library. Apps may use the NetWasm LINQ package.
+- No reflection in `netwasm0.1`, so libraries that rely on it throw at run time. See
+  [Libraries and packages](docs/libraries.md).
+- No `System.Linq` in the core library, to keep it small. Apps can use it.
 - One app per Wasm module.
 - No server-side rendering (SSR) per request. Pages can be
   [prerendered](docs/deployment.md#prerendering) at publish time, but the app replaces that

@@ -67,7 +67,8 @@ In C#: `Suspense(() => new UserList { Api = api }.Render(), () => P("Loading…"
 
 ## HttpClient and JSON
 
-- Reference `NetWasm.System.Net.Http` and `NetWasm.System.Text.Json`, not the Microsoft packages.
+- `HttpClient` and `System.Text.Json` are part of NetWasm's framework; no package reference is
+  needed. See [Libraries and packages](libraries.md).
 - Use a source-generated `JsonSerializerContext`: NetWasm has no reflection-based serializer.
 - Give `HttpClient` an absolute `BaseAddress`. `samples/Fetch` passes `location.origin` from
   `app.mjs` to its `start` export.
@@ -78,8 +79,8 @@ Async adds to the Wasm module:
 
 - The first use of `async`/`Task` adds about 15–20 KB with Brotli: the task machinery is
   compiled in.
-- `HttpClient` adds about 180 KB.
-- `System.Text.Json` adds about 200 KB.
+- `HttpClient` and `System.Text.Json` together make `samples/Fetch` a 435 KB Wasm module, against
+  88 KB for the Counter demo app (Brotli, NetWasm.Sdk 0.14.2).
 
 Prefer a small hand-written API layer to large generic clients when size matters. See
 [Publishing and size](deployment.md).

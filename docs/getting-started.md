@@ -4,7 +4,7 @@
 
 - .NET SDK 10.0.303 or later; .NET 11 works too and is needed for C# 15. `global.json` rolls
   forward to the latest installed SDK.
-- The NetWasm SDK is pinned in `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.13.0" }`). It
+- The NetWasm SDK is pinned in `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.14.2" }`). It
   downloads its host tooling on first restore.
 - A browser listed in [Compatibility](compatibility.md#browsers).
 
@@ -45,7 +45,7 @@ To add NetWasm.UI to an existing NetWasm project, you need the same pieces as th
     <RootNamespace>MyApp</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi.Browser" Version="0.9.0" />
+    <PackageReference Include="NwUi.Browser" Version="0.10.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="wwwroot\**" CopyToPublishDirectory="PreserveNewest" Link="%(RecursiveDir)%(Filename)%(Extension)" />
@@ -178,4 +178,5 @@ connects to the dev server. `--release` and production builds do not include it.
 
 - [Components and the C# API](components.md) or [Templates (`.nwui`)](templates.md) to build UI.
 - [Reactivity](reactivity.md) for state.
+- [Libraries and packages](libraries.md) to use NuGet packages or your own component libraries.
 - [Publishing and size](deployment.md) when you are ready to ship.

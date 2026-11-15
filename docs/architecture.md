@@ -2,8 +2,8 @@
 
 ## Why not a Blazor-style render tree?
 
-NetWasm is a closed-world AOT toolchain: no reflection, no `System.Linq`, no runtime code
-generation, and a small output. Blazor-style render trees and reflection-driven binding do not
+NetWasm is a closed-world AOT toolchain: no reflection, no runtime code generation, and a small
+output. Blazor-style render trees and reflection-driven binding do not
 fit that model. NetWasm.UI instead uses:
 
 - **Signals** (`Signal<T>`, `Computed<T>`, `Effect`) with automatic dependency tracking.

@@ -48,9 +48,12 @@ cache `browser/*.wasm` because NetWasm file names do not change between builds; 
   `InvalidOperationException` at run time, the generator did not intercept it: check that the
   project references NwUi and that `InterceptorsNamespaces` includes `NetWasm.UI.Generated`.
 - Reflection is not available in `netwasm0.1`. For `System.Text.Json`, use a source-generated
-  `JsonSerializerContext`. Use the `NetWasm.*` packages (`NetWasm.System.Net.Http`,
-  `NetWasm.System.Text.Json`) rather than the Microsoft ones; the Microsoft packages fail with
-  `NU1202`.
+  `JsonSerializerContext`. Remove references to the retired `NetWasm.System.*` packages: the
+  framework includes them from NetWasm.Sdk 0.14. See [Libraries and packages](libraries.md).
+- `NU1202` for a NuGet package: the package has only `net8.0` or later assets. NetWasm can use
+  packages with a `netwasm0.1` or .NET Standard asset.
+- `PlatformNotSupportedException` from a library: it reached reflection or another operation
+  NetWasm does not support. See [Libraries and packages](libraries.md#nuget-packages).
 - `NWSDK078`: a page app needs a `Main` method, even an empty one, next to its `[JSExport]`
   start method.
 - `[JSImport]` methods must be `static extern`. A host function used as `JSSubscription` must
@@ -73,8 +76,8 @@ new generic instantiations, and `Uri.EscapeDataString`. See
 
 ## Known limitations
 
-- NetWasm 0.10 (`netwasm0.1`) has no reflection. The core library does not use `System.Linq`;
-  apps may use the NetWasm LINQ package, at a size cost.
+- `netwasm0.1` has no reflection. The core library does not use `System.Linq`, to stay small;
+  apps can use it, at a size cost.
 - `Scheduler`, `Renderer`, the tracker and `Router.Current` are static: one app per Wasm module
   instance.
 - An exception thrown outside the framework (your own `JSImport` callbacks, timers) is not

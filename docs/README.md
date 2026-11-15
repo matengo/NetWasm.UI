@@ -12,6 +12,7 @@
 | [Error handling](error-handling.md) | `ErrorBoundary`, `App.OnError`, where exceptions go |
 | [Routing](routing.md) | `Routes`, `Route`, `Link`, `NavLink`, route parameters, nested routes, base path |
 | [JavaScript interop](js-interop.md) | `[JSImport]`, `[JSExport]`, Promises, callbacks, wrapping JS libraries in components |
+| [Libraries and packages](libraries.md) | NuGet and .NET Standard packages, what fails at run time, your own component libraries, size |
 | [Embedding](embedding.md) | Several apps on one page, `createDomHost` options |
 | [Publishing and size](deployment.md) | Release builds, what to deploy, hosting, caching, keeping the Wasm small |
 | [Security](security.md) | Content Security Policy, Trusted Types, XSS |

@@ -94,7 +94,7 @@ public sealed class HomePage : Component
             Class("stats"),
             Div(
                 Class("container stats-grid"),
-                Stat("~140 KB", "a whole app with router and forms, Brotli, Wasm and JS together"),
+                Stat("~135 KB", "a whole app with router and forms, Brotli, Wasm and JS together"),
                 Stat("≤ 1", "Wasm→JS call per state change, however many nodes it touches"),
                 Stat("0", "reflection, runtime template engines or virtual DOM"),
                 Stat("3–20×", "faster than Blazor WebAssembly, with a ~18× smaller download")));

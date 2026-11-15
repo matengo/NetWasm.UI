@@ -6,6 +6,26 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-15
+
+NetWasm.Sdk 0.14.2. NetWasm now includes its framework (LINQ, `System.Text.Json`, `HttpClient`,
+regular expressions, XML and more) in every `netwasm0.1` project, and apps can use NuGet
+packages built for .NET Standard. The demo app's Wasm drops from 92 to 88 KB (Brotli).
+
+**Upgrading:** set `"NetWasm.Sdk": "0.14.2"` under `msbuild-sdks` in your `global.json`, and
+remove references to `NetWasm.System.*` packages such as `NetWasm.System.Net.Http` and
+`NetWasm.System.Text.Json`: the framework includes them now.
+
+### Added
+
+- [Libraries and packages](docs/libraries.md): NuGet and .NET Standard packages, what fails at
+  run time, component libraries with `.nwui` files, and what libraries cost in size.
+
+### Changed
+
+- NetWasm.Sdk 0.13.0 → 0.14.2. `samples/Fetch` no longer references the `NetWasm.System.*`
+  packages; its Wasm drops from 463 to 435 KB (Brotli).
+
 ## [0.9.0] - 2026-11-13
 
 NetWasm 0.13.0 with its NetWasmGC collector, and the first per-row speedups from the profile in
