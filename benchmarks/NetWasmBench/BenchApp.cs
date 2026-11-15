@@ -43,7 +43,7 @@ public sealed class BenchApp : Component
         var id = row.Id;
         return RowTemplate.Clone()
             .With(0, Class(() => isSelected.Is(id) ? "danger" : null))
-            .Text(1, id.ToString())
+            .Text(1, id)
             .With(2, OnClick(() => selected.Value = id))
             .Text(3, () => row.Label.Value)
             .With(4, OnClick(() => Remove(id)))

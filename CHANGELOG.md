@@ -13,6 +13,8 @@ See [Compatibility and versioning](docs/compatibility.md).
   applies them to an element (or forwards them to another component). `class` and `style` join
   the element's own value. From C#, use `Html.Splat`. See
   [Attribute splatting](docs/templates.md#attribute-splatting).
+- `TemplateInstance.Text(int, int)` and `Text(int, Func<int>)`: integer text holes (also `@expr` of
+  type `int` in `.nwui`) go to the host as a number (new `SetTextInt` op) instead of a C# string.
 
 ### Changed
 

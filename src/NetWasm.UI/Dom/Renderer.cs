@@ -133,6 +133,14 @@ public static class Renderer
         batch.String(text);
     }
 
+    /// <summary>Sets a text node to a number; the host formats it, so no string is built here.</summary>
+    internal static void SetTextInt(int id, int value)
+    {
+        batch.Op(Op.SetTextInt);
+        batch.Int(id);
+        batch.Int(value);
+    }
+
     internal static void SetAttribute(int id, string name, string value)
     {
         batch.Op(Op.SetAttribute);

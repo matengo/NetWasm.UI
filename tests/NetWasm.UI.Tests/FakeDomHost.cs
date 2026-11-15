@@ -140,6 +140,14 @@ public sealed class FakeDomHost : IDomHost
                     Log.Add(("SetText", $"{id} '{text}'"));
                     break;
                 }
+                case Op.SetTextInt:
+                {
+                    var id = ReadInt(ops, ref pos);
+                    var text = ReadInt(ops, ref pos).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    Nodes[id].Text = text;
+                    Log.Add(("SetTextInt", $"{id} '{text}'"));
+                    break;
+                }
                 case Op.SetAttribute:
                 {
                     var id = ReadInt(ops, ref pos);

@@ -23,6 +23,22 @@ internal sealed class TextBinding : Effect
     private protected override void Execute() => Renderer.SetText(id, text());
 }
 
+/// <summary>Keeps a text node in sync with a number, sent as an integer instead of a string.</summary>
+internal sealed class IntTextBinding : Effect
+{
+    private readonly int id;
+    private readonly Func<int> value;
+
+    public IntTextBinding(int id, Func<int> value)
+    {
+        this.id = id;
+        this.value = value;
+        Run();
+    }
+
+    private protected override void Execute() => Renderer.SetTextInt(id, value());
+}
+
 /// <summary>Keeps an attribute in sync with <c>value()</c>; <c>null</c> removes it.</summary>
 internal sealed class AttrBinding : Effect
 {

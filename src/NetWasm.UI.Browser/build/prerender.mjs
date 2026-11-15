@@ -270,6 +270,7 @@ function createPrerenderHost({ path, base }) {
         case 2: { const id = r.i32(); nodes.set(id, text(r.str())); break; }
         case 3: nodes.set(r.i32(), comment("")); break;
         case 4: { const n = nodes.get(r.i32()); n.data = r.str(); n.raw = false; break; }
+        case 19: { const n = nodes.get(r.i32()); n.data = "" + r.i32(); n.raw = false; break; }
         case 5: { const n = nodes.get(r.i32()); const name = r.str(); setAttr(n, name, r.str()); break; }
         case 6: { const n = nodes.get(r.i32()); n.attrs.delete(r.str()); break; }
         case 7: {
