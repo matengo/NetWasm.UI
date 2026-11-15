@@ -264,6 +264,18 @@ helpers that return attributes plus listeners (`Bind` is one):
 static Content Tooltip(string text) => Spread(Attr("title", text), Attr("aria-label", text));
 ```
 
+## Attributes
+
+Every component has `Attributes` (`Content[]`), which templates fill with the lowercase or dashed
+attributes and `@on…` handlers given on its tag (see
+[Attribute splatting](templates.md#attribute-splatting)). Apply them with `Splat`, which joins
+`class`/`style` with the element's own value and attaches a fresh listener each time it is applied:
+
+```csharp
+protected override Node Build() =>
+    Button(Class("btn"), Splat(Attributes, baseClass: "btn"), Text(() => Label.Value));
+```
+
 ## Examples
 
 `samples/Counter/Components` builds the same room UI twice, once as a template

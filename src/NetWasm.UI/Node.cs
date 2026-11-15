@@ -147,6 +147,8 @@ public readonly struct Content
 
     public static Content Of(IContent content) => new(content);
 
+    internal IContent? Inner => content;
+
     internal void ApplyTo(Element parent)
     {
         if (text is not null)

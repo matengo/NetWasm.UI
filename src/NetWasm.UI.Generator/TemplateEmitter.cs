@@ -35,6 +35,7 @@ internal sealed class TemplateEmitter
     private readonly StringBuilder sb = new();
     private readonly List<(string Type, string Name)> refs = new();
     private readonly List<string> templates = new();
+    private bool noSep;
     private bool lineHidden;
 
     private TemplateEmitter(string text, string path, ISet<string> reactiveProps, IReadOnlyDictionary<string, string[]>? injectedConstructors)
@@ -259,6 +260,10 @@ internal sealed class TemplateEmitter
         var refName = RefOf(el, "global::NetWasm.UI.Element");
         var dynamic = new TElement(el.Tag);
         var statics = new List<TAttribute>();
+        var splat = HasSplat(el, skip);
+        var afterSplat = false;
+        string? baseClass = null;
+        string? baseStyle = null;
         foreach (var a in el.Attributes)
         {
             if (a == skip || a.Name == "@ref")
@@ -266,9 +271,30 @@ internal sealed class TemplateEmitter
                 continue;
             }
 
+            afterSplat |= a.Name == "@attributes";
+
             // 'value' stays a property (as before) so it also works on <select> and after user edits.
             if (a.IsDirective || a.Name == "value" || !IsLiteral(a))
             {
+                dynamic.Attributes.Add(a);
+            }
+            else if (splat && a.Name is "class" or "style")
+            {
+                // Stays in the markup; the splat joins its own class/style onto it.
+                statics.Add(a);
+                var value = LiteralValue(a);
+                if (a.Name == "class")
+                {
+                    baseClass = baseClass is null ? value : baseClass + " " + value;
+                }
+                else
+                {
+                    baseStyle = baseStyle is null ? value : baseStyle + ";" + value;
+                }
+            }
+            else if (afterSplat)
+            {
+                // A static attribute after @attributes overrides the splat, so it is applied after it.
                 dynamic.Attributes.Add(a);
             }
             else
@@ -331,7 +357,7 @@ internal sealed class TemplateEmitter
             calls.Add(() =>
             {
                 sb.Append(".With(").Append(hole.ToString(CultureInfo.InvariantCulture));
-                EmitAttributes(dynamic, null);
+                EmitAttributes(dynamic, null, baseClass, baseStyle);
                 sb.Append(')');
             });
         }
@@ -401,6 +427,17 @@ internal sealed class TemplateEmitter
     private static bool IsInsertable(TNode node) =>
         node is TRender or TIf or TForeach || node is TElement { IsComponent: true };
 
+    private string LiteralValue(TAttribute a)
+    {
+        var value = new StringBuilder();
+        foreach (var seg in a.Segments)
+        {
+            value.Append(Decode(seg.Text, seg.Start));
+        }
+
+        return value.ToString();
+    }
+
     private static bool IsLiteral(TAttribute a)
     {
         foreach (var seg in a.Segments)
@@ -441,9 +478,18 @@ internal sealed class TemplateEmitter
         }
     }
 
-    private void EmitAttributes(TElement el, TAttribute? skip)
+    private void EmitAttributes(TElement el, TAttribute? skip, string? baseClass = null, string? baseStyle = null)
     {
         var handlers = new List<TAttribute>();
+        var splat = HasSplat(el, skip);
+        if (splat)
+        {
+            // With @attributes, the element's own attributes go through the splat so source order decides who wins.
+            Sep();
+            sb.Append(H).Append("Splat(new global::NetWasm.UI.Content[] { ");
+            noSep = true;
+        }
+
         foreach (var a in el.Attributes)
         {
             if (a == skip || a.Name == "@ref")
@@ -453,9 +499,15 @@ internal sealed class TemplateEmitter
 
             if (a.IsDirective)
             {
-                if (a.Name == "@bind")
+                if (a.Name == "@attributes")
                 {
-                    sb.Append(", ").Append(H).Append("Spread(").Append(H).Append("Bind(");
+                    Sep();
+                    EmitSplatExpression(a);
+                }
+                else if (a.Name == "@bind")
+                {
+                    Sep();
+                    sb.Append(H).Append("Spread(").Append(H).Append("Bind(");
                     User(a.Code!);
                     sb.Append("))");
                 }
@@ -469,18 +521,65 @@ internal sealed class TemplateEmitter
                 }
                 else
                 {
-                    throw Unsupported($"Unknown directive attribute '{a.Name}' (supported: @bind, @ref, @key, @on<event>[:preventDefault|:stopPropagation]).", a.Start, a.Name.Length);
+                    throw Unsupported($"Unknown directive attribute '{a.Name}' (supported: @attributes, @bind, @ref, @key, @on<event>[:preventDefault|:stopPropagation]).", a.Start, a.Name.Length);
                 }
 
                 continue;
             }
 
-            sb.Append(", ");
+            Sep();
             EmitAttribute(a);
+        }
+
+        if (splat)
+        {
+            noSep = false;
+            sb.Append(" }, ").Append(baseClass is null ? "null" : Literal(baseClass))
+                .Append(", ").Append(baseStyle is null ? "null" : Literal(baseStyle)).Append(')');
         }
 
         EmitHandlers(handlers);
     }
+
+    private static bool HasSplat(TElement el, TAttribute? skip)
+    {
+        foreach (var a in el.Attributes)
+        {
+            if (a != skip && a.Name == "@attributes")
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void EmitSplatExpression(TAttribute a)
+    {
+        sb.Append(H).Append("Splat(");
+        User(a.Code ?? throw Parse("'@attributes' needs a value, e.g. @attributes=\"Attributes\".", a.Start, a.Name.Length));
+        sb.Append(')');
+    }
+
+    /// <summary>Starts the next item of an argument or array list (no comma before the first array item).</summary>
+    private void Sep()
+    {
+        if (noSep)
+        {
+            noSep = false;
+        }
+        else
+        {
+            sb.Append(", ");
+        }
+    }
+
+    /// <summary>
+    /// On a component tag, a name that starts lowercase or contains '-' (<c>class</c>, <c>aria-label</c>,
+    /// <c>data-x</c>) is an HTML attribute for <c>Component.Attributes</c>; PascalCase names are properties.
+    /// </summary>
+    private static bool IsHtmlAttribute(string name) =>
+        (name.Length > 0 && name[0] >= 'a' && name[0] <= 'z') || name.IndexOf('-') >= 0;
 
     private void EmitAttribute(TAttribute a)
     {
@@ -640,7 +739,8 @@ internal sealed class TemplateEmitter
                 throw Structure($"Modifier '{f.Name}' without an '@on{evt}' handler.", f.Start, f.Name.Length);
             }
 
-            sb.Append(", ").Append(H).Append("On(").Append(Literal(evt)).Append(", ");
+            Sep();
+            sb.Append(H).Append("On(").Append(Literal(evt)).Append(", ");
             User(a.Code!);
             sb.Append(", (global::NetWasm.UI.Dom.ListenerFlags)").Append(flags[evt].ToString(CultureInfo.InvariantCulture)).Append(')');
         }
@@ -698,6 +798,7 @@ internal sealed class TemplateEmitter
 
         sb.Append(" {");
         var any = false;
+        var html = new List<TAttribute>();
         foreach (var a in el.Attributes)
         {
             if (a == skip || a.Name == "@ref")
@@ -707,7 +808,19 @@ internal sealed class TemplateEmitter
 
             if (a.IsDirective)
             {
-                throw Unsupported($"'{a.Name}' is not supported on components.", a.Start, a.Name.Length);
+                if (a.Name != "@attributes" && !(a.Name.StartsWith("@on", System.StringComparison.Ordinal) && a.Name.Length > 3))
+                {
+                    throw Unsupported($"'{a.Name}' is not supported on components (supported: @attributes, @ref, @on<event>).", a.Start, a.Name.Length);
+                }
+
+                html.Add(a);
+                continue;
+            }
+
+            if (IsHtmlAttribute(a.Name))
+            {
+                html.Add(a);
+                continue;
             }
 
             sb.Append(any ? "," : string.Empty);
@@ -722,6 +835,36 @@ internal sealed class TemplateEmitter
             {
                 EmitPropValue(a);
             }
+        }
+
+        if (html.Count > 0)
+        {
+            sb.Append(any ? "," : string.Empty);
+            any = true;
+            sb.Append(" Attributes = new global::NetWasm.UI.Content[] { ");
+            noSep = true;
+            var handlers = new List<TAttribute>();
+            foreach (var a in html)
+            {
+                if (a.Name == "@attributes")
+                {
+                    Sep();
+                    EmitSplatExpression(a);
+                }
+                else if (a.IsDirective)
+                {
+                    handlers.Add(a);
+                }
+                else
+                {
+                    Sep();
+                    EmitAttribute(a);
+                }
+            }
+
+            EmitHandlers(handlers);
+            noSep = false;
+            sb.Append(" }");
         }
 
         foreach (var (name, start, body) in slots)

@@ -1,0 +1,2 @@
+@* Wraps UiButton and forwards its own attributes after adding a class. *@
+<UiButton Variant="ghost" class="icon" @attributes="Attributes"><span class="i">*</span></UiButton>

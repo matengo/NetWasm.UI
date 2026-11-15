@@ -1,0 +1,7 @@
+@* A shadcn-style button: HTML attributes from the tag land on the <button> through @attributes. *@
+<button class="btn btn-@Variant" type="button" @attributes="Attributes">@render(ChildContent)</button>
+
+@code {
+    public string Variant { get; set; } = "default";
+    public Slot? ChildContent { get; set; }
+}

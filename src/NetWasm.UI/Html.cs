@@ -290,6 +290,14 @@ public static class Html
     /// <summary>Spreads a content array (e.g. from <see cref="Bind(Signal{string})"/>) into an element.</summary>
     public static Content Spread(params Content[] content) => Content.Of(new SpreadContent(content));
 
+    /// <summary>
+    /// Applies attributes and listeners (e.g. a component's <see cref="Component.Attributes"/>) in order, later
+    /// ones winning. <c>class</c> and <c>style</c> are joined with <paramref name="baseClass"/>/<paramref name="baseStyle"/>
+    /// and with each other instead of replacing them. Nested splats are flattened; <c>null</c> applies nothing.
+    /// </summary>
+    public static Content Splat(Content[]? attributes, string? baseClass = null, string? baseStyle = null) =>
+        Content.Of(new UI.Splat(attributes, baseClass, baseStyle));
+
     private sealed class SpreadContent : IContent
     {
         private readonly Content[] content;

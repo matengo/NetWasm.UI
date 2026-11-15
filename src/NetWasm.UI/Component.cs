@@ -15,6 +15,14 @@ public abstract class Component : IContent, IDisposable
     /// <summary>The root node, available after the component has been built.</summary>
     public Node Root => root ?? throw new InvalidOperationException("Component has not been built yet.");
 
+    /// <summary>
+    /// HTML attributes and listeners given on the component tag that are not properties (lowercase or dashed
+    /// names such as <c>class</c>, <c>aria-label</c>, <c>data-x</c>, and <c>@on…</c> handlers), plus any
+    /// <c>@attributes</c>. Apply them to an element with <c>@attributes="Attributes"</c> in a template or
+    /// <see cref="Html.Splat(Content[], string?, string?)"/> in code.
+    /// </summary>
+    public Content[] Attributes { get; set; } = Array.Empty<Content>();
+
     protected abstract Node Build();
 
     /// <summary>Builds the component inside its own scope.</summary>

@@ -9,3 +9,6 @@ NetWasm.UI.Reactive.ReactiveAttribute.ReactiveAttribute(object? initial) -> void
 NetWasm.UI.TemplateInstance.With(int hole, NetWasm.UI.Content content) -> NetWasm.UI.TemplateInstance!
 NetWasm.UI.TemplateInstance.With(int hole, NetWasm.UI.Content first, NetWasm.UI.Content second) -> NetWasm.UI.TemplateInstance!
 NetWasm.UI.TemplateInstance.With(int hole, NetWasm.UI.Content first, NetWasm.UI.Content second, NetWasm.UI.Content third) -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.Component.Attributes.get -> NetWasm.UI.Content[]!
+NetWasm.UI.Component.Attributes.set -> void
+static NetWasm.UI.Html.Splat(NetWasm.UI.Content[]? attributes, string? baseClass = null, string? baseStyle = null) -> NetWasm.UI.Content

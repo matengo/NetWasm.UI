@@ -1,0 +1,18 @@
+@* Uses attribute splatting on component tags and on a plain element. *@
+<div>
+    <UiButton class="w-4" aria-label="Save" data-x @onclick="() => Saves.Value++" type="submit">Save</UiButton>
+    <IconButton id="ib" class="@(Big.Value ? "big" : null)" @onclick="() => Icons.Value++" />
+    <p class="static" @attributes="Extra" title="last">x</p>
+</div>
+
+@code {
+    public Signal<int> Saves { get; } = new(0);
+    public Signal<int> Icons { get; } = new(0);
+    public Signal<bool> Big { get; } = new(true);
+    public Content[] Extra { get; set; } = new Content[]
+    {
+        NetWasm.UI.Attr.Static("title", "first"),
+        NetWasm.UI.Attr.Static("class", "more"),
+        NetWasm.UI.Attr.Static("style", "color:red"),
+    };
+}
