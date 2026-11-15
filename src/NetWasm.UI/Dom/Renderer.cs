@@ -133,6 +133,14 @@ public static class Renderer
         batch.String(text);
     }
 
+    /// <summary>Detaches <paramref name="firstId"/> and its following siblings up to, not including, <paramref name="endId"/>.</summary>
+    internal static void RemoveRange(int firstId, int endId)
+    {
+        batch.Op(Op.RemoveRange);
+        batch.Int(firstId);
+        batch.Int(endId);
+    }
+
     /// <summary>Sets a text node to a number; the host formats it, so no string is built here.</summary>
     internal static void SetTextInt(int id, int value)
     {

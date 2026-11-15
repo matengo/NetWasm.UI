@@ -217,6 +217,27 @@ public sealed class FakeDomHost : IDomHost
                     Log.Add(("Remove", $"{id}"));
                     break;
                 }
+                case Op.RemoveRange:
+                {
+                    var first = Nodes[ReadInt(ops, ref pos)];
+                    var end = Nodes[ReadInt(ops, ref pos)];
+                    var siblings = first.Parent!.Children;
+                    var from = siblings.IndexOf(first);
+                    var to = siblings.IndexOf(end);
+                    if (from < 0 || to < from)
+                    {
+                        throw new InvalidOperationException($"RemoveRange {first.Id}..{end.Id}: end is not a following sibling");
+                    }
+
+                    foreach (var node in siblings.GetRange(from, to - from))
+                    {
+                        node.Parent = null;
+                    }
+
+                    siblings.RemoveRange(from, to - from);
+                    Log.Add(("RemoveRange", $"{first.Id}..{end.Id}"));
+                    break;
+                }
                 case Op.Release:
                 {
                     var id = ReadInt(ops, ref pos);

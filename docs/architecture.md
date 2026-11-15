@@ -78,6 +78,7 @@ Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs` and `FakeDomHos
 | DefineTemplate | templateId, html | parses the HTML into a `<template>` once and records the paths to its holes |
 | CloneTemplate | templateId, firstId | clones it; the root gets `firstId`, hole *i* gets `firstId + i` |
 | SetTextInt | id, value (i32) | sets a text node to the decimal number, so C# builds no string |
+| RemoveRange | firstId, endId | detaches `firstId` and its next siblings up to, not including, `endId` (a keyed list dropping a run of items) |
 
 Node ids are allocated in C#; `dom.mjs` keeps an id → node table and a per-node list of handlers
 so releasing a node also drops its listeners.

@@ -26,6 +26,7 @@ public enum Op : byte
     DefineTemplate = 17,  // templateId, html   (parsed once; see Template)
     CloneTemplate = 18,   // templateId, firstId (root gets firstId, holes firstId+1.. in document order)
     SetTextInt = 19,      // id, value(i32)     (text is the decimal number)
+    RemoveRange = 20,     // firstId, endId     (detaches firstId and its next siblings up to, not including, endId)
 }
 
 /// <summary>Flags for <see cref="Op.AddListener"/>.</summary>

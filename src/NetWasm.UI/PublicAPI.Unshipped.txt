@@ -15,3 +15,4 @@ static NetWasm.UI.Html.Splat(NetWasm.UI.Content[]? attributes, string? baseClass
 NetWasm.UI.TemplateInstance.Text(int hole, int value) -> NetWasm.UI.TemplateInstance!
 NetWasm.UI.TemplateInstance.Text(int hole, System.Func<int>! value) -> NetWasm.UI.TemplateInstance!
 NetWasm.UI.Dom.Op.SetTextInt = 19 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.RemoveRange = 20 -> NetWasm.UI.Dom.Op
