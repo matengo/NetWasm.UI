@@ -35,71 +35,79 @@ minutes to build; skip it with `--no-aot`.
   Solid's JS again).
 - *Download* sums every response of a first visit, compressed with Brotli quality 11.
 - Values are medians in ms. Cases under ~10 ms move by a few ms between runs.
+- Script time is stable within a few percent between runs. Script + layout is not: even on an
+  idle machine it moves by 10–30 % between runs, because the browser's layout dominates. In the
+  run below, two identical builds of the Oz app measured 67.3 and 53.1 ms for append 1,000 rows.
+  Compare script times when judging a change to the framework.
+- For stable numbers, close other apps, run on mains power with the "Best performance" power
+  mode, use `--runs 20`, and run twice to see how much the cases move.
 
 ## Results
 
-Windows arm64 laptop, Chromium 153, 10 runs, script + layout, NetWasm.Sdk 0.13.0 with NetWasmGC,
-NetWasm.UI 0.9.0. Blazor AOT was not re-measured (`--no-aot`); an earlier run had it at
-142.3 ms for create 1,000 rows and 1,400 ms startup.
+Windows arm64 laptop on an otherwise idle machine, Chromium 153, script + layout, NetWasm.Sdk
+0.13.0 with NetWasmGC, NetWasm.UI 0.9.0. Each value is the mean of the medians of two runs with
+20 runs per case (`--runs 20 --gc NetWasm,Compact`). Blazor AOT was not re-measured
+(`--no-aot`); an earlier run had it at 142.3 ms for create 1,000 rows and 1,400 ms startup.
 
 | Case                         | NetWasm.UI Oz | NetWasm.UI O3 | SolidJS |  React | Blazor |
 |------------------------------|--------------:|--------------:|--------:|-------:|-------:|
-| create 1,000 rows            |          54.7 |          59.6 |    71.0 |   67.7 |  236.3 |
-| replace 1,000 rows           |          62.3 |          65.8 |    62.7 |   81.8 |  263.3 |
-| partial update (every 10th)  |          26.5 |          22.1 |    22.5 |   27.1 |   88.9 |
-| select row                   |           4.8 |           5.4 |     3.2 |   14.2 |   95.1 |
-| swap rows                    |           7.5 |           8.3 |     9.0 |   61.2 |   69.0 |
-| remove row                   |           5.0 |           5.3 |     6.0 |   10.3 |   80.6 |
-| create 10,000 rows           |         588.9 |         557.8 |   489.2 | 1041.7 | 2405.2 |
-| append 1,000 rows            |          78.5 |          88.5 |    62.5 |  113.8 |  302.0 |
-| clear 1,000 rows             |          15.8 |          20.5 |    10.1 |   20.6 |   81.8 |
-| reactive: deep (100-chain)   |           9.3 |           9.2 |    21.0 |      – |      – |
-| reactive: broad (1,000 fan-out) |        28.1 |          21.5 |    35.3 |      – |      – |
-| reactive: diamond            |           2.6 |           1.9 |     4.3 |      – |      – |
-| reactive: create/dispose 10k |           7.8 |           6.1 |    18.1 |      – |      – |
-| sort 100k strings (no UI)    |          60.1 |          57.7 |   132.2 |      – |  643.6 |
-| sieve 2M (no UI)             |           6.8 |           7.8 |   130.1 |      – |   67.5 |
-| startup (`__ready`)          |         127.9 |         133.7 |    25.4 |   57.0 | 1204.6 |
+| create 1,000 rows            |          45.8 |          46.2 |    38.9 |   57.2 |  202.5 |
+| replace 1,000 rows           |          52.0 |          65.0 |    51.1 |   76.6 |  247.8 |
+| partial update (every 10th)  |          20.0 |          19.3 |    19.6 |   25.4 |   76.0 |
+| select row                   |           3.2 |           3.5 |     2.6 |    9.4 |   68.0 |
+| swap rows                    |           5.3 |           5.8 |     5.2 |   40.9 |   47.6 |
+| remove row                   |           4.3 |           4.8 |     5.1 |    7.8 |   52.7 |
+| create 10,000 rows           |         475.4 |         474.3 |   408.8 |  824.0 | 1876.0 |
+| append 1,000 rows            |          67.3 |          70.5 |    46.2 |   65.4 |  234.8 |
+| clear 1,000 rows             |           9.1 |           9.0 |     7.4 |   13.6 |   43.0 |
+| reactive: deep (100-chain)   |           7.8 |           8.4 |    22.1 |      – |      – |
+| reactive: broad (1,000 fan-out) |        27.1 |          21.1 |    37.9 |      – |      – |
+| reactive: diamond            |           2.2 |           1.9 |     4.2 |      – |      – |
+| reactive: create/dispose 10k |           7.4 |           5.7 |    15.9 |      – |      – |
+| sort 100k strings (no UI)    |          46.0 |          51.3 |   107.3 |      – |  245.2 |
+| sieve 2M (no UI)             |           6.2 |           8.1 |    55.5 |      – |   30.8 |
+| startup (`__ready`)          |         107.3 |         105.9 |    22.0 |   46.8 |  915.9 |
 | download, Brotli (KB)        |         114.0 |         128.0 |     6.2 |   58.4 | 2087.3 |
 
-Script time alone (without layout), Oz vs. Solid: create 1,000 rows 16.9 vs 16.3, create 10,000
-rows 206.0 vs 112.2, append 32.8 vs 21.8, replace 28.8 vs 23.4.
+Script time alone (without layout), Oz vs. Solid: create 1,000 rows 11.7 vs 7.7, create 10,000
+rows 172.4 vs 90.6, append 23.1 vs 12.8, replace 21.5 vs 17.2.
 
 In short: NetWasm.UI is level with or faster than React on every DOM case, level with or faster
-than Solid at create 1,000 rows, replace, swap, remove and every reactive and compute workload,
-1.2–1.6× Solid elsewhere, and 3–20× faster than Blazor (interpreter) with a ~18× smaller
-download and ~9× faster startup. Cases under ~10 ms, and partial update, move by a few ms
-between runs. The pure-compute rows vary between runs because Chromium tiers Wasm and JS up at
-different times (Liftoff → TurboFan).
+than Solid at replace, partial update, swap, remove and every reactive and compute workload,
+1.2–1.5× Solid elsewhere, and 3–20× faster than Blazor (interpreter) with a ~18× smaller
+download and ~9× faster startup. The append row is the noisiest: the identical NetWasmGC build
+in the same runs measured 53.1 ms. The pure-compute rows vary between runs because Chromium
+tiers Wasm and JS up at different times (Liftoff → TurboFan).
 
 ### NetWasmGC vs. Compact
 
-The same run with `--gc NetWasm,Compact` builds the Oz app with each collector. Script time in
-ms; NetWasmGC is the default for the template, samples and benchmark since 0.9.0:
+The same runs with `--gc NetWasm,Compact` build the Oz app with each collector the same way.
+Script time in ms, mean of both runs; NetWasmGC is the default for the template, samples and
+benchmark since 0.9.0:
 
 | Case                         | NetWasmGC | Compact |
 |------------------------------|----------:|--------:|
-| create 1,000 rows            |      17.1 |    14.6 |
-| replace 1,000 rows           |      33.3 |    28.5 |
-| create 10,000 rows           |     204.7 |   221.0 |
-| append 1,000 rows            |      30.8 |    36.5 |
-| clear 1,000 rows             |      12.5 |    21.0 |
-| reactive: create/dispose 10k |       8.0 |    17.7 |
-| sort 100k strings (no UI)    |      61.3 |    97.3 |
-| sieve 2M (no UI)             |       6.5 |     9.3 |
-| download, Brotli (KB)        |     114.0 |   112.4 |
+| create 1,000 rows            |      12.0 |    11.4 |
+| replace 1,000 rows           |      21.4 |    22.8 |
+| create 10,000 rows           |     178.2 |   189.6 |
+| append 1,000 rows            |      22.4 |    26.9 |
+| clear 1,000 rows             |       8.9 |    11.2 |
+| reactive: create/dispose 10k |       7.6 |    14.0 |
+| sort 100k strings (no UI)    |      44.5 |    71.7 |
+| sieve 2M (no UI)             |       6.0 |     7.8 |
+| download, Brotli (KB)        |     114.1 |   112.4 |
 
-Allocation-heavy work is clearly faster with NetWasmGC; the 1,000-row create and replace cases
-are within noise. See [#2](https://github.com/matengo/NetWasm.UI/issues/2) for runs on Linux.
+Allocation-heavy work (sort, reactive create/dispose, clear, large lists) is clearly faster with
+NetWasmGC; create and replace 1,000 rows are level. See
+[#2](https://github.com/matengo/NetWasm.UI/issues/2) for runs on Linux.
 
-Compared with the previous run (NetWasm.Sdk 0.10.7, Compact), create 1,000 rows went from 57.0
-to 54.7 ms, create 10,000 rows from 624.9 to 588.9, append from 98.6 to 78.5, and the compute
-workloads by 30–60 %.
-The fixes made after earlier runs are listed in the [CHANGELOG](../CHANGELOG.md).
+An earlier run on a busy machine had Compact ahead at create 1,000 rows (14.6 vs 17.1 ms); the
+quiet runs above show that was noise. The fixes made after earlier runs are listed in the
+[CHANGELOG](../CHANGELOG.md).
 
 ## Still open
 
-- Creating many rows costs 1.2–1.3× Solid with layout and up to 1.8× in script time, growing
+- Creating many rows costs 1.2–1.5× Solid with layout and up to 1.9× in script time, growing
   with the list size. The browser's DOM work is the same as Solid's; the gap is per-row work in
   C# and in the batch-applying JavaScript (see the profile in
   [#2](https://github.com/matengo/NetWasm.UI/issues/2)). 0.9.0 removed the `params` array in
