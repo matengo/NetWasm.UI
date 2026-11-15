@@ -73,7 +73,7 @@ it at 142.3 ms for create 1,000 rows and 1,400 ms startup.
 Script time alone (without layout), Oz vs. Solid: create 1,000 rows 12.5 vs 7.5, create 10,000
 rows 168.6 vs 83.4, append 21.0 vs 11.7, replace 20.0 vs 14.8.
 
-In short: NetWasm.UI is level with or faster than React on every DOM case, 0.9–1.3× Solid's
+In short: NetWasm.UI is faster than React on every DOM case, 0.9–1.3× Solid's
 time on every DOM case (faster at partial update and remove), faster than Solid on every
 reactive and compute workload, and 3–20× faster than Blazor (interpreter) with a ~18× smaller
 download and ~9× faster startup. The two runs agreed within 0.1× of Solid on every DOM case.

@@ -35,8 +35,8 @@
 
     <div class="callouts">
         <div class="callout">
-            <h3>Level with React</h3>
-            <p>Level with or faster than React on every DOM case.</p>
+            <h3>Faster than React</h3>
+            <p>Faster than React on every DOM case.</p>
         </div>
         <div class="callout">
             <h3>Close to Solid</h3>

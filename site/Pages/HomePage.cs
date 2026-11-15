@@ -167,8 +167,8 @@ public sealed class HomePage : Component
                 Div(
                     SectionHead(
                         "Speed, measured",
-                        "Level with React. Close to Solid.",
-                        "In a js-framework-benchmark-style comparison NetWasm.UI is level with or faster than React on every case and between 0.9× and 1.3× SolidJS's time. Lower is better."),
+                        "Faster than React. Close to Solid.",
+                        "In a js-framework-benchmark-style comparison NetWasm.UI is faster than React on every DOM case and between 0.9× and 1.3× SolidJS's time. Lower is better."),
                     Link("/benchmarks", Class("btn"), "All benchmark results →")),
                 Div(
                     Class("bars"),

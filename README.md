@@ -121,7 +121,7 @@ public sealed class CounterView : Component
   **135 KB** with Brotli, Wasm and JavaScript together. CI fails a pull request that grows it
   past its [size budget](size-budget.json).
 - **Speed:** in a [js-framework-benchmark-style comparison](docs/benchmarks.md)
-  it is level with or faster than React on every case, and between 0.9× and 1.3× SolidJS's
+  it is faster than React on every DOM case, and between 0.9× and 1.3× SolidJS's
   time. Against Blazor WebAssembly (interpreter) it is 3–20× faster, with a ~18× smaller
   download and ~9× faster startup.
 - **Startup:** `dotnet publish` adds preload tags for the runtime modules and the Wasm to
