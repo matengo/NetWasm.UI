@@ -136,14 +136,37 @@ snapshot, because `Build` is untracked. From C#: `new Stepper { Max = maxSignal 
 
 ## Attribute splatting
 
-On a component tag, attributes whose name starts with a lowercase letter or contains `-`
-(`class`, `id`, `title`, `aria-*`, `data-*`) and `@on…` handlers (with their modifiers) are not
-properties. They are collected, in source order, into the component's `Attributes`
-(`Content[]`, empty by default). PascalCase names stay property assignments. The component puts
-them on its root element (or any element) with `@attributes`:
+A component tag takes more than its properties. HTML attributes and `@on…` event handlers written
+on it are collected into the component's `Attributes`, and the component decides which element
+they land on with `@attributes`. This is how a `Button` component can accept `class`,
+`aria-label`, `disabled` or `@onclick` without declaring a property for each.
+
+Try it in the [live example](https://matengo.github.io/NetWasm.UI/examples/splatting); its
+source is in `site/Demos` (`SplatDemo.nwui`, `AppButton.nwui`, `IconButton.nwui`,
+`TextField.nwui`).
+
+### Which names go where
+
+On a component tag:
+
+| Written on the tag | Goes to |
+|---|---|
+| PascalCase name: `Variant="ghost"`, `Max="@(20)"` | the property of that name, as before |
+| name that starts lowercase or contains `-`: `class`, `id`, `title`, `type`, `disabled`, `aria-*`, `data-*` | `Attributes` |
+| `@onclick`, `@onkeydown:preventDefault`, any `@on…` with its modifiers | `Attributes` |
+| `@attributes="expr"` | `Attributes` (the set is added in place, see [Forwarding](#forwarding)) |
+
+Everything in `Attributes` keeps source order. `Attributes` is a `Content[]` and is empty when the
+tag has none. `@ref` works on a component tag (and `@key` when it is the root of an `@foreach`
+body), but `@bind` does not; for two-way binding, give the component a `Signal<T>` property (as
+`Stepper` does above).
+
+### Applying them
+
+The component puts the set on its root element, or any element, with `@attributes`:
 
 ```html
-@* Button.nwui *@
+@* AppButton.nwui *@
 <button class="btn btn-@Variant" type="button" @attributes="Attributes">@render(ChildContent)</button>
 
 @code {
@@ -153,22 +176,65 @@ them on its root element (or any element) with `@attributes`:
 ```
 
 ```html
-<Button Variant="ghost" class="w-4" aria-label="Save" data-x @onclick="Save">Save</Button>
-@* → <button class="btn btn-ghost w-4" type="button" aria-label="Save" data-x>Save</button> *@
+<AppButton Variant="primary" class="wide" aria-label="Save" type="submit"
+           disabled="@(name.Value.Length == 0)" @onclick="Save">Save</AppButton>
+@* → <button class="btn btn-primary wide" type="submit" aria-label="Save" disabled>Save</button> *@
 ```
 
-- Attributes are applied in source order, so a later one wins: `type="submit"` on the tag
-  replaces the template's `type="button"`, and a static attribute written after `@attributes`
-  wins over the splat.
-- `class` and `style` are joined with the element's own value (and with each other) instead of
-  replacing it. Bound values such as `class="@(on ? "a" : null)"` stay reactive.
-- Handlers add up: the component's own `@onclick` and the caller's both run.
-- `@attributes` also works on a component tag, to forward a set: a wrapper can write
-  `<Button Variant="ghost" class="icon" @attributes="Attributes" />`.
-- A component that never applies `Attributes` ignores them, and a property whose name starts
-  lowercase is captured as an attribute, so name props in PascalCase.
-- From C#, set `Attributes = new Content[] { Class("x"), OnClick(Save) }` and apply them with
-  `Splat(Attributes, baseClass: "btn")`.
+- **Order decides.** Attributes are applied in source order and a later one wins: `type="submit"`
+  on the tag replaces the template's `type="button"`. A static attribute written *after*
+  `@attributes` on the element wins over the splat.
+- **`class` and `style` are joined**, not replaced: the element's own value, then each one from
+  the set.
+- **Bound values stay reactive.** `class="@(on ? "active" : null)"`, `disabled="@(…)"` and
+  `aria-pressed="@(…)"` update the element when their signals change; `null` removes the
+  attribute.
+- A component that never writes `@attributes` ignores the set.
+
+### Events on components
+
+`@on…` handlers on a component tag become listeners on the element that applies `Attributes`. The
+handler is an `Action` or an `Action<DomEvent>`, exactly as on an element, and the modifiers work
+the same:
+
+```html
+<TextField Value="@draft" placeholder="Add a tag" @onkeydown="OnKey" />
+<AppButton @onclick="Clear">Clear all</AppButton>
+
+@code {
+    private void OnKey(DomEvent e)
+    {
+        if (e.Key == "Escape") draft.Value = "";
+    }
+}
+```
+
+Handlers add up: if the component's template also has `@onclick` on that element, both run. The
+event is a DOM event; for a value the component computes (a selected item, a validated date),
+declare an `Action<T>` property instead (`OnSelect="@(item => …)"`).
+
+### Forwarding
+
+`@attributes` also works on a component tag, so a wrapper can add its own attributes and pass the
+caller's on:
+
+```html
+@* IconButton.nwui *@
+<AppButton Variant="ghost" class="btn-icon" @attributes="Attributes">@render(ChildContent)</AppButton>
+```
+
+```html
+<IconButton aria-label="Remove" data-tag="@tag" @onclick="() => Remove(tag)">&times;</IconButton>
+@* → <button class="btn btn-ghost btn-icon" type="button" aria-label="Remove" data-tag="…">×</button> *@
+```
+
+### Pitfalls
+
+- Name properties in PascalCase. A property whose name starts lowercase is captured as an
+  attribute and never assigned (a breaking change in this release, see the CHANGELOG).
+- A component property named `Attributes` hides the base one.
+- From C#, set `Attributes = new Content[] { Class("x"), On("click", Save) }` and apply them with
+  `Splat(Attributes, baseClass: "btn")` (see [Components](components.md#attributes)).
 
 ## Child content
 

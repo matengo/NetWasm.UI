@@ -1,0 +1,6 @@
+@* Wraps AppButton: adds its own variant and class, and forwards everything else with @attributes. *@
+<AppButton Variant="ghost" class="btn-icon" @attributes="Attributes">@render(ChildContent)</AppButton>
+
+@code {
+    public Slot? ChildContent { get; set; }
+}

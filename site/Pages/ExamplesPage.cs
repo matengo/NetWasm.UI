@@ -31,6 +31,8 @@ public sealed class ExamplesPage : Component
             ["AsyncDemo"], () => new AsyncDemo().Render()),
         new("components", "Components", "Reusable components with reactive props, a two-way signal and named slots.",
             ["ComponentsDemo", "Stepper", "Card"], () => new ComponentsDemo().Render()),
+        new("splatting", "Attribute splatting", "class, aria-*, data-* and @on… handlers written on a component tag land on its element, and a wrapper forwards them with @attributes.",
+            ["SplatDemo", "AppButton", "IconButton", "TextField"], () => new SplatDemo().Render()),
     ];
 
     protected override Node Build()

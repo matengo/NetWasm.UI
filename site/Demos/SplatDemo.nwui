@@ -1,0 +1,79 @@
+@* Lowercase attributes and @on… handlers on a component tag land on its element. AppButton.nwui, IconButton.nwui and TextField.nwui are below. *@
+<div class="demo-splat">
+    <form class="row" @onsubmit="Add">
+        <TextField Value="@draft" Max="@(20)" placeholder="Add a tag, Esc clears" aria-label="New tag" autocomplete="off" @onkeydown="OnKey" />
+        <AppButton Variant="primary" type="submit" title="Add the tag" disabled="@(draft.Value.Trim().Length == 0)">Add</AppButton>
+    </form>
+    <ul class="chips">
+        @foreach (var tag in tags) {
+            <li @key="tag" class="chip">@tag <IconButton aria-label="@("Remove " + tag)" data-tag="@tag" @onclick="() => Remove(tag)">&times;</IconButton></li>
+        }
+    </ul>
+    <div class="row">
+        <AppButton class="@(compact.Value ? "btn-sm" : null)" aria-pressed="@(compact.Value ? "true" : "false")" @onclick="ToggleCompact">Compact</AppButton>
+        <AppButton Variant="ghost" disabled="@(tags.Value.Count == 0)" @onclick="Clear">Clear all</AppButton>
+    </div>
+    <p class="result">@log</p>
+</div>
+
+@code {
+    private readonly Signal<string> draft = new("");
+    private readonly Signal<bool> compact = new(false);
+    private readonly Signal<string> log = new("Events from the component tags show up here.");
+    private readonly Signal<IReadOnlyList<string>> tags = new(new List<string> { "csharp", "wasm", "signals" });
+
+    private void Add()
+    {
+        var tag = draft.Value.Trim();
+        if (tag.Length == 0 || IndexOf(tag) >= 0)
+        {
+            return;
+        }
+
+        tags.Value = new List<string>(tags.Value) { tag };
+        draft.Value = "";
+        log.Value = "submit: added \"" + tag + "\"";
+    }
+
+    private int IndexOf(string tag)
+    {
+        for (var i = 0; i < tags.Value.Count; i++)
+        {
+            if (tags.Value[i] == tag)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private void OnKey(DomEvent e)
+    {
+        if (e.Key == "Escape")
+        {
+            draft.Value = "";
+            log.Value = "keydown on <TextField>: Escape cleared the field";
+        }
+    }
+
+    private void Remove(string tag)
+    {
+        var rest = new List<string>(tags.Value);
+        rest.Remove(tag);
+        tags.Value = rest;
+        log.Value = "click on <IconButton>: removed \"" + tag + "\"";
+    }
+
+    private void ToggleCompact()
+    {
+        compact.Value = !compact.Value;
+        log.Value = "click on <AppButton>: compact " + (compact.Value ? "on" : "off");
+    }
+
+    private void Clear()
+    {
+        tags.Value = new List<string>();
+        log.Value = "click on <AppButton>: cleared all tags";
+    }
+}

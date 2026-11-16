@@ -1,0 +1,7 @@
+@* A button with variants. Attributes and @on… handlers written on <AppButton> land on the <button>. *@
+<button class="btn btn-@Variant" type="button" @attributes="Attributes">@render(ChildContent)</button>
+
+@code {
+    public string Variant { get; set; } = "default";
+    public Slot? ChildContent { get; set; }
+}

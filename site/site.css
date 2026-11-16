@@ -244,6 +244,14 @@ input[type=checkbox] { accent-color: var(--accent); width: 1.05rem; height: 1.05
 .stepper output { min-width: 2rem; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stepper .btn { width: 2.1rem; }
 .total { margin: 1rem 0 0; padding-top: .75rem; border-top: 1px solid var(--border); }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-icon { padding: 0 .35rem; margin-left: .2rem; font-size: 1rem; line-height: 1.2; border-radius: 999px; color: var(--muted); }
+.btn-icon:hover { color: var(--danger); }
+.btn[aria-pressed=true] { border-color: var(--accent); background: var(--accent-soft); }
+.text-field { position: relative; flex: 1; display: flex; }
+.text-field input { flex: 1; padding-right: 3.2rem; }
+.text-field small { position: absolute; right: .7rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.demo-splat .chip { display: inline-flex; align-items: center; }
 
 /* Footer */
 .site-footer { border-top: 1px solid var(--border); background: var(--bg-alt); padding: 2rem 0; color: var(--muted); font-size: .9rem; }

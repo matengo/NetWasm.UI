@@ -269,11 +269,17 @@ static Content Tooltip(string text) => Spread(Attr("title", text), Attr("aria-la
 Every component has `Attributes` (`Content[]`), which templates fill with the lowercase or dashed
 attributes and `@on…` handlers given on its tag (see
 [Attribute splatting](templates.md#attribute-splatting)). Apply them with `Splat`, which joins
-`class`/`style` with the element's own value and attaches a fresh listener each time it is applied:
+`class`/`style` with the given base value and attaches a fresh listener each time it is applied:
 
 ```csharp
 protected override Node Build() =>
-    Button(Class("btn"), Splat(Attributes, baseClass: "btn"), Text(() => Label.Value));
+    Button(Attr("type", "button"), Splat(Attributes, baseClass: "btn"), Text(() => Label.Value));
+```
+
+The caller sets them like any other property:
+
+```csharp
+new MyButton { Label = label, Attributes = [Class("wide"), Attr("aria-label", "Save"), OnClick(Save)] }
 ```
 
 ## Examples
@@ -282,3 +288,8 @@ protected override Node Build() =>
 (`RoomRazor.nwui`) and once in C# (`RoomCode.cs`), from a template component with slots
 (`Panel.nwui`), one with `@prop` and two-way binding (`Stepper.nwui`) and a C# component with
 `Prop<T>` (`ProgressBar.cs`).
+
+The [attribute splatting example](https://matengo.github.io/NetWasm.UI/examples/splatting)
+(`site/Demos/SplatDemo.nwui`) has a button component that takes `class`, `type`, `disabled`,
+`aria-*` and `@onclick` from its tag, an icon button that forwards them with `@attributes`, and a
+text field that takes `placeholder` and `@onkeydown`.

@@ -1,0 +1,11 @@
+@* A text input with a character counter. Value is two-way; attributes and handlers from the tag go on the <input>. *@
+<span class="text-field">
+    <input maxlength="@(Max)" @bind="Value" @attributes="Attributes" />
+    <small>@(Value.Value.Length)/@Max</small>
+</span>
+
+@prop int Max = 40;
+
+@code {
+    public Signal<string> Value { get; set; } = new("");
+}
