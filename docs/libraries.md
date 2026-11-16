@@ -97,6 +97,10 @@ Reference a class library with `ProjectReference`:
 
 A `.nwui` file in the app then needs `@using MyComponents` to use `<Greeting Name="..." />`.
 
+For dialogs, popovers, menus and other interactive components, see
+[Building component libraries](components.md#building-component-libraries) and
+`samples/Primitives`.
+
 ## JavaScript libraries
 
 Load the library from your page or from a JavaScript module, and call it with `[JSImport]`. See

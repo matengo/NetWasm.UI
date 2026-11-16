@@ -88,4 +88,5 @@ new generic instantiations, and `Uri.EscapeDataString`. See
   signals, form fields, focus and scroll are restored; lists and objects are not. See
   [Getting started](getting-started.md#developing).
 - `.nwui` editor support is syntax highlighting only (VS Code). Control flow is only
-  `@if`/`@foreach`, and slots take no parameters (no `Slot<T>`).
+  `@if`/`@foreach`, and generic components need explicit type arguments
+  (`<Select TItem="Fruit">`); they are not inferred.

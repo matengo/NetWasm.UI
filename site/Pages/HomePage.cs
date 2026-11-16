@@ -147,11 +147,12 @@ public sealed class HomePage : Component
                 Div(
                     Class("features"),
                     Feature("reactivity.md", "Fine-grained signals", "Signal, Computed and Effect with batching, context and stores, or [Reactive] properties you just read and write. Only the nodes that read a signal update."),
-                    Feature("templates.md", ".nwui templates", "HTML with @if, @foreach, @bind, slots, props and components. Static subtrees are cloned, not rebuilt."),
+                    Feature("templates.md", ".nwui templates", "HTML with @if, @foreach, @bind, slots, props and generic components. Static subtrees are cloned, not rebuilt."),
                     Feature("routing.md", "Router", "Route parameters, nested layouts, NavLink, base paths and the History API. This site uses it."),
                     Feature("forms.md", "Forms and validation", "Fields with validators, touched and ARIA state, async submit and server errors."),
                     Feature("async.md", "Async and Suspense", "Resource<T> turns a Task into reactive state; Suspense and ErrorBoundary handle loading and failure."),
                     Feature("services.md", "Dependency injection", "Reflection-free Services, Inject<T>() and @inject, wired at compile time by a generator."),
+                    Feature("components.md#building-component-libraries", "Component library primitives", "Element calls, outside-click listeners, DOM reads, portals and ids: build dialogs, popovers and menus on top."),
                     Feature("js-interop.md", "JavaScript interop", "[JSImport], callbacks and Promises: wrap any JS library in a component."),
                     Feature("security.md", "Secure by default", "Text is never parsed as HTML. Works under a strict Content Security Policy and Trusted Types."),
             Feature("deployment.md#startup-preloading", "Fast startup", "Publish adds preload tags to index.html, so the runtime and the Wasm download in parallel instead of one import at a time."))));

@@ -8,7 +8,7 @@ changed, and every state change crosses the Wasm→JS boundary **at most once**.
 **Website and live examples: [matengo.github.io/NetWasm.UI](https://matengo.github.io/NetWasm.UI/)**,
 itself a NetWasm.UI app ([source](site/)).
 
-> **Status: 0.10, an early but usable release.** The packages are on NuGet and the framework is
+> **Status: 0.11, an early but usable release.** The packages are on NuGet and the framework is
 > tested in Chromium, Firefox and WebKit. The public API may still change in 0.x releases; every
 > change is listed in the [CHANGELOG](CHANGELOG.md). See
 > [Compatibility and versioning](docs/compatibility.md).
@@ -159,13 +159,16 @@ dotnet run --project tools/DevServer -- samples/Counter   # counter, todos, rout
 dotnet run --project tools/DevServer -- samples/Fetch     # HttpClient + System.Text.Json with Suspense
 dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one page
 dotnet run --project tools/DevServer -- samples/Interop   # a JS library wrapped in a component
+dotnet run --project tools/DevServer -- samples/Primitives # dialog, popover, tabs, generic select and table
 dotnet run --project tools/DevServer -- site              # the project website
 ```
 
 ## Documentation
 
 - [Getting started](docs/getting-started.md): the template, the dev server and a first component
-- [Components and the C# API](docs/components.md)
+- [Components and the C# API](docs/components.md), including
+  [building component libraries](docs/components.md#building-component-libraries): element calls,
+  outside-click listeners, DOM reads, portals and ids
 - [Templates (`.nwui`)](docs/templates.md)
 - [Reactivity](docs/reactivity.md): signals, batching, context, lifecycle
 - [Services and DI](docs/services.md): `Services`, `Inject<T>()`, `@inject`
@@ -194,6 +197,7 @@ dotnet run --project tools/DevServer -- site              # the project website
 | `samples/Fetch`              | `HttpClient` + `System.Text.Json` with `Resource` and `Suspense`.    |
 | `samples/Widgets`            | Several independent apps (Wasm instances) on one page.              |
 | `samples/Interop`            | `[JSImport]`, `JSObject`, callbacks and Promises: a JS library in a component. |
+| `samples/Primitives`         | Reference components for a component library: dialog, popover, tabs, generic select and data table. |
 | `site/`                      | The project website, built with NetWasm.UI and published to GitHub Pages. |
 | `templates/`                 | The `dotnet new netwasm-ui` template package.                        |
 | `tests/NetWasm.UI.Tests`     | xunit tests against an in-memory `FakeDomHost`.                      |
@@ -214,7 +218,7 @@ dotnet run --project tools/DevServer -- site              # the project website
 - No hash routing; the server must fall back to `index.html` for app routes.
 - No hot reload; live reload takes ~3 s and keeps simple signal values and form state.
 - `.nwui` has syntax highlighting but no IntelliSense. Control flow is only `@if`/`@foreach`,
-  and slots take no parameters.
+  and generic components need explicit type arguments (`TItem="Fruit"`).
 
 See [Troubleshooting](docs/troubleshooting.md#known-limitations).
 

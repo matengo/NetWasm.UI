@@ -180,7 +180,7 @@ not matter on localhost.
 
 ## Roadmap ideas
 
-- **Templates:** parameterized slots (`Slot<T>`), `@switch`, a language server for `.nwui`
+- **Templates:** type inference for generic components, `@switch`, a language server for `.nwui`
   (IntelliSense via the generated C#).
 - **Rendering speed** (see [Benchmarks](docs/benchmarks.md#still-open)): push-pull `Computed` to
   avoid glitchy eager recomputes; cheaper per-row Wasm work (fewer allocations per effect).
