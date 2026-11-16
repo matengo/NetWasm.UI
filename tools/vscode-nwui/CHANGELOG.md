@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.11.0
 
 - Highlight `@typeparam T where …` and `@bind-Prop` on component tags.
 

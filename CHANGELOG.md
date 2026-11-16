@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-16
+
 ### Added
 
 - Attribute splatting: on a component tag, lowercase or dashed attributes (`class`, `aria-*`,
