@@ -260,6 +260,51 @@ public static class Html
     /// </summary>
     public static IDisposable SetInterval(Action tick, int milliseconds) => Interval.Start(tick, milliseconds);
 
+    // ---- document, window and DOM reads ----
+
+    /// <summary>
+    /// Listens for <paramref name="eventName"/> on <c>document</c> (keydown for Escape, pointerdown for "click outside",
+    /// focusin…). Built in a component or Effect, it is removed with it; from an event handler, dispose the returned
+    /// handle yourself. With <paramref name="within"/>, <see cref="DomEvent.Inside"/> tells whether the event happened
+    /// inside that element. An event that is already being dispatched when the listener is added (the click that opened a
+    /// popover) is not delivered to it.
+    /// </summary>
+    public static IDisposable OnDocument(string eventName, Action<DomEvent> handler, ListenerFlags flags = ListenerFlags.None, Element? within = null) =>
+        GlobalListener.Add(GlobalTarget.Document, eventName, handler, flags, within);
+
+    /// <summary>Like <see cref="OnDocument"/>, on <c>window</c> (resize, scroll, blur…).</summary>
+    public static IDisposable OnWindow(string eventName, Action<DomEvent> handler, ListenerFlags flags = ListenerFlags.None, Element? within = null) =>
+        GlobalListener.Add(GlobalTarget.Window, eventName, handler, flags, within);
+
+    /// <summary>
+    /// Calls <paramref name="handler"/> with the element's new <see cref="Element.GetRect"/> whenever its size changes
+    /// (a <c>ResizeObserver</c>), including once after it is first laid out. Owned like <see cref="OnDocument"/>.
+    /// </summary>
+    public static IDisposable OnResize(Element element, Action<Rect> handler) => GlobalListener.Resize(element, handler);
+
+    /// <summary>
+    /// The node id of the focused element (compare with <see cref="Node.Id"/>), or 0. Same rules as
+    /// <see cref="Element.GetRect"/>: call from <c>OnMount</c> or an event handler.
+    /// </summary>
+    public static int ActiveElementId() => Renderer.Queries().ActiveElementId();
+
+    /// <summary>The viewport size (<c>innerWidth</c>, <c>innerHeight</c>). Same rules as <see cref="Element.GetRect"/>.</summary>
+    public static Rect Viewport() => Renderer.Queries().Viewport();
+
+    /// <summary>
+    /// A page-unique id like <c>nw7</c>, for <c>id</c>/<c>for</c>/<c>aria-labelledby</c>/<c>aria-controls</c> pairs.
+    /// Call it once while building (a field, or a local in <c>Build</c>), not inside a reactive expression.
+    /// </summary>
+    public static string UseId(string prefix = "nw") => prefix + Ids.Next().ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Renders <paramref name="content"/> at the end of the element matching <paramref name="target"/> (<c>body</c> by
+    /// default) instead of in place: for toasts and overlays that must escape <c>overflow: hidden</c> or a stacking
+    /// context. It still belongs to the current component: its listeners, context and cleanup work as usual.
+    /// </summary>
+    public static Component Portal(string target, params Content[] content) =>
+        new Portal { Target = target, ChildContent = new Slot(() => content) };
+
     // ---- routing ----
 
     /// <summary>An in-app link: renders <c>&lt;a href&gt;</c> (prefixed with the router's base path) and routes plain clicks through <see cref="Routing.Router.Current"/>.

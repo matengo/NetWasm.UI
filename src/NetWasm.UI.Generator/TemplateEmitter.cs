@@ -15,6 +15,7 @@ internal sealed class TemplateEmitter
     private static readonly HashSet<string> BooleanAttributes = new(System.StringComparer.OrdinalIgnoreCase)
     {
         "disabled", "checked", "hidden", "readonly", "required", "selected", "multiple", "autofocus", "open",
+        "inert", "novalidate", "formnovalidate", "default", "playsinline", "nomodule",
     };
 
     private static readonly HashSet<string> VoidTags = new(System.StringComparer.OrdinalIgnoreCase)
@@ -32,14 +33,16 @@ internal sealed class TemplateEmitter
     private readonly string path;
     private readonly ISet<string> reactiveProps;
     private readonly IReadOnlyDictionary<string, string[]>? injectedConstructors;
+    private readonly IReadOnlyDictionary<string, string[]>? genericComponents;
     private readonly StringBuilder sb = new();
     private readonly List<(string Type, string Name)> refs = new();
     private readonly List<string> templates = new();
     private bool noSep;
     private bool lineHidden;
 
-    private TemplateEmitter(string text, string path, ISet<string> reactiveProps, IReadOnlyDictionary<string, string[]>? injectedConstructors)
+    private TemplateEmitter(string text, string path, ISet<string> reactiveProps, IReadOnlyDictionary<string, string[]>? injectedConstructors, IReadOnlyDictionary<string, string[]>? genericComponents)
     {
+        this.genericComponents = genericComponents;
         lines = new LineMap(text);
         this.path = path.Replace("\"", string.Empty);
         this.reactiveProps = reactiveProps;
@@ -48,9 +51,10 @@ internal sealed class TemplateEmitter
 
     /// <param name="reactiveProps"><c>Component.Prop</c> names whose type is <c>Prop&lt;T&gt;</c>; the parent passes those as getters.</param>
     /// <param name="injectedConstructors">Component simple name to constructor parameter types; a tag fills them with <c>Inject&lt;T&gt;()</c>.</param>
-    public static string Emit(TemplateFile file, string text, string path, string? ns, string className, ISet<string>? reactiveProps = null, IReadOnlyDictionary<string, string[]>? injectedConstructors = null)
+    /// <param name="genericComponents">Generic component simple name to its type parameter names; a tag gives them as <c>TItem="Type"</c>.</param>
+    public static string Emit(TemplateFile file, string text, string path, string? ns, string className, ISet<string>? reactiveProps = null, IReadOnlyDictionary<string, string[]>? injectedConstructors = null, IReadOnlyDictionary<string, string[]>? genericComponents = null)
     {
-        var e = new TemplateEmitter(text, path, reactiveProps ?? new HashSet<string>(), injectedConstructors);
+        var e = new TemplateEmitter(text, path, reactiveProps ?? new HashSet<string>(), injectedConstructors, genericComponents);
         return e.EmitFile(file, ns, className);
     }
 
@@ -92,7 +96,28 @@ internal sealed class TemplateEmitter
             header.Append("namespace ").Append(ns).Append(";\n");
         }
 
-        header.Append("\npublic partial class ").Append(className).Append(" : global::NetWasm.UI.Component\n{\n");
+        header.Append("\npublic partial class ").Append(className);
+        if (file.TypeParams.Count > 0)
+        {
+            header.Append('<');
+            for (var i = 0; i < file.TypeParams.Count; i++)
+            {
+                header.Append(i == 0 ? string.Empty : ", ").Append(file.TypeParams[i].Name.Code);
+            }
+
+            header.Append('>');
+        }
+
+        header.Append(" : global::NetWasm.UI.Component");
+        foreach (var (_, constraint) in file.TypeParams)
+        {
+            if (constraint is not null)
+            {
+                header.Append(' ').Append(constraint.Code);
+            }
+        }
+
+        header.Append("\n{\n");
         foreach (var (type, name) in refs)
         {
             header.Append("    private ").Append(type).Append(' ').Append(name).Append(" = null!;\n");
@@ -197,7 +222,8 @@ internal sealed class TemplateEmitter
                 sb.Append(')');
                 break;
             case TRender r:
-                sb.Append('(');
+                // @render(Cell, row) renders a Slot<T> with an argument; without the call it would be a tuple.
+                sb.Append(CSharpScanner.ScanUntil(r.Code.Code, 0, ',') >= 0 ? R + "Render(" : "(");
                 User(r.Code);
                 sb.Append(')');
                 break;
@@ -618,7 +644,7 @@ internal sealed class TemplateEmitter
         }
 
         sb.Append(H).Append(isValue ? "Value(() => " : "Attr(" + Literal(name) + ", () => ");
-        EmitInterpolated(a.Segments);
+        EmitInterpolated(a.Segments, "AttrStr");
         if (isValue)
         {
             sb.Append(" ?? \"\"");
@@ -628,11 +654,12 @@ internal sealed class TemplateEmitter
     }
 
     /// <summary>Emits a <c>string?</c> expression for literal text mixed with <c>@expr</c> pieces.</summary>
-    private void EmitInterpolated(List<Segment> segments)
+    /// <param name="format"><c>Str</c>, or <c>AttrStr</c> for HTML attribute values (<c>bool</c> becomes <c>"true"</c>/<c>"false"</c>).</param>
+    private void EmitInterpolated(List<Segment> segments, string format = "Str")
     {
         if (segments.Count == 1)
         {
-            sb.Append(R).Append("Str(");
+            sb.Append(R).Append(format).Append('(');
             User(segments[0]);
             sb.Append(')');
             return;
@@ -649,7 +676,7 @@ internal sealed class TemplateEmitter
             var seg = segments[i];
             if (seg.IsCode)
             {
-                sb.Append(R).Append("Str(");
+                sb.Append(R).Append(format).Append('(');
                 User(seg);
                 sb.Append(')');
             }
@@ -777,13 +804,15 @@ internal sealed class TemplateEmitter
         }
 
         var slots = SlotsOf(el);
-        var refName = RefOf(el, el.Tag);
+        var typeArgAttrs = new List<TAttribute>();
+        var typeArgs = TypeArgumentsOf(el, typeArgAttrs);
+        var refName = RefOf(el, el.Tag + typeArgs);
         if (refName is not null)
         {
             sb.Append('(').Append(refName).Append(" = ");
         }
 
-        sb.Append("new ").Append(el.Tag);
+        sb.Append("new ").Append(el.Tag).Append(typeArgs);
         var dot = el.Tag.LastIndexOf('.');
         if (injectedConstructors is not null && injectedConstructors.TryGetValue(dot < 0 ? el.Tag : el.Tag.Substring(dot + 1), out var parameters))
         {
@@ -801,8 +830,25 @@ internal sealed class TemplateEmitter
         var html = new List<TAttribute>();
         foreach (var a in el.Attributes)
         {
-            if (a == skip || a.Name == "@ref")
+            if (a == skip || a.Name == "@ref" || typeArgAttrs.Contains(a))
             {
+                continue;
+            }
+
+            if (a.Name.StartsWith("@bind-", System.StringComparison.Ordinal))
+            {
+                // @bind-Value="signal" hands the component the signal itself, so it can read and write it.
+                var prop = a.Name.Substring(6);
+                if (prop.Length == 0 || !CSharpScanner.IsIdentStart(prop[0]) || CSharpScanner.ScanIdent(prop, 0) != prop.Length || a.Code is null)
+                {
+                    throw Parse("'@bind-' on a component needs a property name and a value, e.g. @bind-Value=\"name\".", a.Start, a.Name.Length);
+                }
+
+                sb.Append(any ? "," : string.Empty);
+                any = true;
+                User(new Directive(prop, a.Start + 6));
+                sb.Append(" = ");
+                User(a.Code);
                 continue;
             }
 
@@ -810,7 +856,7 @@ internal sealed class TemplateEmitter
             {
                 if (a.Name != "@attributes" && !(a.Name.StartsWith("@on", System.StringComparison.Ordinal) && a.Name.Length > 3))
                 {
-                    throw Unsupported($"'{a.Name}' is not supported on components (supported: @attributes, @ref, @on<event>).", a.Start, a.Name.Length);
+                    throw Unsupported($"'{a.Name}' is not supported on components (supported: @attributes, @bind-<Prop>, @ref, @on<event>).", a.Start, a.Name.Length);
                 }
 
                 html.Add(a);
@@ -867,12 +913,23 @@ internal sealed class TemplateEmitter
             sb.Append(" }");
         }
 
-        foreach (var (name, start, body) in slots)
+        foreach (var (name, start, context, body) in slots)
         {
             sb.Append(any ? "," : string.Empty);
             any = true;
             User(new Directive(name, start));
-            sb.Append(" = new global::NetWasm.UI.Slot(() => new global::NetWasm.UI.Content[] {");
+            if (context is null)
+            {
+                sb.Append(" = new global::NetWasm.UI.Slot(() => new global::NetWasm.UI.Content[] {");
+            }
+            else
+            {
+                // Target-typed: the property's Slot<T> gives the lambda parameter its type.
+                sb.Append(" = new(");
+                User(context);
+                sb.Append(" => new global::NetWasm.UI.Content[] {");
+            }
+
             for (var i = 0; i < body.Count; i++)
             {
                 sb.Append(i == 0 ? " " : ", ");
@@ -895,12 +952,55 @@ internal sealed class TemplateEmitter
     }
 
     /// <summary>
-    /// A component's child content: <c>&lt;template slot="Name"&gt;…&lt;/template&gt;</c> children fill the
-    /// <c>Name</c> slot; everything else goes to <c>ChildContent</c>.
+    /// <c>&lt;Name&lt;Type&gt;&gt;</c> for a generic component: its type parameters come from attributes with their names
+    /// (<c>&lt;DataTable TItem="Person"&gt;</c>), which are added to <paramref name="used"/>. Empty for other components.
     /// </summary>
-    private static List<(string Name, int Start, List<TNode> Body)> SlotsOf(TElement el)
+    private string TypeArgumentsOf(TElement el, List<TAttribute> used)
     {
-        var slots = new List<(string Name, int Start, List<TNode> Body)>();
+        var dot = el.Tag.LastIndexOf('.');
+        if (genericComponents is null || !genericComponents.TryGetValue(dot < 0 ? el.Tag : el.Tag.Substring(dot + 1), out var names))
+        {
+            return string.Empty;
+        }
+
+        var result = new StringBuilder("<");
+        for (var i = 0; i < names.Length; i++)
+        {
+            TAttribute? found = null;
+            foreach (var a in el.Attributes)
+            {
+                if (a.Name == names[i])
+                {
+                    found = a;
+                }
+            }
+
+            if (found is null)
+            {
+                var all = string.Join(", ", System.Array.ConvertAll(names, n => n + "=\"…\""));
+                throw Structure($"<{el.Tag}> is generic; give its type arguments: {all}.", el.Start, el.Tag.Length + 1);
+            }
+
+            if (!found.HasValue || found.Segments.Count != 1 || found.Segments[0].IsCode || found.Segments[0].Text.Trim().Length == 0)
+            {
+                throw Parse($"'{names[i]}' must name a type, e.g. {names[i]}=\"Person\".", found.Start, found.Name.Length);
+            }
+
+            used.Add(found);
+            result.Append(i == 0 ? string.Empty : ", ").Append(found.Segments[0].Text.Trim());
+        }
+
+        return result.Append('>').ToString();
+    }
+
+    /// <summary>
+    /// A component's child content: <c>&lt;template slot="Name"&gt;…&lt;/template&gt;</c> children fill the
+    /// <c>Name</c> slot; everything else goes to <c>ChildContent</c>. With <c>context="row"</c> the slot is a
+    /// <c>Slot&lt;T&gt;</c> and its body can use <c>row</c>.
+    /// </summary>
+    private static List<(string Name, int Start, Directive? Context, List<TNode> Body)> SlotsOf(TElement el)
+    {
+        var slots = new List<(string Name, int Start, Directive? Context, List<TNode> Body)>();
         var loose = new List<TNode>();
         foreach (var child in Trim(el.Children))
         {
@@ -911,11 +1011,24 @@ internal sealed class TemplateEmitter
             }
 
             TAttribute? slot = null;
+            Directive? context = null;
             foreach (var a in t.Attributes)
             {
+                if (a.Name == "context")
+                {
+                    var ctx = a.HasValue && a.Segments.Count == 1 && !a.Segments[0].IsCode ? a.Segments[0].Text.Trim() : string.Empty;
+                    if (ctx.Length == 0 || !CSharpScanner.IsIdentStart(ctx[0]) || CSharpScanner.ScanIdent(ctx, 0) != ctx.Length)
+                    {
+                        throw Parse("'context' must name the slot's argument, e.g. context=\"row\".", a.Start, a.Name.Length);
+                    }
+
+                    context = new Directive(ctx, a.Segments[0].Start);
+                    continue;
+                }
+
                 if (a.Name != "slot")
                 {
-                    throw Unsupported($"'{a.Name}' is not supported on a slot <template>; only 'slot' is.", a.Start, a.Name.Length);
+                    throw Unsupported($"'{a.Name}' is not supported on a slot <template>; only 'slot' and 'context' are.", a.Start, a.Name.Length);
                 }
 
                 slot = a;
@@ -932,17 +1045,17 @@ internal sealed class TemplateEmitter
                 throw Parse($"'{name}' is not a valid slot name; use a property name like slot=\"Header\".", slot.Segments[0].Start, System.Math.Max(1, slot.Segments[0].Text.Length));
             }
 
-            Add(name, slot.Segments[0].Start, Trim(t.Children));
+            Add(name, slot.Segments[0].Start, context, Trim(t.Children));
         }
 
         if (loose.Count > 0)
         {
-            Add("ChildContent", loose[0].Start, loose);
+            Add("ChildContent", loose[0].Start, null, loose);
         }
 
         return slots;
 
-        void Add(string name, int start, List<TNode> body)
+        void Add(string name, int start, Directive? context, List<TNode> body)
         {
             foreach (var s in slots)
             {
@@ -953,7 +1066,7 @@ internal sealed class TemplateEmitter
                 }
             }
 
-            slots.Add((name, start, body));
+            slots.Add((name, start, context, body));
         }
     }
 

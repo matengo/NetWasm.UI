@@ -113,7 +113,10 @@ Helpers: `OnClick`, `OnInput`, `OnChange`, `OnKeyDown`, `OnSubmit`, `OnDblClick`
 `PreventDefaultPlainClick` (prevent only an unmodified primary click; used by `Link`).
 
 `DomEvent` carries `Value`, `Checked`, `Key`, `Repeat`, `Ctrl`/`Shift`/`Alt`/`Meta`, `Button`,
-`ClientX`/`ClientY` and `IsPlainClick`. Each handler runs inside a scheduler batch, so a handler
+`ClientX`/`ClientY` and `IsPlainClick`. For overlays it also has `TargetId` and `RelatedTargetId`
+(the ids of the framework elements involved, 0 otherwise; test with `e.IsTarget(element)`),
+`Inside`/`RelatedInside` (see `within` under [Building component libraries](#building-component-libraries))
+and `NewState` (`"open"`/`"closed"` for `toggle` events of `popover` and `<details>`). Each handler runs inside a scheduler batch, so a handler
 that writes ten signals still produces one DOM update.
 
 ## Two-way binding
@@ -255,6 +258,17 @@ new Card
 The slot is built where the child places it, so it lives in the child's scope (and is disposed
 with it) but still reads the parent's signals.
 
+A `Slot<T>` takes an argument, for per-item templates such as table cells. Place it with
+`slot.With(arg)`; in a template, `@render(slot, arg)`:
+
+```csharp
+public Slot<Person>? Cell { get; set; }
+
+Td(Cell?.With(person))
+
+new Table { Cell = new(p => Span(p.Name)) }
+```
+
 ## Spread
 
 `Spread(params Content[])` groups several pieces of content into one, which is handy for
@@ -281,6 +295,63 @@ The caller sets them like any other property:
 ```csharp
 new MyButton { Label = label, Attributes = [Class("wide"), Attr("aria-label", "Save"), OnClick(Save)] }
 ```
+
+## Building component libraries
+
+The core has no dialog, popover or select. It has the pieces to build them in a separate
+library; `samples/Primitives` (a dialog, popover, tabs, select and data table) uses all of them.
+
+**Element calls.** `Element.Call(method, args…)` calls a method on the DOM element, after the
+pending DOM updates, with string arguments. Helpers: `ShowModal()`, `Show()`, `Close(returnValue)`,
+`ShowPopover()`, `HidePopover()`, `TogglePopover()`, `Focus()`, `Blur()`, `Select()` and
+`ScrollIntoView(block)`. Call them from an event handler, an effect or `OnMount`:
+
+```csharp
+var dialog = El("dialog", On("close", () => open.Value = false), content);
+new Effect(() => { if (open.Value) dialog.ShowModal(); else dialog.Close(); });
+```
+
+`showModal()` needs the element in the document, so if the dialog can start open, wait for
+`OnMount` first (see `samples/Primitives/Dialog.cs`). For anything else, such as a JS library,
+`BrowserDom.GetHandle(element)` (in `NetWasm.UI.Browser`) returns the element as a `JSObject`.
+
+**Document and window listeners.** `OnDocument(event, handler, flags, within)` and
+`OnWindow(…)` listen outside the component and are removed with the current component or effect
+run. Inside an effect, that gives "listen only while open". With `within`, the handler gets
+`e.Inside` (the target is inside that element) and `e.RelatedInside`:
+
+```csharp
+new Effect(() =>
+{
+    if (!open.Value) return;
+    OnDocument("pointerdown", e => { if (!e.Inside) open.Value = false; }, within: panel);
+    OnDocument("keydown", e => { if (e.Key == "Escape") { open.Value = false; trigger.Focus(); } });
+});
+```
+
+Outside a component or effect (in an event handler), they return an `IDisposable` that you
+dispose yourself. `OnResize(element, rect => …)` observes an element's size the same way.
+
+**DOM reads.** `element.GetRect()`, `element.Contains(other)`, `element.HasFocus()`,
+`ActiveElementId()` and `Viewport()` read the live DOM synchronously. They apply the pending DOM
+updates first. Call them from event handlers or `OnMount`, not while building or inside an effect
+(they throw there, because a read would make the effect depend on layout). Under a host without
+reads (for example the prerenderer's) they throw `NotSupportedException`; prerendering returns
+zeros.
+
+**Portal.** `Portal(target, content…)` (or `<Portal Target="body">…</Portal>` in a template)
+renders content at the end of the element matching the CSS selector `target`, inside a
+`<div data-nwui-portal style="display:contents">`. Use it for toasts and menus that must escape
+`overflow: hidden` or a stacking context. The content still belongs to the component: context,
+listeners, cleanup and error boundaries work as usual, and it is removed with the component.
+A modal `<dialog>` and a `popover` element already render in the top layer and need no portal.
+
+**Ids.** `UseId(prefix)` returns an id that is unique in the app (`"nw7"`), for `aria-labelledby`,
+`aria-controls` and `for`. Ids come from a counter, so the same tree built in the same order
+(as prerendering and the client do) gets the same ids.
+
+**Generic components.** `@typeparam`, `Slot<T>`, `context=` and `@bind-Prop`: see
+[Generic components and slots with parameters](templates.md#generic-components-and-slots-with-parameters).
 
 ## Examples
 

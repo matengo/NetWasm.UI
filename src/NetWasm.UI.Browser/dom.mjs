@@ -31,13 +31,18 @@ const OP = {
   CloneTemplate: 18,
   SetTextInt: 19,
   RemoveRange: 20,
+  Call: 21,
+  AddGlobalListener: 22,
+  RemoveGlobalListener: 23,
+  ObserveResize: 24,
+  Portal: 25,
 };
 
 const FLAG_PREVENT_DEFAULT = 1;
 const FLAG_STOP_PROPAGATION = 2;
 const FLAG_PREVENT_DEFAULT_PLAIN_CLICK = 4;
 
-const EV_CTRL = 1, EV_SHIFT = 2, EV_ALT = 4, EV_META = 8, EV_CHECKED = 16, EV_REPEAT = 32;
+const EV_CTRL = 1, EV_SHIFT = 2, EV_ALT = 4, EV_META = 8, EV_CHECKED = 16, EV_REPEAT = 32, EV_INSIDE = 64, EV_RELATED_INSIDE = 128;
 
 const decoder = new TextDecoder();
 const encoder = new TextEncoder();
@@ -86,12 +91,24 @@ function isPlainClick(e) {
   return (e.button ?? 0) === 0 && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey;
 }
 
+function containsNode(scope, n) {
+  return !!(scope && n && typeof n.nodeType === "number" && scope.contains(n));
+}
+
 // Encodes the event as the record NetWasm.UI.DomEvent.Decode expects:
-// u8 flags, i32 button, i32 clientX, i32 clientY, str key, str value.
-function payloadFor(e) {
+// u8 flags, i32 button, i32 clientX, i32 clientY, str key, str value, then, only when one is set,
+// i32 targetId, i32 relatedTargetId, str newState. `idKey` reads a node's renderer id; `scope` is the node the
+// listener is on (for relatedTarget containment); `within` is the element of a document/window listener.
+function payloadFor(e, idKey, scope, within) {
   const t = e.target;
   let key = "", value = "", flags = 0, button = 0, x = 0, y = 0;
+  const targetId = (idKey && t?.[idKey]) | 0;
+  const related = e.relatedTarget;
+  const relatedId = (idKey && related?.[idKey]) | 0;
+  const newState = typeof e.newState === "string" ? e.newState : "";
 
+  if (within && containsNode(within, t)) flags |= EV_INSIDE;
+  if (related && containsNode(within ?? scope, related)) flags |= EV_RELATED_INSIDE;
   if (e.ctrlKey) flags |= EV_CTRL;
   if (e.shiftKey) flags |= EV_SHIFT;
   if (e.altKey) flags |= EV_ALT;
@@ -106,11 +123,13 @@ function payloadFor(e) {
     if ("value" in t) value = String(t.value ?? "");
   }
 
-  if (flags === 0 && button === 0 && x === 0 && y === 0 && key === "" && value === "") return EMPTY;
+  const extended = targetId !== 0 || relatedId !== 0 || newState !== "";
+  if (!extended && flags === 0 && button === 0 && x === 0 && y === 0 && key === "" && value === "") return EMPTY;
 
   const keyBytes = encoder.encode(key);
   const valueBytes = encoder.encode(value);
-  const out = new Uint8Array(1 + 12 + 4 + keyBytes.length + 4 + valueBytes.length);
+  const stateBytes = extended ? encoder.encode(newState) : EMPTY;
+  const out = new Uint8Array(1 + 12 + 4 + keyBytes.length + 4 + valueBytes.length + (extended ? 12 + stateBytes.length : 0));
   const view = new DataView(out.buffer);
   let p = 0;
   out[p++] = flags;
@@ -120,7 +139,13 @@ function payloadFor(e) {
   view.setUint32(p, keyBytes.length, true); p += 4;
   out.set(keyBytes, p); p += keyBytes.length;
   view.setUint32(p, valueBytes.length, true); p += 4;
-  out.set(valueBytes, p);
+  out.set(valueBytes, p); p += valueBytes.length;
+  if (extended) {
+    view.setInt32(p, targetId, true); p += 4;
+    view.setInt32(p, relatedId, true); p += 4;
+    view.setUint32(p, stateBytes.length, true); p += 4;
+    out.set(stateBytes, p);
+  }
   return out;
 }
 
@@ -183,6 +208,8 @@ export function createDomHost(options = {}) {
   const doc = root.nodeType === 9 ? root : root.ownerDocument;
   const hist = options.history ?? windowHistory();
   const key = Symbol("nwui");
+  // The renderer's id of an element, so events can report their target and focus reads can answer with an id.
+  const idKey = Symbol("nwui.id");
 
   // Node ids are small integers that the renderer reuses once released, so an array indexes them without hashing
   // and stays dense however long the app runs.
@@ -197,6 +224,14 @@ export function createDomHost(options = {}) {
   const templates = new Map();
   const delegatedTypes = new Set();
   const mounted = new Set();
+  /** @type {Map<number, { target: EventTarget, event: string, fn: EventListener }>} */
+  const globals = new Map();
+  /** @type {ResizeObserver | null} */
+  let resizeObserver = null;
+  /** @type {Map<number, Element>} */
+  const resized = new Map();
+  // The event whose handler is running: a document/window listener added meanwhile must not see that same event.
+  let dispatching = null;
 
   /** @type {((handlerId: number, payload: Uint8Array) => void) | null} */
   let dispatch = null;
@@ -211,23 +246,32 @@ export function createDomHost(options = {}) {
   let applying = false;
   const pending = [];
 
-  function send(handlerId, payload) {
-    if (applying) pending.push(handlerId, payload);
-    else dispatch?.(handlerId, payload);
+  function send(handlerId, payload, e) {
+    if (applying) { pending.push(handlerId, payload); return; }
+    const previous = dispatching;
+    dispatching = e ?? previous;
+    try {
+      dispatch?.(handlerId, payload);
+    } finally {
+      dispatching = previous;
+    }
   }
 
   function onDelegated(e) {
     const type = e.type;
     let payload = null;
+    // relatedTarget containment depends on the listener's node, so such payloads are built per level.
+    const perNode = !!e.relatedTarget;
     for (let n = e.target; n; n = n.parentNode) {
       const list = n[key]?.[type];
       if (list) {
+        if (perNode) payload = null;
         for (const [handlerId, flags] of list.slice()) {
           if (flags & FLAG_PREVENT_DEFAULT) e.preventDefault();
           if ((flags & FLAG_PREVENT_DEFAULT_PLAIN_CLICK) && isPlainClick(e)) e.preventDefault();
           if (flags & FLAG_STOP_PROPAGATION) e.stopPropagation();
-          payload ??= payloadFor(e);
-          send(handlerId, payload);
+          payload ??= payloadFor(e, idKey, n, null);
+          send(handlerId, payload, e);
         }
         if (e.cancelBubble) return;
       }
@@ -311,6 +355,7 @@ export function createDomHost(options = {}) {
     const t = templates.get(id);
     const clone = t.root.cloneNode(true);
     nodes[firstId] = clone;
+    clone[idKey] = firstId;
     const paths = t.paths;
     for (let h = 0; h < paths.length; h++) {
       const path = paths[h];
@@ -320,6 +365,62 @@ export function createDomHost(options = {}) {
         for (let j = path[k]; j > 0; j--) n = n.nextSibling;
       }
       nodes[firstId + 1 + h] = n;
+      if (n.nodeType === 1) n[idKey] = firstId + 1 + h;
+    }
+  }
+
+  function addGlobal(target, event, handlerId, flags, within) {
+    const addedAt = performance.now();
+    const skip = dispatching;
+    const fn = (e) => {
+      if (e === skip || e.timeStamp < addedAt) return;
+      if (flags & FLAG_PREVENT_DEFAULT) e.preventDefault();
+      if ((flags & FLAG_PREVENT_DEFAULT_PLAIN_CLICK) && isPlainClick(e)) e.preventDefault();
+      if (flags & FLAG_STOP_PROPAGATION) e.stopPropagation();
+      send(handlerId, payloadFor(e, idKey, null, within), e);
+    };
+    target.addEventListener(event, fn);
+    globals.set(handlerId, { target, event, fn });
+  }
+
+  function observeResize(n, handlerId) {
+    resizeObserver ??= new ResizeObserver(entries => {
+      for (const entry of entries) {
+        for (const [handlerId, node] of resized) {
+          if (node === entry.target) send(handlerId, EMPTY);
+        }
+      }
+    });
+    resized.set(handlerId, n);
+    resizeObserver.observe(n);
+  }
+
+  function removeGlobal(handlerId) {
+    const g = globals.get(handlerId);
+    if (g) {
+      g.target.removeEventListener(g.event, g.fn);
+      globals.delete(handlerId);
+      return;
+    }
+    const n = resized.get(handlerId);
+    if (n) {
+      resized.delete(handlerId);
+      let observed = false;
+      for (const other of resized.values()) observed ||= other === n;
+      if (!observed) resizeObserver?.unobserve(n);
+    }
+  }
+
+  // Element.Call: a DOM method with string arguments. A failing call (showModal on an open dialog...) is reported
+  // without aborting the rest of the batch.
+  function callMethod(n, method, args) {
+    if (!n) return;
+    try {
+      if (method === "scrollIntoView" && args.length === 1) n.scrollIntoView({ block: args[0] });
+      else if (typeof n[method] === "function") n[method](...args);
+      else console.error(`NetWasm.UI: '${method}' is not a method of <${n.nodeName?.toLowerCase()}>`);
+    } catch (err) {
+      console.error(`NetWasm.UI: ${method}() failed`, err);
     }
   }
 
@@ -349,7 +450,9 @@ export function createDomHost(options = {}) {
       switch (op) {
         case OP.CreateElement: {
           const id = r.i32();
-          nodes[id] = doc.createElement(r.str());
+          const n = doc.createElement(r.str());
+          n[idKey] = id;
+          nodes[id] = n;
           break;
         }
         case OP.CreateText: {
@@ -436,6 +539,7 @@ export function createDomHost(options = {}) {
           if (n) {
             releaseListeners(n);
             if (n[key]) n[key] = undefined;
+            if (n[idKey] === id) n[idKey] = undefined;
           }
           nodes[id] = undefined;
           break;
@@ -453,7 +557,7 @@ export function createDomHost(options = {}) {
             if (flags & FLAG_PREVENT_DEFAULT) e.preventDefault();
             if ((flags & FLAG_PREVENT_DEFAULT_PLAIN_CLICK) && isPlainClick(e)) e.preventDefault();
             if (flags & FLAG_STOP_PROPAGATION) e.stopPropagation();
-            send(handlerId, payloadFor(e));
+            send(handlerId, payloadFor(e, idKey, n, null), e);
           };
           n.addEventListener(event, fn);
           listeners.set(handlerId, { node: n, event, fn });
@@ -490,6 +594,43 @@ export function createDomHost(options = {}) {
         }
         case OP.Focus: {
           nodes[r.i32()]?.focus?.();
+          break;
+        }
+        case OP.Call: {
+          const n = nodes[r.i32()];
+          const method = r.str();
+          const count = r.u8();
+          const args = [];
+          for (let i = 0; i < count; i++) args.push(r.str());
+          callMethod(n, method, args);
+          break;
+        }
+        case OP.AddGlobalListener: {
+          const which = r.u8();
+          const event = r.str();
+          const handlerId = r.i32();
+          const flags = r.u8();
+          const withinId = r.i32();
+          addGlobal(which === 1 ? doc.defaultView : doc, event, handlerId, flags, withinId ? nodes[withinId] ?? null : null);
+          break;
+        }
+        case OP.RemoveGlobalListener: {
+          removeGlobal(r.i32());
+          break;
+        }
+        case OP.ObserveResize: {
+          const n = nodes[r.i32()];
+          const handlerId = r.i32();
+          if (n && typeof ResizeObserver === "function") observeResize(n, handlerId);
+          break;
+        }
+        case OP.Portal: {
+          const n = nodes[r.i32()];
+          const selector = r.str();
+          const target = mountTarget(selector);
+          if (!target) throw new Error(`NetWasm.UI: portal target '${selector}' not found`);
+          target.appendChild(n);
+          mounted.add(n);
           break;
         }
         case OP.DefineTemplate: {
@@ -561,6 +702,29 @@ export function createDomHost(options = {}) {
     },
     devPut(state) { devCaptured = state; },
 
+    // Synchronous reads (NetWasm.UI.Dom.IDomQueries) and element handles (BrowserDom.GetHandle).
+    // double[] results must be Float64Arrays: NetWasm rejects plain arrays.
+    nodeById: id => nodes[id] ?? null,
+    getRect(id) {
+      const n = nodes[id];
+      if (!n || typeof n.getBoundingClientRect !== "function") return new Float64Array(4);
+      const b = n.getBoundingClientRect();
+      return Float64Array.of(b.x, b.y, b.width, b.height);
+    },
+    activeElementId() {
+      let a = doc.activeElement;
+      while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement;
+      return (a?.[idKey]) | 0;
+    },
+    contains(parentId, childId) {
+      const p = nodes[parentId], c = nodes[childId];
+      return !!(p && c && p.contains(c));
+    },
+    viewport() {
+      const w = doc.defaultView;
+      return Float64Array.of(0, 0, w?.innerWidth ?? 0, w?.innerHeight ?? 0);
+    },
+
     /** Removes everything this host mounted and all its listeners. Call after the Wasm instance is closed. */
     dispose() {
       const dev = globalThis.__nwuiDev;
@@ -569,6 +733,11 @@ export function createDomHost(options = {}) {
       delegatedTypes.clear();
       for (const l of listeners.values()) l.node.removeEventListener(l.event, l.fn);
       listeners.clear();
+      for (const g of globals.values()) g.target.removeEventListener(g.event, g.fn);
+      globals.clear();
+      resizeObserver?.disconnect();
+      resizeObserver = null;
+      resized.clear();
       for (const n of mounted) n.parentNode?.removeChild(n);
       mounted.clear();
       nodes.length = 0;
@@ -594,3 +763,8 @@ export function basePath() { return host().basePath(); }
 export function devState() { return host().devState(); }
 export function devConnect(fn) { return host().devConnect(fn); }
 export function devPut(state) { host().devPut(state); }
+export function nodeById(id) { return host().nodeById(id); }
+export function getRect(id) { return host().getRect(id); }
+export function activeElementId() { return host().activeElementId(); }
+export function contains(parentId, childId) { return host().contains(parentId, childId); }
+export function viewport() { return host().viewport(); }

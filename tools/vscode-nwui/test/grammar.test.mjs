@@ -144,6 +144,19 @@ test('components, props and slots', () => {
   expectScope(t, 'ChildContent', 'source.cs');
 });
 
+test('generic components: @typeparam, @bind-Prop and context slots', () => {
+  const t = tokenize([
+    '@typeparam TItem where TItem : notnull',
+    '<Select TItem="Fruit" @bind-Selected="choice"><template slot="Row" context="item">@item.Name</template></Select>',
+  ].join('\n'));
+  expectScope(t, 'typeparam', 'keyword.control.nwui.directive');
+  expectScope(t, 'TItem', 'entity.name.type.type-parameter');
+  expectScope(t, 'where', 'storage.modifier');
+  expectScope(t, 'bind-Selected', 'entity.other.attribute-name.directive.nwui');
+  expectScope(t, 'choice', 'source.cs');
+  expectScope(t, 'context', 'entity.other.attribute-name');
+});
+
 test('top-level directives and @code', () => {
   const t = tokenize([
     '@using NetWasm.UI.Dom',

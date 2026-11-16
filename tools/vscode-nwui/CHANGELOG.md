@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Highlight `@typeparam T where …` and `@bind-Prop` on component tags.
+
 ## 0.10.0
 
 - Version aligned with NwUi 0.10.0; no grammar changes.

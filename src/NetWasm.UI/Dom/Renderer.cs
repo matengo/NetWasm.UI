@@ -240,6 +240,55 @@ public static class Renderer
         batch.Int(id);
     }
 
+    internal static void Call(int id, string method, string[] args)
+    {
+        if (args.Length > 255)
+        {
+            throw new ArgumentException("At most 255 arguments.", nameof(args));
+        }
+
+        batch.Op(Op.Call);
+        batch.Int(id);
+        batch.String(method);
+        batch.Byte((byte)args.Length);
+        for (var i = 0; i < args.Length; i++)
+        {
+            batch.String(args[i]);
+        }
+    }
+
+    internal static void MountPortal(int id, string selector)
+    {
+        batch.Op(Op.Portal);
+        batch.Int(id);
+        batch.String(selector);
+    }
+
+    // ---- reads ----
+
+    /// <summary>
+    /// The host's query interface, after flushing the pending ops so the DOM is up to date. Reads are not reactive,
+    /// so they are refused while building or inside a computation (where the DOM may not exist yet).
+    /// </summary>
+    internal static IDomQueries Queries()
+    {
+        if (Tracker.Current is not null || Tracker.CurrentOwner is not null)
+        {
+            throw new InvalidOperationException(
+                "DOM reads (GetRect, ActiveElementId, Contains, Viewport) are not allowed while building a component or inside a " +
+                "Computed/Effect. Call them from OnMount or an event handler.");
+        }
+
+        if (host is not IDomQueries queries)
+        {
+            throw new NotSupportedException(
+                host is null ? "The renderer is not initialized." : "The DOM host does not support reads (it does not implement IDomQueries).");
+        }
+
+        Flush();
+        return queries;
+    }
+
     // ---- events ----
 
     internal static int AddListener(int id, string eventName, Action<DomEvent> handler, ListenerFlags flags)
@@ -272,6 +321,39 @@ public static class Renderer
 
     /// <summary>Forgets a handler without emitting an op (the node is being released anyway).</summary>
     internal static void ForgetListener(int handlerId) => handlers.Remove(handlerId);
+
+    internal static int AddGlobalListener(GlobalTarget target, UI.Listener listener, ListenerFlags flags, int withinId)
+    {
+        var handlerId = nextHandlerId++;
+        handlers[handlerId] = listener;
+        batch.Op(Op.AddGlobalListener);
+        batch.Byte((byte)target);
+        batch.String(listener.EventName);
+        batch.Int(handlerId);
+        batch.Byte((byte)flags);
+        batch.Int(withinId);
+        return handlerId;
+    }
+
+    internal static int ObserveResize(int id, UI.Listener listener)
+    {
+        var handlerId = nextHandlerId++;
+        handlers[handlerId] = listener;
+        batch.Op(Op.ObserveResize);
+        batch.Int(id);
+        batch.Int(handlerId);
+        return handlerId;
+    }
+
+    /// <summary>Removes a document/window listener or a resize observation.</summary>
+    internal static void RemoveGlobalListener(int handlerId)
+    {
+        if (handlers.Remove(handlerId))
+        {
+            batch.Op(Op.RemoveGlobalListener);
+            batch.Int(handlerId);
+        }
+    }
 
     /// <summary>
     /// Entry point for events coming from the host. Runs the handler inside a batch so all

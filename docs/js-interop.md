@@ -128,8 +128,10 @@ public sealed class Meter : Component
 ```
 
 1. **Create in `OnMount`.** While `Build` runs, the element does not exist in the browser yet.
-   `OnMount` runs after the DOM ops were applied. Elements have no JS handle in C#, so give the
-   container a unique `id` and look it up in JS with `document.querySelector`.
+   `OnMount` runs after the DOM ops were applied. Either give the container a unique `id` (from
+   `UseId()`) and look it up in JS with `document.querySelector`, or pass the element itself:
+   `BrowserDom.GetHandle(element)` returns its `HTMLElement` as a `JSObject` for an import that
+   takes `JSObject` (dispose it with the library).
 2. **Push changes with an `Effect`.** It reads the signal, so it re-runs on every change. Its
    first run happens during `Build`, before the library exists, which is why it checks for
    `null`. Use `Peek()` in `OnMount` to read without subscribing.

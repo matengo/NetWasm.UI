@@ -1,0 +1,39 @@
+@* A generic single select: the parent picks TItem and renders each option through a slot with context. *@
+@typeparam TItem where TItem : notnull
+<div class="select" @attributes="Attributes">
+    <button type="button" class="select-trigger" aria-haspopup="listbox" aria-expanded="@Open.Value" @onclick="() => Open.Value = !Open.Value">
+        @if (Selected.Value is null) {
+            <span class="placeholder">@Placeholder</span>
+        }
+        @* An @if branch is only rebuilt when the condition flips; @foreach rebuilds per item. *@
+        @foreach (var item in Current) {
+            <span>@render(Option, item)</span>
+        }
+    </button>
+    @if (Open.Value) {
+        <ul role="listbox">
+            @foreach (var item in Items) {
+                <li role="option" aria-selected="@(Equals(item, Selected.Value))" @onclick="() => Pick(item)">@render(Option, item)</li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    public Signal<IReadOnlyList<TItem>> Items { get; set; } = new(new TItem[0]);
+    public Slot<TItem>? Option { get; set; }
+    public Signal<TItem?> Selected { get; set; } = new(default);
+    public string Placeholder { get; set; } = "Choose…";
+
+    private Signal<bool> Open { get; } = new(false);
+    private Computed<IReadOnlyList<TItem>> Current = null!;
+
+    partial void OnInit() =>
+        Current = new(() => Selected.Value is { } v ? new[] { v } : new TItem[0]);
+
+    private void Pick(TItem item)
+    {
+        Selected.Value = item;
+        Open.Value = false;
+    }
+}

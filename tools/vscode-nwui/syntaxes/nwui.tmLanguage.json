@@ -28,6 +28,7 @@
         { "include": "#code-block" },
         { "include": "#line-directive" },
         { "include": "#prop-directive" },
+        { "include": "#typeparam-directive" },
         { "include": "#if" },
         { "include": "#else" },
         { "include": "#foreach" },
@@ -79,6 +80,16 @@
         "5": { "name": "keyword.operator.assignment.cs" },
         "6": { "name": "meta.embedded.expression.csharp", "patterns": [{ "include": "source.cs#expression" }] },
         "7": { "name": "punctuation.terminator.statement.cs" }
+      }
+    },
+    "typeparam-directive": {
+      "match": "(@)(typeparam)\\s+([A-Za-z_]\\w*)(?:\\s+(where)\\s+(.*?))?\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.nwui.transition" },
+        "2": { "name": "keyword.control.nwui.directive" },
+        "3": { "name": "entity.name.type.type-parameter.cs" },
+        "4": { "name": "storage.modifier.where.cs" },
+        "5": { "name": "meta.embedded.expression.csharp", "patterns": [{ "include": "source.cs#type" }] }
       }
     },
     "if": {
@@ -198,7 +209,7 @@
     "directive-attribute": {
       "patterns": [
         {
-          "match": "(@)(on[A-Za-z]+|bind|ref|key)(?:(:)([A-Za-z]+))?\\s*(=)\\s*(?:(\")([^\"]*)(\")|(')([^']*)('))",
+          "match": "(@)(on[A-Za-z]+|bind(?:-[A-Za-z_]\\w*)?|ref|key)(?:(:)([A-Za-z]+))?\\s*(=)\\s*(?:(\")([^\"]*)(\")|(')([^']*)('))",
           "captures": {
             "1": { "name": "keyword.control.nwui.transition" },
             "2": { "name": "entity.other.attribute-name.directive.nwui" },
@@ -214,7 +225,7 @@
           }
         },
         {
-          "match": "(@)(on[A-Za-z]+|bind|ref|key)(?:(:)([A-Za-z]+))?",
+          "match": "(@)(on[A-Za-z]+|bind(?:-[A-Za-z_]\\w*)?|ref|key)(?:(:)([A-Za-z]+))?",
           "captures": {
             "1": { "name": "keyword.control.nwui.transition" },
             "2": { "name": "entity.other.attribute-name.directive.nwui" },

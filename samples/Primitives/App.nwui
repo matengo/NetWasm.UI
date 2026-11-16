@@ -1,0 +1,58 @@
+@* Reference components built only on core primitives. None of them is part of NetWasm.UI itself. *@
+<main>
+    <h1>Primitives</h1>
+
+    <section id="dialog-demo">
+        <h2>Dialog</h2>
+        <button id="open-dialog" type="button" @onclick="() => DialogOpen.Value = true">Open dialog</button>
+        <span id="dialog-state">@(DialogOpen.Value ? "open" : "closed")</span>
+        <Dialog Title="Hello" @bind-Open="DialogOpen" id="demo-dialog">
+            <p>A native modal dialog. Escape or the button closes it.</p>
+        </Dialog>
+    </section>
+
+    <section id="popover-demo">
+        <h2>Popover</h2>
+        <Popover Label="Details" @bind-Open="PopoverOpen" id="popover-trigger">
+            <p>Rendered at the end of body.</p>
+            <button id="popover-inner" type="button">Inside</button>
+        </Popover>
+        <span id="popover-state">@(PopoverOpen.Value ? "open" : "closed")</span>
+    </section>
+
+    <section id="tabs-demo">
+        <h2>Tabs</h2>
+        <Tabs Labels="@TabLabels">
+            <template slot="Panel" context="index"><p>Panel @(index + 1)</p></template>
+        </Tabs>
+    </section>
+
+    <section id="select-demo">
+        <h2>Select</h2>
+        <Select TItem="Fruit" Items="@Fruits" @bind-Selected="Fruit" Placeholder="Pick a fruit">
+            <template slot="Option" context="fruit"><span>@fruit.Emoji @fruit.Name</span></template>
+        </Select>
+        <p id="select-state">Selected: @(Fruit.Value?.Name ?? "none")</p>
+    </section>
+
+    <section id="table-demo">
+        <h2>DataTable</h2>
+        <DataTable TItem="Fruit" Items="@Fruits" @bind-Selected="Fruit">
+            <template slot="Head"><tr><th>Name</th><th>Emoji</th></tr></template>
+            <template slot="Row" context="fruit"><td>@fruit.Name</td><td>@fruit.Emoji</td></template>
+        </DataTable>
+    </section>
+</main>
+
+@code {
+    public Signal<bool> DialogOpen { get; } = new(false);
+    public Signal<bool> PopoverOpen { get; } = new(false);
+    public IReadOnlyList<string> TabLabels { get; } = new[] { "One", "Two", "Three" };
+    public Signal<IReadOnlyList<Fruit>> Fruits { get; } = new(new[]
+    {
+        new Fruit("Apple", "🍎"),
+        new Fruit("Banana", "🍌"),
+        new Fruit("Cherry", "🍒"),
+    });
+    public Signal<Fruit?> Fruit { get; } = new(null);
+}

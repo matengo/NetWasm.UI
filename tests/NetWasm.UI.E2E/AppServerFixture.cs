@@ -190,8 +190,17 @@ public sealed class InteropServerFixture : AppServerFixture
     }
 }
 
+/// <summary>Serves <c>samples/Primitives</c>: dialog, popover, tabs and generic components built on core primitives.</summary>
+public sealed class PrimitivesServerFixture : AppServerFixture
+{
+    public PrimitivesServerFixture()
+        : base("Primitives")
+    {
+    }
+}
+
 [CollectionDefinition(Name)]
-public sealed class AppCollection : ICollectionFixture<AppServerFixture>, ICollectionFixture<WidgetsServerFixture>, ICollectionFixture<FetchServerFixture>, ICollectionFixture<InteropServerFixture>
+public sealed class AppCollection : ICollectionFixture<AppServerFixture>, ICollectionFixture<WidgetsServerFixture>, ICollectionFixture<FetchServerFixture>, ICollectionFixture<InteropServerFixture>, ICollectionFixture<PrimitivesServerFixture>
 {
     public const string Name = "app";
 }

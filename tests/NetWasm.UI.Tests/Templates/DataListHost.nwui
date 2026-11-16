@@ -1,0 +1,13 @@
+@* Uses a generic component with an explicit type argument, a slot with context and @bind- on a component. *@
+<div>
+    <DataList TItem="string" Items="@Names" @bind-Selected="Picked" Busy="@false">
+        <template slot="Row" context="name"><b>@name</b></template>
+    </DataList>
+    <input type="checkbox" inert="@Locked.Value" aria-checked="@Locked.Value" data-state="@(Locked.Value ? "on" : "off")" />
+</div>
+
+@code {
+    public Signal<IReadOnlyList<string>> Names { get; } = new(new[] { "Ada", "Bo" });
+    public Signal<string?> Picked { get; } = new("Bo");
+    public Signal<bool> Locked { get; } = new(false);
+}

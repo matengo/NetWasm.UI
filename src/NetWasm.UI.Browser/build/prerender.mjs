@@ -337,6 +337,14 @@ function createPrerenderHost({ path, base }) {
           });
           break;
         }
+        // Element.Call: no DOM methods to run while prerendering.
+        case 21: { r.i32(); r.str(); const count = r.u8(); for (let i = 0; i < count; i++) r.str(); break; }
+        // Document/window listeners and resize observers do nothing here.
+        case 22: r.u8(); r.str(); r.i32(); r.u8(); r.i32(); break;
+        case 23: r.i32(); break;
+        case 24: r.i32(); r.i32(); break;
+        // Portals are not prerendered: their content appears once the app runs.
+        case 25: r.i32(); r.str(); break;
         default:
           throw new Error(`NetWasm.UI prerender: unknown opcode ${op}`);
       }
@@ -358,6 +366,11 @@ function createPrerenderHost({ path, base }) {
     devState: () => "",
     devConnect() { return { dispose() {} }; },
     devPut() {},
+    nodeById: () => null,
+    getRect: () => new Float64Array(4),
+    activeElementId: () => 0,
+    contains: () => false,
+    viewport: () => new Float64Array(4),
     dispose() {},
   });
   return state;

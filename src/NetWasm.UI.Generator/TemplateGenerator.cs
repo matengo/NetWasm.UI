@@ -67,7 +67,7 @@ internal static class TemplateCompiler
     public static readonly DiagnosticDescriptor UnsupportedError = new(
         "NWUI003", "Unsupported template feature", "{0}", "NetWasm.UI.Templates", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
-    public static CompiledTemplate Compile(string path, string text, string? rootNamespace, string? projectDir, string? reactiveProps = null, string? injectedConstructors = null)
+    public static CompiledTemplate Compile(string path, string text, string? rootNamespace, string? projectDir, string? reactiveProps = null, string? injectedConstructors = null, string? genericComponents = null)
     {
         var className = SafeIdentifier(FileStem(path));
         var relativeDir = RelativeDirectory(path, projectDir);
@@ -97,7 +97,13 @@ internal static class TemplateCompiler
                 reactive.Add(p);
             }
 
-            var source = TemplateEmitter.Emit(file, text, path, ns, className, reactive, ParseConstructors(injectedConstructors));
+            var generics = ParseConstructors(genericComponents) ?? new Dictionary<string, string[]>(System.StringComparer.Ordinal);
+            if (GenericOf(file, className) is { } own)
+            {
+                generics[className] = own.Substring(className.Length + 1).Split('\t');
+            }
+
+            var source = TemplateEmitter.Emit(file, text, path, ns, className, reactive, ParseConstructors(injectedConstructors), generics);
             return new CompiledTemplate(path, hint, source, null);
         }
         catch (TemplateException ex)
@@ -157,6 +163,52 @@ internal static class TemplateCompiler
         return b.ToString();
     }
 
+    /// <summary>For a generic component class: its simple name, then its type parameter names, separated by tabs.</summary>
+    public static string? GenericComponentOf(INamedTypeSymbol? type)
+    {
+        if (type is null || type.IsAbstract || type.IsStatic || type.TypeParameters.Length == 0 || !MayBeComponent(type))
+        {
+            return null;
+        }
+
+        var b = new StringBuilder(type.Name);
+        foreach (var t in type.TypeParameters)
+        {
+            b.Append('\t').Append(t.Name);
+        }
+
+        return b.ToString();
+    }
+
+    /// <summary>The same for a template with <c>@typeparam</c>; null when it has none or doesn't parse.</summary>
+    public static string? GenericComponentOf(string path, string text)
+    {
+        try
+        {
+            return GenericOf(TemplateParser.Parse(text), SafeIdentifier(FileStem(path)));
+        }
+        catch (TemplateException)
+        {
+            return null;
+        }
+    }
+
+    private static string? GenericOf(TemplateFile file, string className)
+    {
+        if (file.TypeParams.Count == 0)
+        {
+            return null;
+        }
+
+        var b = new StringBuilder(className);
+        foreach (var (name, _) in file.TypeParams)
+        {
+            b.Append('\t').Append(name.Code);
+        }
+
+        return b.ToString();
+    }
+
     /// <summary>
     /// A <c>Component</c> subclass, or a partial class whose base may come from a generated <c>.nwui</c> part
     /// (generated sources are not visible to the semantic model in the same run).
@@ -187,6 +239,7 @@ internal static class TemplateCompiler
         return false;
     }
 
+    /// <summary>Parses <c>Name\tA\tB</c> lines; names given twice with different values are dropped.</summary>
     private static Dictionary<string, string[]>? ParseConstructors(string? all)
     {
         if (string.IsNullOrEmpty(all))
@@ -390,12 +443,34 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             .Collect()
             .Select(static (all, _) => string.Join("\n", new SortedSet<string>(all!, System.StringComparer.Ordinal)));
 
+        // Generic components: a tag gives their type arguments as TItem="Type".
+        var templateGenerics = sources.Select(static (t, _) => TemplateCompiler.GenericComponentOf(t.Path, t.Text)).Collect();
+        var csharpGenerics = context.SyntaxProvider.CreateSyntaxProvider(
+                static (node, _) => node is ClassDeclarationSyntax { TypeParameterList: not null },
+                static (ctx, ct) => TemplateCompiler.GenericComponentOf(ctx.SemanticModel.GetDeclaredSymbol((ClassDeclarationSyntax)ctx.Node, ct)))
+            .Collect();
+        var generics = templateGenerics.Combine(csharpGenerics).Select(static (p, _) =>
+        {
+            var all = new SortedSet<string>(System.StringComparer.Ordinal);
+            foreach (var g in p.Left.Concat(p.Right))
+            {
+                if (g is not null)
+                {
+                    all.Add(g);
+                }
+            }
+
+            return string.Join("\n", all);
+        });
+
         var templates = sources
             .Combine(options)
             .Combine(reactiveProps)
             .Combine(constructors)
+            .Combine(generics)
             .Select(static (pair, _) => TemplateCompiler.Compile(
-                pair.Left.Left.Left.Path, pair.Left.Left.Left.Text, pair.Left.Left.Right.Namespace, pair.Left.Left.Right.ProjectDir, pair.Left.Right, pair.Right));
+                pair.Left.Left.Left.Left.Path, pair.Left.Left.Left.Left.Text, pair.Left.Left.Left.Right.Namespace, pair.Left.Left.Left.Right.ProjectDir,
+                pair.Left.Left.Right, pair.Left.Right, pair.Right));
 
         context.RegisterSourceOutput(templates, static (spc, t) =>
         {

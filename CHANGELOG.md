@@ -16,12 +16,38 @@ See [Compatibility and versioning](docs/compatibility.md).
   [live example](https://matengo.github.io/NetWasm.UI/examples/splatting).
 - `TemplateInstance.Text(int, int)` and `Text(int, Func<int>)`: integer text holes (also `@expr` of
   type `int` in `.nwui`) go to the host as a number (new `SetTextInt` op) instead of a C# string.
+- Primitives for component libraries (see
+  [Building component libraries](docs/components.md#building-component-libraries) and the new
+  `samples/Primitives`):
+  - Element calls: `Element.Call(method, args…)` and the helpers `ShowModal`, `Show`, `Close`,
+    `ShowPopover`, `HidePopover`, `TogglePopover`, `Blur`, `Select`, `ScrollIntoView`, applied in
+    order with the other DOM updates. `BrowserDom.GetHandle(element)` returns the element as a
+    `JSObject`.
+  - Document and window listeners: `Html.OnDocument`, `Html.OnWindow` (with `within` for
+    outside-click detection) and `Html.OnResize`, owned by the current component or effect run.
+  - Synchronous DOM reads: `Element.GetRect`, `Contains`, `HasFocus`, `Html.ActiveElementId` and
+    `Html.Viewport` (new `IDomQueries` host interface). They flush pending updates first and
+    throw while building or inside an effect.
+  - `DomEvent.TargetId`, `RelatedTargetId`, `Inside`, `RelatedInside`, `NewState` and
+    `IsTarget(element)`.
+  - `Html.Portal(target, …)` and the `Portal` component render content elsewhere in the document.
+  - `Html.UseId(prefix)` for unique ids.
+  - `Slot<T>` (slots with a parameter) with `.With(arg)`.
+- Templates: `@typeparam T [where …]` for generic components, generic component tags with
+  explicit type arguments (`<Select TItem="Fruit">`), `<template slot="Row" context="item">` for
+  `Slot<T>` properties, `@render(slot, arg)`, and `@bind-Prop="signal"` on component tags.
+  `inert`, `novalidate`, `formnovalidate`, `default`, `playsinline` and `nomodule` are boolean
+  attributes.
 
 ### Changed
 
 - **Breaking:** on a component tag, an attribute whose name starts lowercase or contains `-` is no
   longer assigned to a property of that name; it goes to `Attributes`. Rename such properties to
   PascalCase. A component property named `Attributes` now hides the base one.
+- **Breaking:** in `.nwui` templates, a `bool` written into an attribute value
+  (`aria-expanded="@open"`) renders as `"true"`/`"false"` instead of `"True"`/`"False"`, which is
+  what ARIA and CSS selectors such as `[aria-selected=true]` expect. Update selectors and tests
+  that match the capitalized value.
 - Clearing or replacing a keyed list (`Each`/`For`) removes the old rows with one `RemoveRange` op
   instead of one `Remove` per row. When the list is its parent's only content, the browser host
   empties the parent in one call.

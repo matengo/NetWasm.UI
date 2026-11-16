@@ -25,6 +25,9 @@ internal sealed class TemplateFile
     public List<Directive> CodeBlocks { get; } = new();
     public List<PropDecl> Props { get; } = new();
     public List<InjectDecl> Injects { get; } = new();
+
+    /// <summary><c>@typeparam TItem [where TItem : …]</c>: the name and the optional constraint clause.</summary>
+    public List<(Directive Name, Directive? Constraint)> TypeParams { get; } = new();
     public List<TNode> Nodes { get; } = new();
 }
 

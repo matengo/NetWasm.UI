@@ -27,6 +27,23 @@ public static class TemplateRuntime
         return value.ToString();
     }
 
+    /// <summary>
+    /// Like <see cref="Str{T}"/> but for attribute values: a <c>bool</c> becomes <c>true</c>/<c>false</c>
+    /// (what <c>aria-*</c> and <c>data-*</c> attributes expect) instead of <c>True</c>/<c>False</c>.
+    /// </summary>
+    public static string? AttrStr<T>(T value)
+    {
+        if (typeof(T) == typeof(bool)) return (bool)(object)value! ? "true" : "false";
+        if (typeof(T) == typeof(bool?)) return value is null ? null : (bool)(object)value ? "true" : "false";
+        return Str(value);
+    }
+
+    /// <summary><c>@render(expr)</c> with one argument: the content as-is.</summary>
+    public static Content Render(Content content) => content;
+
+    /// <summary><c>@render(Slot, arg)</c>: builds a <see cref="Slot{T}"/> for <paramref name="arg"/>.</summary>
+    public static Content Render<T>(Slot<T>? slot, T arg) => slot is null ? Html.Spread() : slot.With(arg);
+
     /// <summary><c>@if / else if / else</c>: <paramref name="selector"/> returns the index of the branch to show (or -1 for none).</summary>
     public static Content Chain(Func<int> selector, params Func<Node>[] branches)
     {

@@ -1,0 +1,17 @@
+@* A generic table: the header and the cells of a row are slots; the row slot gets the item. *@
+@typeparam TItem where TItem : notnull
+<table @attributes="Attributes">
+    <thead>@render(Head)</thead>
+    <tbody>
+        @foreach (var item in Items) {
+            <tr aria-selected="@(Equals(item, Selected.Value))" @onclick="() => Selected.Value = item">@render(Row, item)</tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    public Signal<IReadOnlyList<TItem>> Items { get; set; } = new(new TItem[0]);
+    public Slot? Head { get; set; }
+    public Slot<TItem>? Row { get; set; }
+    public Signal<TItem?> Selected { get; set; } = new(default);
+}

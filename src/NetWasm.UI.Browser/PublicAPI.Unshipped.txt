@@ -1,3 +1,9 @@
 #nullable enable
 NetWasm.UI.Browser.DevReload
 static NetWasm.UI.Browser.DevReload.Install() -> void
+NetWasm.UI.Browser.BrowserDom
+NetWasm.UI.Browser.BrowserDomHost.ActiveElementId() -> int
+NetWasm.UI.Browser.BrowserDomHost.Contains(int parentId, int childId) -> bool
+NetWasm.UI.Browser.BrowserDomHost.GetRect(int id) -> NetWasm.UI.Dom.Rect
+NetWasm.UI.Browser.BrowserDomHost.Viewport() -> NetWasm.UI.Dom.Rect
+static NetWasm.UI.Browser.BrowserDom.GetHandle(NetWasm.UI.Element! element) -> System.Runtime.InteropServices.JavaScript.JSObject!

@@ -27,6 +27,18 @@ public enum Op : byte
     CloneTemplate = 18,   // templateId, firstId (root gets firstId, holes firstId+1.. in document order)
     SetTextInt = 19,      // id, value(i32)     (text is the decimal number)
     RemoveRange = 20,     // firstId, endId     (detaches firstId and its next siblings up to, not including, endId)
+    Call = 21,            // id, method, argCount(u8), args(string)…  (node[method](...args))
+    AddGlobalListener = 22, // target(u8: 0 document, 1 window), event, handlerId, flags, withinId (0 = none)
+    RemoveGlobalListener = 23, // handlerId     (also stops an ObserveResize)
+    ObserveResize = 24,   // id, handlerId      (ResizeObserver; dispatches an empty "resize" event)
+    Portal = 25,          // id, selector       (append to the target like Mount, but never replaces prerendered content)
+}
+
+/// <summary>The target of <see cref="Op.AddGlobalListener"/>.</summary>
+public enum GlobalTarget : byte
+{
+    Document = 0,
+    Window = 1,
 }
 
 /// <summary>Flags for <see cref="Op.AddListener"/>.</summary>

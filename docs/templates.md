@@ -56,8 +56,9 @@ using static NetWasm.UI.Html;
 |---|---|
 | `@name`, `@a.b(c)[0]`, `@(x + 1)` | reactive text `Text(() => expr)`; a `Signal`/`Computed` prints (and tracks) its value |
 | `@render(expr)` | any `Content` (node, component, fragment) inserted as-is |
-| `class="a @b"`, `title="@x"` | static `Attr`, or reactive `Attr(name, () => …)` when it contains `@` |
-| `disabled="@cond"` (also `checked`, `hidden`, `readonly`, `required`, `selected`, `multiple`, `autofocus`, `open`) | toggled attribute / `checked` property |
+| `@render(Row, item)` | a `Slot<T>` rendered with an argument (`Row.With(item)`); an unset slot renders nothing. See [Generic components](#generic-components-and-slots-with-parameters) |
+| `class="a @b"`, `title="@x"` | static `Attr`, or reactive `Attr(name, () => …)` when it contains `@`; a `bool` value is written `"true"`/`"false"` (for `aria-*` and `data-*`) |
+| `disabled="@cond"` (also `checked`, `hidden`, `readonly`, `required`, `selected`, `multiple`, `autofocus`, `open`, `inert`, `novalidate`, `formnovalidate`, `default`, `playsinline`, `nomodule`) | toggled attribute / `checked` property |
 | `value="…"` | the `value` property (`Value(...)`) |
 | `@onclick="() => …"`, `@onsubmit="Save"` | `On("click", handler)`; the handler is an `Action` or `Action<DomEvent>` |
 | `@onclick:preventDefault`, `@onclick:stopPropagation`, `@onsubmit:preventDefault="false"` | listener flags (`submit` prevents default unless turned off) |
@@ -70,6 +71,10 @@ using static NetWasm.UI.Html;
 | `@attributes="expr"` | applies a `Content[]` (such as a component's `Attributes`) to the element or passes it on to the component |
 | `<Card>…</Card>` | `new Card { ChildContent = new Slot(() => …) }`; place it inside `Card` with `@render(ChildContent)` |
 | `<Card><template slot="Header">…</template>…</Card>` | a named slot: `Header = new Slot(() => …)`; the rest still goes to `ChildContent` |
+| `<template slot="Row" context="item">…</template>` | a slot with a parameter: `Row = new(item => …)` for a `Slot<T>` property |
+| `<Select TItem="Fruit" …>` | `new Select<Fruit> { … }`: a generic component needs each type argument as an attribute |
+| `@typeparam TItem where TItem : notnull` | makes the template's class generic (`Select<TItem>`); repeat for more type parameters |
+| `<Dialog @bind-Open="isOpen" />` | `Open = isOpen`: shares the parent's `Signal<T>` with a `Signal<T>` property, so both sides read and write it |
 | `<Link href="/x">…</Link>`, `<NavLink href="/x" activeClass="on">…</NavLink>` | `Html.Link` / `Html.NavLink` |
 | `<ErrorBoundary>…<template slot="Fallback" context="error">…</template></ErrorBoundary>` | `Html.ErrorBoundary(() => …, (BoundaryError error) => …)`; see [Error handling](error-handling.md) |
 | `<Suspense>…<template slot="Fallback">…</template></Suspense>` | `Html.Suspense(() => …, () => …)`; the content must have exactly one root node, and the `<Suspense>` cannot be the only content of a template or block. See [Async data](async.md) |
@@ -275,6 +280,50 @@ is torn down with it) while still reading the parent's signals.
 two-way `Signal<int>`) are templates, `ProgressBar.cs` is a C# component, and `RoomRazor.nwui` /
 `RoomCode.cs` build the same UI from them, once as a template and once in C#.
 
+## Generic components and slots with parameters
+
+`@typeparam` makes a template generic, and a `Slot<T>` property is a slot that receives a value.
+Together they let a list, table or select leave the item markup to the parent:
+
+```razor
+@* Select.nwui *@
+@typeparam TItem where TItem : notnull
+<ul role="listbox" @attributes="Attributes">
+    @foreach (var item in Items) {
+        <li role="option" aria-selected="@(Equals(item, Selected.Value))"
+            @onclick="() => Selected.Value = item">@render(Option, item)</li>
+    }
+</ul>
+
+@code {
+    public Signal<IReadOnlyList<TItem>> Items { get; set; } = new(new TItem[0]);
+    public Slot<TItem>? Option { get; set; }
+    public Signal<TItem?> Selected { get; set; } = new(default);
+}
+```
+
+```razor
+<Select TItem="Fruit" Items="@fruits" @bind-Selected="picked">
+    <template slot="Option" context="fruit"><span>@fruit.Emoji @fruit.Name</span></template>
+</Select>
+```
+
+- **Type arguments are explicit.** Write `TItem="Fruit"` (the literal text is the C# type) for
+  each type parameter; there is no inference from the other attributes yet. Generic components
+  written in C# (`class Table<T> : Component`) work the same way.
+- **`context="name"`** names the slot's parameter inside the `<template>`. Without `context`, the
+  property must be a plain `Slot`.
+- **`@render(Option, item)`** renders the slot with an argument. In C#, use `Option?.With(item)`.
+- **`@bind-Selected="picked"`** passes the parent's `Signal<T>` to the `Signal<T>` property
+  `Selected`. Both sides see each other's writes; it is the same signal.
+- Test for an optional slot with `@if (Header is not null) { … }`.
+- An `@if` branch is built once and only rebuilt when its condition flips, so content that
+  depends on a value (such as `@render(Option, Selected.Value)`) belongs in an `@foreach` over a
+  `Computed` list, or in reactive text and attributes.
+
+`samples/Primitives` builds a dialog, popover, tabs, select and data table this way; see
+[Building component libraries](components.md#building-component-libraries).
+
 ## Errors
 
 Template errors are reported with the position in the `.nwui` file:
@@ -315,4 +364,4 @@ and point at the `.nwui` line.
 ## Not supported yet
 
 - Control flow other than `@if`/`@foreach` (no `@switch`).
-- Slots with parameters (`Slot<T>`).
+- Type inference for generic components: pass each type argument (`TItem="Fruit"`).

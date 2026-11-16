@@ -9,7 +9,7 @@ namespace NetWasm.UI.Tests;
 /// Decodes render batches into an in-memory DOM so tests can assert on the resulting tree.
 /// This is the reference decoder; dom.mjs implements the same format for the browser.
 /// </summary>
-public sealed class FakeDomHost : IDomHost
+public sealed class FakeDomHost : IDomHost, IDomQueries
 {
     public sealed class FakeNode
     {
@@ -90,6 +90,56 @@ public sealed class FakeDomHost : IDomHost
     public FakeNode Document { get; } = new() { Id = 0, Kind = "element", Tag = "body" };
     public List<(string Op, string Detail)> Log { get; } = new();
     public int BatchCount { get; private set; }
+
+    /// <summary>Document/window listeners by handler id.</summary>
+    public Dictionary<int, (GlobalTarget Target, string Event, byte Flags, int WithinId)> GlobalListeners { get; } = new();
+
+    /// <summary>Resize observations: handler id → node id.</summary>
+    public Dictionary<int, int> ResizeObservers { get; } = new();
+
+    /// <summary>Portal targets: node id → selector.</summary>
+    public Dictionary<int, string> Portals { get; } = new();
+
+    /// <summary>Answers for the <see cref="IDomQueries"/> reads.</summary>
+    public Dictionary<int, Rect> Rects { get; } = new();
+
+    public int ActiveId { get; set; }
+
+    public Rect ViewportRect { get; set; } = new(0, 0, 1024, 768);
+
+    public int Reads { get; private set; }
+
+    public Rect GetRect(int id)
+    {
+        Reads++;
+        return Rects.TryGetValue(id, out var r) ? r : default;
+    }
+
+    public int ActiveElementId()
+    {
+        Reads++;
+        return ActiveId;
+    }
+
+    public bool Contains(int parentId, int childId)
+    {
+        Reads++;
+        for (var n = Nodes.GetValueOrDefault(childId); n is not null; n = n.Parent)
+        {
+            if (n.Id == parentId && Nodes.ContainsKey(parentId) && ReferenceEquals(n, Nodes[parentId]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public Rect Viewport()
+    {
+        Reads++;
+        return ViewportRect;
+    }
 
     public FakeNode this[int id] => Nodes[id];
 
@@ -275,6 +325,56 @@ public sealed class FakeDomHost : IDomHost
                 {
                     var id = ReadInt(ops, ref pos);
                     Log.Add(("Focus", $"{id}"));
+                    break;
+                }
+                case Op.Call:
+                {
+                    var id = ReadInt(ops, ref pos);
+                    var method = ReadString(ops, ref pos);
+                    var count = ops[pos++];
+                    var args = new string[count];
+                    for (var i = 0; i < count; i++)
+                    {
+                        args[i] = ReadString(ops, ref pos);
+                    }
+
+                    Log.Add(("Call", $"{id} {method}({string.Join(", ", args)})"));
+                    break;
+                }
+                case Op.AddGlobalListener:
+                {
+                    var target = (GlobalTarget)ops[pos++];
+                    var eventName = ReadString(ops, ref pos);
+                    var handlerId = ReadInt(ops, ref pos);
+                    var flags = ops[pos++];
+                    var within = ReadInt(ops, ref pos);
+                    GlobalListeners[handlerId] = (target, eventName, flags, within);
+                    Log.Add(("AddGlobalListener", $"{target} {eventName} #{handlerId}" + (within != 0 ? $" within {within}" : "")));
+                    break;
+                }
+                case Op.RemoveGlobalListener:
+                {
+                    var handlerId = ReadInt(ops, ref pos);
+                    GlobalListeners.Remove(handlerId);
+                    ResizeObservers.Remove(handlerId);
+                    Log.Add(("RemoveGlobalListener", $"#{handlerId}"));
+                    break;
+                }
+                case Op.ObserveResize:
+                {
+                    var id = ReadInt(ops, ref pos);
+                    var handlerId = ReadInt(ops, ref pos);
+                    ResizeObservers[handlerId] = id;
+                    Log.Add(("ObserveResize", $"{id} #{handlerId}"));
+                    break;
+                }
+                case Op.Portal:
+                {
+                    var id = ReadInt(ops, ref pos);
+                    var selector = ReadString(ops, ref pos);
+                    Attach(Document, Nodes[id], null);
+                    Portals[id] = selector;
+                    Log.Add(("Portal", $"{id} -> {selector}"));
                     break;
                 }
                 case Op.DefineTemplate:

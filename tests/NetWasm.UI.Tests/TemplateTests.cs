@@ -140,6 +140,57 @@ public partial class TemplateTests : RendererTest
     }
 
     [Fact]
+    public void Generic_component_renders_typed_slot_and_shares_a_bound_signal()
+    {
+        var host = new DataListHost();
+        App.Mount(host, "#app");
+
+        Assert.Equal(
+            "<ul aria-busy=\"false\" role=\"listbox\"><li aria-selected=\"false\"><b>Ada</b></li><li aria-selected=\"true\"><b>Bo</b></li><!----></ul>",
+            Dom.Query("ul")!.ToHtml());
+
+        Fire(Dom.Query("li")!, "click");
+        Assert.Equal("Ada", host.Picked.Value);
+        Assert.Equal("true", Dom.Query("li")!.Attributes["aria-selected"]);
+
+        host.Picked.Value = "Bo";
+        Assert.Equal("false", Dom.Query("li")!.Attributes["aria-selected"]);
+    }
+
+    [Fact]
+    public void Bool_attribute_values_render_lowercase_and_inert_toggles()
+    {
+        var host = new DataListHost();
+        App.Mount(host, "#app");
+        var box = Dom.Query("input")!;
+        Assert.Equal("false", box.Attributes["aria-checked"]);
+        Assert.False(box.Attributes.ContainsKey("inert"));
+
+        host.Locked.Value = true;
+        Assert.Equal("true", box.Attributes["aria-checked"]);
+        Assert.Equal("on", box.Attributes["data-state"]);
+        Assert.True(box.Attributes.ContainsKey("inert"));
+    }
+
+    [Fact]
+    public void Generic_tag_without_its_type_argument_is_an_error()
+    {
+        var result = TemplateCompiler.Compile("C:\\p\\Bad.nwui", "<div><DataList Items=\"@x\" /></div>", "App", "C:\\p\\", genericComponents: "DataList\tTItem");
+
+        Assert.Equal("NWUI002", result.Diagnostic!.Id);
+        Assert.Contains("TItem=", result.Diagnostic.Message);
+    }
+
+    [Fact]
+    public void Typeparam_declares_a_generic_class_with_constraints()
+    {
+        var result = TemplateCompiler.Compile("C:\\p\\Box.nwui", "@typeparam T where T : class\n@typeparam U\n<div>@render(Cell, Value)</div>", "App", "C:\\p\\");
+
+        Assert.Contains("public partial class Box<T, U> : global::NetWasm.UI.Component where T : class", result.Source);
+        Assert.Contains("global::NetWasm.UI.TemplateRuntime.Render(", result.Source);
+    }
+
+    [Fact]
     public void Splat_in_code_joins_classes_and_attaches_a_listener_per_application()
     {
         var clicks = 0;
@@ -359,7 +410,7 @@ public partial class TemplateTests : RendererTest
     [InlineData("<div><Foo @bind=\"x\" /></div>", "NWUI003", "not supported on components")]
     [InlineData("<div @attributes></div>", "NWUI001", "'@attributes' needs a value")]
     [InlineData("<div><Foo><template>x</template></Foo></div>", "NWUI002", "needs slot=")]
-    [InlineData("<div><Foo><template slot=\"A\" class=\"x\"></template></Foo></div>", "NWUI003", "only 'slot' is")]
+    [InlineData("<div><Foo><template slot=\"A\" class=\"x\"></template></Foo></div>", "NWUI003", "only 'slot' and 'context' are")]
     [InlineData("<div><Foo><template slot=\"1a\"></template></Foo></div>", "NWUI001", "not a valid slot name")]
     [InlineData("<div><Foo><template slot=\"A\"></template><template slot=\"A\"></template></Foo></div>", "NWUI002", "more than once")]
     [InlineData("<div><Foo><template slot=\"ChildContent\"></template>x</Foo></div>", "NWUI002", "loose child content")]
@@ -384,6 +435,12 @@ public partial class TemplateTests : RendererTest
     [InlineData("@inject IApi\n<div></div>", "NWUI001", "@inject Type Name")]
     [InlineData("@inject IApi Api = null\n<div></div>", "NWUI001", "cannot have a default value")]
     [InlineData("<div>@inject IApi Api</div>", "NWUI001", "only allowed at the top level")]
+    [InlineData("@typeparam\n<div></div>", "NWUI001", "Expected a name")]
+    [InlineData("@typeparam T : class\n<div></div>", "NWUI001", "@typeparam TItem where")]
+    [InlineData("@typeparam T\n@typeparam T\n<div></div>", "NWUI001", "more than once")]
+    [InlineData("<div><Card><template slot=\"Header\" context=\"@x\"></template></Card></div>", "NWUI001", "'context' must name")]
+    [InlineData("<div><Card @bind-=\"x\" /></div>", "NWUI001", "'@bind-' on a component")]
+    [InlineData("<div><Card @bind=\"x\" /></div>", "NWUI003", "@bind-<Prop>")]
     public void Compiler_reports_template_errors(string template, string id, string message)
     {
         var result = TemplateCompiler.Compile("C:\\p\\Bad.nwui", template, "App", "C:\\p\\");

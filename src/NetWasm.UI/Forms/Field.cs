@@ -58,8 +58,6 @@ public abstract class FormField
 /// </example>
 public sealed class Field<T> : FormField
 {
-    private static int nextId;
-
     private readonly Signal<T> value;
     private readonly Signal<T> initial;
     private readonly Signal<bool> touched = new(false);
@@ -72,8 +70,7 @@ public sealed class Field<T> : FormField
         value = new Signal<T>(initial);
         this.initial = new Signal<T>(initial);
         this.validators = validators;
-        nextId++;
-        id = "nwf" + nextId.ToString();
+        id = "nwf" + Ids.Next().ToString();
     }
 
     /// <summary>The current value. Setting it clears an error set with <see cref="SetError"/>.</summary>

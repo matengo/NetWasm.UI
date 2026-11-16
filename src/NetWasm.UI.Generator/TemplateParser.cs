@@ -210,6 +210,7 @@ internal sealed class TemplateParser
             case "namespace":
             case "prop":
             case "inject":
+            case "typeparam":
                 if (file is null)
                 {
                     throw Error($"'@{keyword}' is only allowed at the top level of a template.", at, keyword.Length + 1);
@@ -226,7 +227,7 @@ internal sealed class TemplateParser
             case "do":
             case "functions":
             case "page":
-                throw new TemplateException("NWUI003", $"'@{keyword}' is not supported in .nwui templates (supported: @if, @foreach, @render, @code, @prop, @inject, @using, @namespace).", at, keyword.Length + 1);
+                throw new TemplateException("NWUI003", $"'@{keyword}' is not supported in .nwui templates (supported: @if, @foreach, @render, @code, @prop, @inject, @typeparam, @using, @namespace).", at, keyword.Length + 1);
         }
 
         var exprEnd = CSharpScanner.ScanImplicit(s, pos);
@@ -289,6 +290,30 @@ internal sealed class TemplateParser
             }
 
             file.Injects.Add(new InjectDecl(decl.Type, decl.Name));
+            pos = lineEnd;
+            return;
+        }
+
+        if (keyword == "typeparam")
+        {
+            var nameEnd = CSharpScanner.IsIdentStart(value[0]) ? CSharpScanner.ScanIdent(value, 0) : 0;
+            var rest = value.Substring(nameEnd).Trim();
+            if (nameEnd == 0 || (rest.Length > 0 && !rest.StartsWith("where ", System.StringComparison.Ordinal)))
+            {
+                throw Error("Expected '@typeparam TItem' or '@typeparam TItem where TItem : constraint'.", at, keyword.Length + 1);
+            }
+
+            var name = value.Substring(0, nameEnd);
+            foreach (var (existing, _) in file.TypeParams)
+            {
+                if (existing.Code == name)
+                {
+                    throw Error($"Type parameter '{name}' is declared more than once.", pos, nameEnd);
+                }
+            }
+
+            var valueStart = s.IndexOf(value, pos, System.StringComparison.Ordinal);
+            file.TypeParams.Add((new Directive(name, valueStart), rest.Length == 0 ? null : new Directive(rest, valueStart + value.IndexOf(rest, nameEnd, System.StringComparison.Ordinal))));
             pos = lineEnd;
             return;
         }

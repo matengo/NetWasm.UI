@@ -1,0 +1,14 @@
+@* A generic list: the parent picks the item type and passes a template per item; @bind-Selected shares a signal. *@
+@typeparam TItem where TItem : notnull
+<ul role="listbox" aria-busy="@Busy">
+    @foreach (var item in Items) {
+        <li aria-selected="@(Equals(item, Selected.Value))" @onclick="() => Selected.Value = item">@render(Row, item)</li>
+    }
+</ul>
+
+@code {
+    public Signal<IReadOnlyList<TItem>> Items { get; set; } = new(new TItem[0]);
+    public Slot<TItem>? Row { get; set; }
+    public Signal<TItem?> Selected { get; set; } = new(default);
+    public bool Busy { get; set; }
+}

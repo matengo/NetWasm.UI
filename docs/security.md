@@ -28,6 +28,10 @@
 
 - **Raw HTML.** There is no `innerHTML` binding. If you add one through your own `[JSImport]`,
   sanitize the HTML first (for example with DOMPurify).
+- **Keep `Element.Call` names constant.** `element.Call(method, args)` calls any method on the
+  element, and the method name is not checked against a list. Pass a fixed name (or use the
+  helpers such as `ShowModal()`); never a name that comes from user data. The arguments are
+  always strings.
 - **Secrets.** Everything in the `.wasm` file, including strings and constants, can be read by
   anyone who downloads it. Keep API keys on the server.
 
