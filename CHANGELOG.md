@@ -6,6 +6,12 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `benchmarks/WasmBench`: the keyed benchmark's C# side under Wasmtime, with times that repeat
+  within about 1 % and exact allocation and batch sizes. See
+  [Benchmarks](docs/benchmarks.md#the-c-side-alone-under-wasmtime).
+
 ### Changed
 
 - The benchmark app is a `.nwui` template (`benchmarks/NetWasmBench/BenchApp.nwui`), so the

@@ -1,0 +1,23 @@
+<Project Sdk="NetWasm.Sdk">
+  <!-- The keyed benchmark app without a browser: a console program for Wasmtime that mounts BenchApp.nwui on a
+       host that discards the render batches, and times the C# side of each case. See docs/benchmarks.md. -->
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
+    <RootNamespace>NetWasmBench</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                      UndefineProperties="TargetFramework" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The same app, data and labels as the browser benchmark. -->
+    <AdditionalFiles Include="..\NetWasmBench\BenchApp.nwui" />
+    <Compile Include="..\NetWasmBench\Data.cs;..\NetWasmBench\Labels.cs" />
+    <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
+  </ItemGroup>
+</Project>

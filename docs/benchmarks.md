@@ -23,6 +23,25 @@ dotnet run --project benchmarks/Runner -c Release -- --runs 10
 Blazor AOT needs the `wasm-tools` workload (`dotnet workload install wasm-tools`) and takes a few
 minutes to build; skip it with `--no-aot`.
 
+### The C# side alone, under Wasmtime
+
+Browser timings move by a few percent from run to run, which hides a change that saves 1 ms per
+10,000 rows. `benchmarks/WasmBench` is the same `BenchApp.nwui` as a console program for
+[Wasmtime](https://wasmtime.dev): it renders into a host that only counts the bytes of each batch,
+so no browser, DOM or JavaScript takes part, and it starts every run right after a collection. Its
+times repeat within about 1 %, and the bytes allocated and the batch size are exact.
+
+```powershell
+dotnet publish benchmarks/WasmBench -c Release -p:NetWasmOptimization=Oz
+wasmtime run benchmarks/WasmBench/bin/Release/netwasm0.1/publish/WasmBench.wasm            # all cases
+wasmtime run benchmarks/WasmBench/bin/Release/netwasm0.1/publish/WasmBench.wasm create 50  # filter, runs
+```
+
+It runs the cases of the browser runner from the same starting state. Each line is the case, the
+median and the fastest time in microseconds, the time of the first run, and per run the bytes
+allocated, the collections and the bytes of render batch. Use it for changes to the reactive core,
+the renderer and the template compiler; changes to `dom.mjs` still need the browser.
+
 ## Method
 
 - Every DOM case opens a fresh page, runs the setup clicks, forces a GC and then times one

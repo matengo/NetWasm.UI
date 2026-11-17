@@ -3,6 +3,7 @@
     <Project Path="benchmarks/BlazorBench/BlazorBench.csproj" />
     <Project Path="benchmarks/NetWasmBench/NetWasmBench.csproj" />
     <Project Path="benchmarks/Runner/Runner.csproj" />
+    <Project Path="benchmarks/WasmBench/WasmBench.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Counter/Counter.csproj" />
