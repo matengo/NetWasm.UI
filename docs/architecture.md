@@ -123,7 +123,9 @@ has a different item for that key (another object, or for a value type a value t
 equal), the whole row shows the new item. A row without `setup` takes it in place: `bind` runs
 for the new item and later events get it. A row with `setup` is disposed and rendered again
 for the new item where it was (`KeyedList.Replace`), because what `setup` created was built
-for the old one.
+for the old one. Every other keyed list (`Each`, a `@foreach` that is not rows) keeps the item
+each entry was rendered for and replaces the entry the same way. When the items are their own
+keys (no `@key`), a key that stays has an equal item, so nothing is compared.
 
 ## Event delegation
 

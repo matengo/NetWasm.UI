@@ -111,7 +111,9 @@ new keys get new rows.
     place. What lived in the old row starts over: a component's state, a typed-in value, focus.
 
   Keep the same object to keep the row. An item counts as different when it is another object,
-  or for a value type when it is not equal to the old value.
+  or for a value type when it is not equal to the old value. Without `@key` the items are their
+  own keys, so a row whose key stays already has an equal item and is kept. A `@foreach` whose
+  body is not compiled to rows, and `Each` in C#, follow the same rule: the row is built again.
 - **A row's bindings run together.** The `@expr` text and bound attributes of a row's own
   elements are one effect per row. When something one of them reads changes, all of them are
   evaluated again and only the values that differ are written to the DOM. Keep expensive work in

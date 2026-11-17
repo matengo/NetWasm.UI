@@ -214,7 +214,7 @@ internal sealed class RowBindings<T> : RowBindings
             }
             else
             {
-                list.Replace(i, render);
+                list.Replace(i, render, null);
             }
         }
     }

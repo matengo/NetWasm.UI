@@ -8,7 +8,8 @@ namespace NetWasm.UI;
 /// <summary>
 /// Keyed list rendering. Each item is built once inside its own scope. When the list changes,
 /// removed keys are disposed, new keys are built, and only items whose relative order changed
-/// are moved.
+/// are moved. A key that stays but has a different item (another object, or for a value type a
+/// value that is not equal) is disposed and built again for that item, in the same place.
 /// </summary>
 public sealed class For<T, TKey> : Fragment
     where TKey : notnull
@@ -17,6 +18,8 @@ public sealed class For<T, TKey> : Fragment
     private readonly Func<T, TKey> key;
     private readonly Func<T, Node> render;
     private readonly RowBindings<T>? rows;
+    // The items are their own keys (no @key), so an item whose key stays is equal to the one it replaces.
+    private readonly bool keyIsItem;
 
     public For(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Func<T, Node> render)
     {
@@ -25,9 +28,15 @@ public sealed class For<T, TKey> : Fragment
         this.render = render;
     }
 
+    internal For(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Func<T, Node> render, bool keyIsItem)
+        : this(items, key, render)
+    {
+        this.keyIsItem = keyIsItem;
+    }
+
     // Rows of a template: after each new list, a row whose key got a different item shows that item.
-    internal For(Func<IReadOnlyList<T>> items, Func<T, TKey> key, RowBindings<T> rows)
-        : this(items, key, rows.Render)
+    internal For(Func<IReadOnlyList<T>> items, Func<T, TKey> key, RowBindings<T> rows, bool keyIsItem)
+        : this(items, key, rows.Render, keyIsItem)
     {
         this.rows = rows;
     }
@@ -69,8 +78,30 @@ public sealed class For<T, TKey> : Fragment
                 }
 
                 Func<int, Node> renderAt = i => render(list[i]);
-                keyed.Reconcile(keys, count, renderAt);
-                rows?.Refresh(keyed, list, renderAt);
+                if (keyIsItem)
+                {
+                    keyed.Reconcile(keys, count, renderAt, null);
+                }
+                else if (rows is not null)
+                {
+                    // A template row keeps its item itself, and may take a new one in place.
+                    keyed.Reconcile(keys, count, renderAt, null);
+                    rows.Refresh(keyed, list, renderAt);
+                }
+                else
+                {
+                    // A key that stays but has a different item is rendered again for it, in the same place: the
+                    // content was built once, for the old item.
+                    Func<int, object?> itemAt = i => list[i];
+                    keyed.Reconcile(keys, count, renderAt, itemAt);
+                    for (var i = 0; i < count; i++)
+                    {
+                        if (!KeyedList.SameItem((T)keyed.ItemAt(i)!, list[i]))
+                        {
+                            keyed.Replace(i, renderAt, itemAt);
+                        }
+                    }
+                }
             });
         });
     }
@@ -87,8 +118,8 @@ internal sealed class KeyedList : IDisposable
     private object[] order = Array.Empty<object>();
     private object[] spare = Array.Empty<object>();
     private int count;
-    // The items' nodes, in the same order as their keys.
-    private readonly List<Node> nodes = new();
+    // The items' nodes (and items, when the list keeps them), in the same order as their keys.
+    private readonly List<Entry> rendered = new();
     // What the middle of a diff needs, kept from one reconcile to the next and emptied after each.
     private Dictionary<object, int>? oldIndex;
     private HashSet<object>? newKeys;
@@ -96,7 +127,7 @@ internal sealed class KeyedList : IDisposable
     private int[] sequence = Array.Empty<int>();
     private int[] predecessor = Array.Empty<int>();
     private bool[] stable = Array.Empty<bool>();
-    private Node[] middle = Array.Empty<Node>();
+    private Entry[] middle = Array.Empty<Entry>();
 
     public KeyedList(Element parent, Scope? owner)
     {
@@ -111,7 +142,10 @@ internal sealed class KeyedList : IDisposable
 
     internal object KeyAt(int index) => order[index];
 
-    internal Node NodeAt(int index) => nodes[index];
+    internal Node NodeAt(int index) => rendered[index].Node;
+
+    /// <summary>The item the content at <paramref name="index"/> was rendered for, when the list keeps items.</summary>
+    internal object? ItemAt(int index) => rendered[index].Item;
 
     /// <summary>The buffer for the next list's keys; pass it to <see cref="Reconcile"/>.</summary>
     internal object[] KeyBuffer(int size)
@@ -137,7 +171,7 @@ internal sealed class KeyedList : IDisposable
         entries.Clear();
         Array.Clear(order, 0, count);
         count = 0;
-        nodes.Clear();
+        rendered.Clear();
     }
 
     // Most keys of a new list are the very objects of the old one (see For), so try the reference first.
@@ -154,7 +188,7 @@ internal sealed class KeyedList : IDisposable
     /// Renders the item at <paramref name="index"/> again, in place: what was rendered for it is removed and
     /// disposed, and the new node goes where the old one was. The key, and every other item, stay as they are.
     /// </summary>
-    internal void Replace(int index, Func<int, Node> render)
+    internal void Replace(int index, Func<int, Node> render, Func<int, object?>? item)
     {
         var k = order[index];
         var old = entries[k];
@@ -162,21 +196,21 @@ internal sealed class KeyedList : IDisposable
         old.Scope.Dispose();
         entries.Remove(k);
 
-        var entry = Build(index, render);
+        var entry = Build(index, render, item);
         entries[k] = entry;
-        nodes[index] = entry.Node;
-        Renderer.InsertBefore(index + 1 < count ? nodes[index + 1].Id : anchor.Id, entry.Node.Id);
+        rendered[index] = entry;
+        Renderer.InsertBefore(index + 1 < count ? rendered[index + 1].Node.Id : anchor.Id, entry.Node.Id);
     }
 
     // Renders an item inside a scope of its own, which the list disposes when the item goes.
-    private Entry Build(int index, Func<int, Node> render)
+    private Entry Build(int index, Func<int, Node> render, Func<int, object?>? item)
     {
         var scope = Scope.Detached(owner);
         var previousOwner = Tracker.CurrentOwner;
         Tracker.CurrentOwner = scope;
         try
         {
-            return new Entry(render(index), scope);
+            return new Entry(render(index), scope, item?.Invoke(index));
         }
         finally
         {
@@ -193,7 +227,7 @@ internal sealed class KeyedList : IDisposable
         count = newCount;
     }
 
-    public void Reconcile(object[] newOrder, int newCount, Func<int, Node> render)
+    public void Reconcile(object[] newOrder, int newCount, Func<int, Node> render, Func<int, object?>? item)
     {
         var oldCount = count;
 
@@ -202,11 +236,11 @@ internal sealed class KeyedList : IDisposable
         {
             if (oldCount > 1)
             {
-                Renderer.RemoveRange(nodes[0].Id, anchor.Id);
+                Renderer.RemoveRange(rendered[0].Node.Id, anchor.Id);
             }
             else if (oldCount == 1)
             {
-                nodes[0].Remove();
+                rendered[0].Node.Remove();
             }
 
             for (var i = 0; i < oldCount; i++)
@@ -215,7 +249,7 @@ internal sealed class KeyedList : IDisposable
             }
 
             entries.Clear();
-            nodes.Clear();
+            rendered.Clear();
             Adopt(newOrder, 0);
             return;
         }
@@ -249,16 +283,16 @@ internal sealed class KeyedList : IDisposable
 
             if (between == oldEnd - 1)
             {
-                var first = nodes[start];
-                var last = nodes[oldEnd - 1];
-                Renderer.InsertBefore(length > 2 ? nodes[start + 1].Id : first.Id, last.Id);
+                var first = rendered[start];
+                var last = rendered[oldEnd - 1];
+                Renderer.InsertBefore(length > 2 ? rendered[start + 1].Node.Id : first.Node.Id, last.Node.Id);
                 if (length > 2)
                 {
-                    Renderer.InsertBefore(oldEnd < oldCount ? nodes[oldEnd].Id : anchor.Id, first.Id);
+                    Renderer.InsertBefore(oldEnd < oldCount ? rendered[oldEnd].Node.Id : anchor.Id, first.Node.Id);
                 }
 
-                nodes[start] = last;
-                nodes[oldEnd - 1] = first;
+                rendered[start] = last;
+                rendered[oldEnd - 1] = first;
                 Adopt(newOrder, newCount);
                 return;
             }
@@ -303,8 +337,8 @@ internal sealed class KeyedList : IDisposable
 
                 if (bulk)
                 {
-                    var endId = oldEnd < oldCount ? nodes[oldEnd].Id : anchor.Id;
-                    Renderer.RemoveRange(nodes[start].Id, endId);
+                    var endId = oldEnd < oldCount ? rendered[oldEnd].Node.Id : anchor.Id;
+                    Renderer.RemoveRange(rendered[start].Node.Id, endId);
                 }
 
                 for (var i = start; i < oldEnd; i++)
@@ -331,7 +365,7 @@ internal sealed class KeyedList : IDisposable
                 sequence = new int[size];
                 predecessor = new int[size];
                 stable = new bool[size];
-                middle = new Node[size];
+                middle = new Entry[size];
             }
 
             var anySurvivor = false;
@@ -354,7 +388,7 @@ internal sealed class KeyedList : IDisposable
             }
 
             // Walk the middle backwards so the reference node is always already in position.
-            var referenceId = oldEnd < oldCount ? nodes[oldEnd].Id : anchor.Id;
+            var referenceId = oldEnd < oldCount ? rendered[oldEnd].Node.Id : anchor.Id;
             for (var i = newEnd - 1; i >= start; i--)
             {
                 var k = newOrder[i];
@@ -362,8 +396,8 @@ internal sealed class KeyedList : IDisposable
 
                 if (sequence[i - start] >= 0)
                 {
-                    middle[i - start] = entries[k].Node;
-                    nodeId = middle[i - start].Id;
+                    middle[i - start] = entries[k];
+                    nodeId = middle[i - start].Node.Id;
                     if (!stable[i - start])
                     {
                         Renderer.InsertBefore(referenceId, nodeId);
@@ -371,9 +405,9 @@ internal sealed class KeyedList : IDisposable
                 }
                 else
                 {
-                    var entry = Build(i, render);
+                    var entry = Build(i, render, item);
                     entries[k] = entry;
-                    middle[i - start] = entry.Node;
+                    middle[i - start] = entry;
                     nodeId = entry.Node.Id;
                     Renderer.InsertBefore(referenceId, nodeId);
                 }
@@ -385,13 +419,13 @@ internal sealed class KeyedList : IDisposable
             {
                 for (var i = 0; i < size; i++)
                 {
-                    nodes[start + i] = middle[i];
+                    rendered[start + i] = middle[i];
                 }
             }
             else
             {
-                nodes.RemoveRange(start, oldEnd - start);
-                nodes.InsertRange(start, new ArraySegment<Node>(middle, 0, size));
+                rendered.RemoveRange(start, oldEnd - start);
+                rendered.InsertRange(start, new ArraySegment<Entry>(middle, 0, size));
             }
 
             Adopt(newOrder, newCount);
@@ -459,13 +493,16 @@ internal sealed class KeyedList : IDisposable
 
     private readonly struct Entry
     {
-        public Entry(Node node, Scope scope)
+        public Entry(Node node, Scope scope, object? item)
         {
             Node = node;
             Scope = scope;
+            Item = item;
         }
 
         public Node Node { get; }
         public Scope Scope { get; }
+        // The item the node was rendered for; only kept by lists that render it again when it changes.
+        public object? Item { get; }
     }
 }
