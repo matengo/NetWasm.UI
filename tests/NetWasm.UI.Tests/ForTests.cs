@@ -212,4 +212,105 @@ public class ForTests : RendererTest
         public Lambda(Func<Node> build) => this.build = build;
         protected override Node Build() => build();
     }
+
+    [Fact]
+    public void Swapping_two_distant_items_moves_those_two_and_touches_nothing_else()
+    {
+        var v = new ListView(1, 2, 3, 4, 5, 6);
+        App.Mount(v, "#app");
+        Dom.Log.Clear();
+
+        Set(v, 1, 5, 3, 4, 2, 6);
+
+        Assert.Equal("1,5,3,4,2,6", Items(Dom.Html));
+        Assert.Equal(2, Dom.Log.Count(l => l.Op == "InsertBefore"));
+        Assert.DoesNotContain(Dom.Log, l => l.Op is "Remove" or "RemoveRange" or "CreateElement" or "Release");
+    }
+
+    [Fact]
+    public void Swapping_two_neighbours_moves_one()
+    {
+        var v = new ListView(1, 2, 3, 4);
+        App.Mount(v, "#app");
+        Dom.Log.Clear();
+
+        Set(v, 1, 3, 2, 4);
+
+        Assert.Equal("1,3,2,4", Items(Dom.Html));
+        Assert.Equal(1, Dom.Log.Count(l => l.Op == "InsertBefore"));
+    }
+
+    [Fact]
+    public void An_empty_list_detaches_all_items_with_one_op_and_a_later_list_starts_over()
+    {
+        var v = new ListView(1, 2, 3);
+        App.Mount(v, "#app");
+        Dom.Log.Clear();
+
+        Set(v);
+
+        Assert.Equal("", Items(Dom.Html));
+        Assert.Equal(1, Dom.Log.Count(l => l.Op == "RemoveRange"));
+        Assert.DoesNotContain(Dom.Log, l => l.Op == "Remove");
+
+        Set(v, 3, 1);
+        Assert.Equal("3,1", Items(Dom.Html));
+    }
+
+    [Fact]
+    public void The_dom_follows_the_list_through_a_long_sequence_of_changes()
+    {
+        // The list keeps its keys and lookup tables from one change to the next; a long seeded sequence of
+        // inserts, removals, moves, swaps, reversals and clears must leave the DOM equal to the list every time.
+        var random = new Random(20261117);
+        var items = new List<int>();
+        var next = 1;
+        var v = new ListView();
+        App.Mount(v, "#app");
+
+        for (var step = 0; step < 400; step++)
+        {
+            switch (random.Next(8))
+            {
+                case 0:
+                case 1:
+                    items.Insert(random.Next(items.Count + 1), next++);
+                    break;
+                case 2 when items.Count > 0:
+                    items.RemoveAt(random.Next(items.Count));
+                    break;
+                case 3 when items.Count > 1:
+                {
+                    var a = random.Next(items.Count);
+                    var b = random.Next(items.Count);
+                    (items[a], items[b]) = (items[b], items[a]);
+                    break;
+                }
+                case 4 when items.Count > 1:
+                {
+                    var from = random.Next(items.Count);
+                    var item = items[from];
+                    items.RemoveAt(from);
+                    items.Insert(random.Next(items.Count + 1), item);
+                    break;
+                }
+                case 5 when items.Count > 2:
+                    items.Reverse();
+                    break;
+                case 6 when random.Next(6) == 0:
+                    items.Clear();
+                    break;
+                default:
+                    for (var i = random.Next(4); i >= 0; i--)
+                    {
+                        items.Add(next++);
+                    }
+
+                    break;
+            }
+
+            Set(v, items.ToArray());
+            Assert.Equal(string.Join(",", items), Items(Dom.Html));
+        }
+    }
 }
