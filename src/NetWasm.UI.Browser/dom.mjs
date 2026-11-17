@@ -37,6 +37,7 @@ const OP = {
   ObserveResize: 24,
   Portal: 25,
   TemplateListener: 26,
+  ReleaseBlock: 27,
 };
 
 const FLAG_PREVENT_DEFAULT = 1;
@@ -544,6 +545,19 @@ export function createDomHost(options = {}) {
     }
   }
 
+  function release(id) {
+    const n = nodes[id];
+    if (cloneOf[id]) cloneOf[id] = undefined;
+    // A hole nothing asked for is still the number of its clone.
+    if (n && typeof n === "object") {
+      releaseListeners(n);
+      if (n[key]) n[key] = undefined;
+      if (n[rowKey]) n[rowKey] = undefined;
+      if (n[idKey] === id) n[idKey] = undefined;
+    }
+    nodes[id] = undefined;
+  }
+
   function mountTarget(selector) {
     if (selector === "") return root.nodeType === 9 ? root.body : root;
     if (root.nodeType === 1 && root.matches(selector)) return root;
@@ -658,17 +672,13 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.Release: {
-          const id = r.i32();
-          const n = nodes[id];
-          if (cloneOf[id]) cloneOf[id] = undefined;
-          // A hole nothing asked for is still the number of its clone.
-          if (n && typeof n === "object") {
-            releaseListeners(n);
-            if (n[key]) n[key] = undefined;
-            if (n[rowKey]) n[rowKey] = undefined;
-            if (n[idKey] === id) n[idKey] = undefined;
-          }
-          nodes[id] = undefined;
+          release(r.i32());
+          break;
+        }
+        case OP.ReleaseBlock: {
+          const first = r.i32();
+          const end = first + r.i32();
+          for (let id = first; id < end; id++) release(id);
           break;
         }
         case OP.AddListener: {

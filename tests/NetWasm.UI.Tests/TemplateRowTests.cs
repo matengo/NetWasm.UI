@@ -256,9 +256,29 @@ public class TemplateRowTests : RendererTest
 
         items.Value = [items.Value[0]];
 
-        Assert.Equal(4, Dom.Log.Count(l => l.Op == "Release"));
+        // The row's four node ids go with one op.
+        Assert.Equal("4", Assert.Single(Dom.Log, l => l.Op == "ReleaseBlock").Detail.Split(' ')[1]);
+        Assert.DoesNotContain(Dom.Log, l => l.Op == "Release");
         Renderer.DispatchRow(listener.First, listener.Slot, new DomEvent("click"));
         Assert.Empty(clicks);
+    }
+
+    [Fact]
+    public void A_cleared_list_releases_the_ids_of_all_its_rows_with_one_op()
+    {
+        items.Value = [new Item(1, "one"), new Item(2, "two"), new Item(3, "three")];
+        Mount(RowTemplate());
+        Dom.Log.Clear();
+
+        items.Value = [];
+
+        // The rows got their id blocks one after the other, so the three blocks of four ids are one run.
+        Assert.Equal("12", Assert.Single(Dom.Log, l => l.Op == "ReleaseBlock").Detail.Split(' ')[1]);
+        Assert.Equal("<ul><!----></ul>", Dom.Html);
+
+        // The ids are free again: the next rows use them, and the host has dropped the old nodes.
+        items.Value = [new Item(4, "four"), new Item(5, "five")];
+        Assert.Equal("<ul><li>4 <a>four</a></li><li>5 <a>five</a></li><!----></ul>", Dom.Html);
     }
 
     [Fact]

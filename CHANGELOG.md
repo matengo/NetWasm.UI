@@ -13,6 +13,10 @@ See [Compatibility and versioning](docs/compatibility.md).
   shape of those short-lived readers (or of a cleared list's rows) the browser threw away the
   code compiled for them, so the next batch ran slower while it was compiled again. One reader
   now reads every batch, and each template keeps one node shaped like its clones' root.
+- A template clone releases its node ids with one op (new `ReleaseBlock` op) instead of one per
+  node, and clones whose ids follow each other share that op. Clearing a list of 1,000 rows
+  sends 18 bytes instead of 25 KB, and replacing one sends a third less. A host of your own has
+  to handle the new op.
 
 ## [0.13.0] - 2026-11-17
 

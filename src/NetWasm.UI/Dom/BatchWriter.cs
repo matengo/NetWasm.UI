@@ -9,6 +9,8 @@ internal sealed class BatchWriter
     private byte[] buffer;
     private byte[]? spare;
     private int length;
+    // Where the operands of the last ReleaseBlock op start, while that op is still the last one in the batch.
+    private int openRelease = -1;
 
     public BatchWriter(int initialCapacity = 1024)
     {
@@ -23,6 +25,48 @@ internal sealed class BatchWriter
     {
         length = 0;
         OpCount = 0;
+        openRelease = -1;
+    }
+
+    /// <summary>
+    /// Releases the ids <paramref name="first"/> .. <paramref name="first"/> + <paramref name="count"/> - 1 with
+    /// one op. A block that touches the ids of the op before it, on either side, extends that op: the rows of a
+    /// list got their blocks one after the other, so a list that is cleared releases all of them with one op.
+    /// </summary>
+    public void ReleaseBlock(int first, int count)
+    {
+        if (openRelease >= 0 && openRelease + 8 == length)
+        {
+            var runFirst = ReadInt(openRelease);
+            var runCount = ReadInt(openRelease + 4);
+            if (first == runFirst + runCount)
+            {
+                WriteInt(openRelease + 4, runCount + count);
+                return;
+            }
+
+            if (first + count == runFirst)
+            {
+                WriteInt(openRelease, first);
+                WriteInt(openRelease + 4, runCount + count);
+                return;
+            }
+        }
+
+        Op(Dom.Op.ReleaseBlock);
+        openRelease = length;
+        Int(first);
+        Int(count);
+    }
+
+    private int ReadInt(int at) => buffer[at] | (buffer[at + 1] << 8) | (buffer[at + 2] << 16) | (buffer[at + 3] << 24);
+
+    private void WriteInt(int at, int value)
+    {
+        buffer[at] = (byte)value;
+        buffer[at + 1] = (byte)(value >> 8);
+        buffer[at + 2] = (byte)(value >> 16);
+        buffer[at + 3] = (byte)(value >> 24);
     }
 
     /// <summary>Returns a right-sized copy of the encoded ops and clears the writer.</summary>

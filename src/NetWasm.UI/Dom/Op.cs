@@ -35,6 +35,8 @@ public enum Op : byte
     TemplateListener = 26, // templateId, hole, event, slot(u8), flags  (an element of every clone listens without a
                            // listener op per clone: the event is dispatched to handler 0 with firstId, slot and
                            // the event payload; see Template.Listen)
+    ReleaseBlock = 27,    // firstId, count     (Release for the ids firstId .. firstId + count - 1: the nodes of
+                          // a template clone, or of several clones whose ids follow each other)
 }
 
 /// <summary>The target of <see cref="Op.AddGlobalListener"/>.</summary>
