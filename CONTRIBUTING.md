@@ -9,7 +9,7 @@ dotnet test tests/NetWasm.UI.Tests                 # core unit tests (net10.0, <
 
 Unit tests run the core on `net10.0` against `FakeDomHost`, an in-memory decoder of the
 [render protocol](docs/architecture.md#render-protocol). When you add an op, update `Op.cs`,
-`Renderer`, `dom.mjs` and `FakeDomHost.cs` together.
+`Renderer`, `dom.mjs`, `build/prerender.mjs` (it has its own decoder) and `FakeDomHost.cs` together.
 
 ### Browser (E2E) tests
 

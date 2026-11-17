@@ -42,6 +42,10 @@ public sealed class Template
     private readonly byte[] kinds;
     private readonly string[] tags;
     private int definedIn = -1;
+    private byte[]? listenerHoles;
+    private string[]? listenerEvents;
+    private ListenerFlags[]? listenerFlags;
+    private int listenerCount;
 
     public Template(string html)
     {
@@ -60,17 +64,80 @@ public sealed class Template
     /// <summary>Clones the template into the DOM and returns handles to its holes.</summary>
     public TemplateInstance Clone()
     {
-        if (definedIn != Renderer.Generation)
-        {
-            Renderer.DefineTemplate(Id, Html);
-            definedIn = Renderer.Generation;
-        }
-
-        var first = Renderer.CloneTemplate(Id, kinds.Length);
-        var instance = new TemplateInstance(first, kinds, tags);
+        var instance = new TemplateInstance(CloneBlock(), kinds, tags);
         Scope.Current?.Register(instance);
         return instance;
     }
+
+    // Queues a clone and returns its first node id. The caller releases the block.
+    internal int CloneBlock()
+    {
+        if (definedIn != Renderer.Generation)
+        {
+            Renderer.DefineTemplate(Id, Html);
+            for (var slot = 0; slot < listenerCount; slot++)
+            {
+                Renderer.TemplateListener(Id, listenerHoles![slot], listenerEvents![slot], slot, listenerFlags![slot]);
+            }
+
+            definedIn = Renderer.Generation;
+        }
+
+        return Renderer.CloneTemplate(Id, kinds.Length);
+    }
+
+    internal string RootTag => tags[0];
+
+    /// <summary>
+    /// Declares that the element at <paramref name="hole"/> of every row cloned from this template listens for
+    /// <paramref name="eventName"/>. The listeners are numbered in the order they are declared; a row's events
+    /// function (see <see cref="TemplateRuntime.Rows{T, TKey}(Func{IReadOnlyList{T}}, Func{T, TKey}, Template, int, Action{TemplateRow, T}?, Action{TemplateRow, T}?, Action{TemplateRow, T, int, DomEvent}?)"/>)
+    /// receives that number. The listener is part of the template, so a row costs no listener object and no op for
+    /// it. Only events the host delegates can be declared (see <see cref="CanListen"/>; the host rejects others
+    /// when it defines the template), at most 255 per template, and before the template is first cloned.
+    /// </summary>
+    public Template Listen(int hole, string eventName, ListenerFlags flags = ListenerFlags.None)
+    {
+        if (hole < 0 || hole >= kinds.Length || kinds[hole] != ElementHole)
+        {
+            throw new ArgumentOutOfRangeException(nameof(hole), "Hole " + hole.ToString() + " is not an element.");
+        }
+
+        if (definedIn != -1 || listenerCount == 255)
+        {
+            throw new InvalidOperationException("Template listeners are declared before the first clone, at most 255 of them.");
+        }
+
+        if (listenerHoles is null || listenerCount == listenerHoles.Length)
+        {
+            var size = listenerCount == 0 ? 4 : listenerCount * 2;
+            Array.Resize(ref listenerHoles, size);
+            Array.Resize(ref listenerEvents, size);
+            Array.Resize(ref listenerFlags, size);
+        }
+
+        listenerHoles![listenerCount] = (byte)hole;
+        listenerEvents![listenerCount] = eventName;
+        listenerFlags![listenerCount] = flags;
+        listenerCount++;
+        return this;
+    }
+
+    /// <summary>
+    /// Whether a template can <see cref="Listen"/> for the event: the ones the browser host handles with one
+    /// listener at its root (<c>DELEGATED</c> in <c>dom.mjs</c>; a test compares the two lists and the template
+    /// compiler's). <see cref="Listen"/> does not call this, so an app pays nothing for the list; the host checks.
+    /// </summary>
+    public static bool CanListen(string eventName) => eventName is
+        "click" or "dblclick" or "contextmenu" or "input" or "change" or "beforeinput" or "submit" or
+        "keydown" or "keyup" or "mousedown" or "mouseup" or "pointerdown" or "pointerup" or "focusin" or "focusout";
+
+    internal bool HasListeners => listenerCount > 0;
+
+    internal string ListenerEvent(int slot) => listenerEvents![slot];
+
+    // A handle to a clone whose block someone else releases.
+    internal TemplateInstance InstanceAt(int first) => new(first, kinds, tags, owned: false);
 
     /// <summary>
     /// Finds the holes the same way the host does: the first element is the root, then every element with a
@@ -322,11 +389,12 @@ public sealed class TemplateInstance : IDisposable
     private Element? root;
     private bool released;
 
-    internal TemplateInstance(int first, byte[] kinds, string[] tags)
+    internal TemplateInstance(int first, byte[] kinds, string[] tags, bool owned = true)
     {
         this.first = first;
         this.kinds = kinds;
         this.tags = tags;
+        released = !owned;
     }
 
     /// <summary>The root element (hole 0).</summary>

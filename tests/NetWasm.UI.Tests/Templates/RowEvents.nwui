@@ -1,0 +1,23 @@
+@* Rows of an @foreach: bindings, handlers of both shapes, a modifier, an event the host does not delegate. *@
+<ul>
+    @foreach (Entry entry in Entries) {
+        <li @key="entry.Id" data-id="@entry.Id" class="@(entry.Id == Picked.Value ? "on" : null)">
+            <a class="pick" @onclick="() => Picked.Value = entry.Id">@entry.Name</a>
+            <a class="key" @onkeydown="(DomEvent e) => Keys.Add(entry.Name + e.Key)">k</a>
+            <a class="go" href="/x" @onclick="Go" @onclick:preventDefault>go</a>
+            <input class="edit" @onfocus="() => Focused.Value = entry.Id">
+        </li>
+    }
+</ul>
+
+@code {
+    public sealed record Entry(int Id, string Name);
+
+    public Signal<IReadOnlyList<Entry>> Entries { get; } = new(new Entry[0]);
+    public Signal<int> Picked { get; } = new(0);
+    public Signal<int> Focused { get; } = new(0);
+    public List<string> Keys { get; } = new();
+    public int Went { get; private set; }
+
+    private void Go() => Went++;
+}

@@ -1,0 +1,16 @@
+@* Rows with a component: a key that gets a new item has its whole row built again for it. *@
+<ul>
+    @foreach (Entry entry in Entries) {
+        <li @key="entry.Id">
+            <a @onclick="() => Picked.Value = entry.Name">@entry.Name</a>
+            <Badge Label="@entry.Name" Count="@entry.Count" />
+        </li>
+    }
+</ul>
+
+@code {
+    public sealed record Entry(int Id, string Name, int Count);
+
+    public Signal<IReadOnlyList<Entry>> Entries { get; } = new(new Entry[0]);
+    public Signal<string> Picked { get; } = new("");
+}

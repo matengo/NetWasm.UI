@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using NetWasm.UI.Reactive;
 
 namespace NetWasm.UI.Dom;
@@ -20,6 +21,12 @@ public static class Renderer
     private static readonly Stack<int> freeNodeIds = new();
     private static readonly Dictionary<int, Stack<int>> freeNodeBlocks = new();
     private static int nextHandlerId = 1;
+    // Rows that take events through their template's listeners (Template.Listen), by their first node id. The host
+    // dispatches such an event to RowEventHandler with the row's first node id and the listener's slot.
+    private static TemplateRow?[] rows = Array.Empty<TemplateRow?>();
+
+    /// <summary>The handler id the host dispatches a template listener's event to. Listener ids start at 1.</summary>
+    internal const int RowEventHandler = 0;
 
     public static bool IsInitialized => host is not null;
 
@@ -47,6 +54,7 @@ public static class Renderer
         freeNodeIds.Clear();
         freeNodeBlocks.Clear();
         nextHandlerId = 1;
+        Array.Clear(rows);
         FlushCount = 0;
         Generation++;
         App.ForgetMounted();
@@ -107,6 +115,38 @@ public static class Renderer
         batch.Op(Op.DefineTemplate);
         batch.Int(templateId);
         batch.String(html);
+    }
+
+    /// <summary>
+    /// Declares a listener of a defined template: the element at <paramref name="hole"/> of every clone listens
+    /// for the event, with no op per clone (see <see cref="Template.Listen"/>).
+    /// </summary>
+    internal static void TemplateListener(int templateId, int hole, string eventName, int slot, ListenerFlags flags)
+    {
+        batch.Op(Op.TemplateListener);
+        batch.Int(templateId);
+        batch.Int(hole);
+        batch.String(eventName);
+        batch.Byte((byte)slot);
+        batch.Byte((byte)flags);
+    }
+
+    internal static void TrackRow(int first, TemplateRow row)
+    {
+        if (first >= rows.Length)
+        {
+            Array.Resize(ref rows, Math.Max(first + 1, rows.Length * 2));
+        }
+
+        rows[first] = row;
+    }
+
+    internal static void ForgetRow(int first)
+    {
+        if (first < rows.Length)
+        {
+            rows[first] = null;
+        }
     }
 
     /// <summary>Clones a defined template; returns the id of its root, holes get the following ids.</summary>
@@ -361,12 +401,40 @@ public static class Renderer
     /// </summary>
     public static void Dispatch(int handlerId, byte[] payload)
     {
+        if (handlerId == RowEventHandler)
+        {
+            // first node id (i32), slot (u8), then the event payload.
+            if (payload.Length >= 5)
+            {
+                var first = payload[0] | (payload[1] << 8) | (payload[2] << 16) | (payload[3] << 24);
+                if ((uint)first < (uint)rows.Length && rows[first] is { } row)
+                {
+                    row.Handle(payload[4], DomEvent.Decode(row.ListenerEvent(payload[4]), payload, 5));
+                }
+            }
+
+            return;
+        }
+
         if (!handlers.TryGetValue(handlerId, out var listener))
         {
             return;
         }
 
         Invoke(listener, DomEvent.Decode(listener.EventName, payload));
+    }
+
+    /// <summary>
+    /// Delivers an event that a host already decoded to a row's template listener (see <see cref="Template.Listen"/>):
+    /// <paramref name="firstId"/> is the row's first node id and <paramref name="slot"/> the listener's slot.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static void DispatchRow(int firstId, int slot, DomEvent e)
+    {
+        if ((uint)firstId < (uint)rows.Length && rows[firstId] is { } row)
+        {
+            row.Handle(slot, e);
+        }
     }
 
     /// <summary>Dispatches an already-decoded event (tests, fake hosts).</summary>

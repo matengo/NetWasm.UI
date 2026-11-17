@@ -345,6 +345,8 @@ function createPrerenderHost({ path, base }) {
         case 24: r.i32(); r.i32(); break;
         // Portals are not prerendered: their content appears once the app runs.
         case 25: r.i32(); r.str(); break;
+        // Template listeners (rows) are skipped like any other listener.
+        case 26: r.i32(); r.i32(); r.str(); r.u8(); r.u8(); break;
         default:
           throw new Error(`NetWasm.UI prerender: unknown opcode ${op}`);
       }

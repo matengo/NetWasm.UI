@@ -32,6 +32,8 @@ public class Effect : Computation
 
     private protected virtual void Execute() => action!();
 
+    internal Scope? Owner => owner;
+
     internal void AddCleanup(Action cleanup) => (cleanups ??= new List<Action>()).Add(cleanup);
 
     private void RunCleanups()

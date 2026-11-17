@@ -8,12 +8,28 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ### Added
 
+- `TemplateRuntime.Rows`, `TemplateRow` and `Template.Listen`: the rows of a keyed list as clones of
+  one template, filled in by functions of the row that all rows share. See
+  [Rows](docs/architecture.md#rows). New `TemplateListener` op.
 - `benchmarks/WasmBench`: the keyed benchmark's C# side under Wasmtime, with times that repeat
   within about 1 % and exact allocation and batch sizes. See
   [Benchmarks](docs/benchmarks.md#the-c-side-alone-under-wasmtime).
 
 ### Changed
 
+- `.nwui`: the element of an `@foreach` body is compiled to rows of a template. A row is one
+  clone and one object: its `@expr` text and bound attributes are one effect, and its `@on…`
+  handlers for delegated events are registered once for the whole list. Creating rows takes about
+  40 % less time on the C# side and sends about 40 % fewer bytes to the host. Templates need no
+  change. Two things behave differently, see
+  [Rows of an `@foreach`](docs/templates.md#rows-of-an-foreach):
+  - A row whose key gets a different item in a new list (another object, or for a value type a
+    value that is not equal) now shows that item in all of its content. A row that is only
+    bindings and delegated handlers takes it in place; a row with a component, a block, `@bind`,
+    `@ref` or other content that is applied once is built again for it. Before, the row kept the
+    object it was created for. Keep the same object to keep the row.
+  - The bindings of a row are evaluated together when something one of them reads changes. Only
+    values that differ are written to the DOM.
 - The keyed list reuses its keys and lookup tables from one list to the next, and it clears a list
   or swaps two rows without building them. Swapping two of 1,000 rows no longer allocates per row.
 - The benchmark app is a `.nwui` template (`benchmarks/NetWasmBench/BenchApp.nwui`), so the

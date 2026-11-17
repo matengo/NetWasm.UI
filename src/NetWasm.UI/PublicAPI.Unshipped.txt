@@ -90,3 +90,20 @@ static NetWasm.UI.Html.Viewport() -> NetWasm.UI.Dom.Rect
 static NetWasm.UI.TemplateRuntime.AttrStr<T>(T value) -> string?
 static NetWasm.UI.TemplateRuntime.Render(NetWasm.UI.Content content) -> NetWasm.UI.Content
 static NetWasm.UI.TemplateRuntime.Render<T>(NetWasm.UI.Slot<T>? slot, T arg) -> NetWasm.UI.Content
+NetWasm.UI.Dom.Op.TemplateListener = 26 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Template.Listen(int hole, string! eventName, NetWasm.UI.Dom.ListenerFlags flags = NetWasm.UI.Dom.ListenerFlags.None) -> NetWasm.UI.Template!
+NetWasm.UI.TemplateRow
+NetWasm.UI.TemplateRow.Attr(int slot, int hole, string! name, string? value) -> void
+NetWasm.UI.TemplateRow.Instance.get -> NetWasm.UI.TemplateInstance!
+NetWasm.UI.TemplateRow.Text(int slot, int hole, int value) -> void
+NetWasm.UI.TemplateRow.Text(int slot, int hole, string? value) -> void
+NetWasm.UI.TemplateRow.Text<T>(int slot, int hole, T value) -> void
+override NetWasm.UI.TemplateRow.Dispose() -> void
+static NetWasm.UI.Dom.Renderer.DispatchRow(int firstId, int slot, NetWasm.UI.DomEvent e) -> void
+static NetWasm.UI.Template.CanListen(string! eventName) -> bool
+static NetWasm.UI.TemplateRuntime.Invoke(System.Action! handler, NetWasm.UI.DomEvent e) -> void
+static NetWasm.UI.TemplateRuntime.Invoke(System.Action<NetWasm.UI.DomEvent>! handler, NetWasm.UI.DomEvent e) -> void
+static NetWasm.UI.TemplateRuntime.Rows<T, TKey>(System.Func<NetWasm.UI.Reactive.IReadOnlySignal<System.Collections.Generic.IReadOnlyList<T>!>!>! items, System.Func<T, TKey>! key, NetWasm.UI.Template! template, int slots, System.Action<NetWasm.UI.TemplateRow!, T>? setup, System.Action<NetWasm.UI.TemplateRow!, T>? bind, System.Action<NetWasm.UI.TemplateRow!, T, int, NetWasm.UI.DomEvent>? events = null) -> NetWasm.UI.For<T, TKey>!
+static NetWasm.UI.TemplateRuntime.Rows<T, TKey>(System.Func<System.Collections.Generic.IReadOnlyList<T>!>! items, System.Func<T, TKey>! key, NetWasm.UI.Template! template, int slots, System.Action<NetWasm.UI.TemplateRow!, T>? setup, System.Action<NetWasm.UI.TemplateRow!, T>? bind, System.Action<NetWasm.UI.TemplateRow!, T, int, NetWasm.UI.DomEvent>? events = null) -> NetWasm.UI.For<T, TKey>!
+static NetWasm.UI.TemplateRuntime.Rows<T>(System.Func<NetWasm.UI.Reactive.IReadOnlySignal<System.Collections.Generic.IReadOnlyList<T>!>!>! items, NetWasm.UI.Template! template, int slots, System.Action<NetWasm.UI.TemplateRow!, T>? setup, System.Action<NetWasm.UI.TemplateRow!, T>? bind, System.Action<NetWasm.UI.TemplateRow!, T, int, NetWasm.UI.DomEvent>? events = null) -> NetWasm.UI.For<T, T>!
+static NetWasm.UI.TemplateRuntime.Rows<T>(System.Func<System.Collections.Generic.IReadOnlyList<T>!>! items, NetWasm.UI.Template! template, int slots, System.Action<NetWasm.UI.TemplateRow!, T>? setup, System.Action<NetWasm.UI.TemplateRow!, T>? bind, System.Action<NetWasm.UI.TemplateRow!, T, int, NetWasm.UI.DomEvent>? events = null) -> NetWasm.UI.For<T, T>!

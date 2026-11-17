@@ -64,7 +64,8 @@ against `FakeDomHost`, an in-memory decoder of the same protocol.
 ## Render protocol
 
 Opcode `u8`, integers little-endian `i32`, strings `u32` byte length + UTF‑8, booleans `u8`.
-Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs` and `FakeDomHost.cs` mirror it.
+Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs`, `build/prerender.mjs` and
+`FakeDomHost.cs` mirror it.
 
 | Op | Operands | Note |
 |----|----------|------|
@@ -77,6 +78,7 @@ Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs` and `FakeDomHos
 | Focus | id | |
 | DefineTemplate | templateId, html | parses the HTML into a `<template>` once and records the paths to its holes |
 | CloneTemplate | templateId, firstId | clones it; the root gets `firstId`, hole *i* gets `firstId + i` |
+| TemplateListener | templateId, hole, event, slot (u8), flags | the element at that hole of every clone listens for the event, with no op per clone. The event is dispatched to handler 0, with the clone's `firstId` (i32) and the slot before the event payload. See [Rows](#rows) |
 | SetTextInt | id, value (i32) | sets a text node to the decimal number, so C# builds no string |
 | RemoveRange | firstId, endId | detaches `firstId` and its next siblings up to, not including, `endId` (a keyed list dropping a run of items) |
 
@@ -93,6 +95,32 @@ the first time it is cloned in a renderer generation; `Clone()` then reserves co
 and emits one `CloneTemplate` op. The generator turns every native element subtree of a
 `.nwui` file into a static template, so only bound attributes, handlers, `@expr` text and
 components/blocks cost ops per instance.
+
+### Rows
+
+The element of an `@foreach` body is a template too, and a list clones it once per item. Here the
+generator goes further, because a long list pays for everything a row allocates. It emits
+`TemplateRuntime.Rows(items, key, template, slots, setup, bind, events)`, where the three functions
+take the row and its item and are shared by all rows:
+
+- `bind` writes the row's `@expr` text and plain bound attributes. Each row is one `TemplateRow`,
+  which is also the effect that runs `bind`, so a row has one effect instead of one per binding,
+  and no closure or delegate of its own. The row remembers what each binding wrote and sends an
+  op only for a value that changed.
+- `events` receives the row's `@on…` handlers for delegated events. The listeners are declared
+  on the template (`Template.Listen`, the `TemplateListener` op), so a row has no listener object
+  and no listener op. The host dispatches such an event with the row's first node id and the
+  listener's slot, and the renderer finds the row in a table indexed by node id.
+- `setup` applies whatever is neither: components, blocks, `@bind`, `@ref`, handlers for events
+  the host does not delegate, and all attributes of an element that has `@attributes`. It runs
+  once per row, as before.
+
+The keyed list keeps a row while its key is in the list and has the same item. When a new list
+has a different item for that key (another object, or for a value type a value that is not
+equal), the whole row shows the new item. A row without `setup` takes it in place: `bind` runs
+for the new item and later events get it. A row with `setup` is disposed and rendered again
+for the new item where it was (`KeyedList.Replace`), because what `setup` created was built
+for the old one.
 
 ## Event delegation
 

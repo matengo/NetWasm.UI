@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using NetWasm.UI.Reactive;
 
@@ -66,6 +67,65 @@ public static class TemplateRuntime
     public static For<T, TKey> Each<T, TKey>(Func<IReadOnlySignal<IReadOnlyList<T>>> items, Func<T, TKey> key, Func<T, Node> render)
         where TKey : notnull =>
         new(() => items().Value, key, render);
+
+    /// <summary>
+    /// A keyed list whose rows are clones of <paramref name="template"/>; what the template compiler emits for a
+    /// <c>@foreach</c> over an element. Three functions of the row fill it in, so a row needs no closure, delegate,
+    /// effect or listener per binding: <paramref name="setup"/> runs once when the row is created, for content
+    /// that is applied once; <paramref name="bind"/> writes the row's reactive text and attributes (each with a
+    /// slot below <paramref name="slots"/>) and runs again when something it read changes; <paramref name="events"/>
+    /// receives the events of the template's listeners (see <see cref="Template.Listen"/>) with the listener's slot.
+    /// </summary>
+    /// <remarks>
+    /// A row shows the item its key has in the current list. When a new list has a different item for a key that
+    /// stays (another object, or for a value type a value that is not equal), a row without
+    /// <paramref name="setup"/> takes it in place, and a row with <paramref name="setup"/> is disposed and built
+    /// again for the new item.
+    /// </remarks>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static For<T, TKey> Rows<T, TKey>(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Template template, int slots,
+        Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
+        where TKey : notnull =>
+        Rows(items, key, new RowBindings<T>(template, slots, setup, bind, events));
+
+    /// <inheritdoc cref="Rows{T, TKey}(Func{IReadOnlyList{T}}, Func{T, TKey}, Template, int, Action{TemplateRow, T}?, Action{TemplateRow, T}?, Action{TemplateRow, T, int, DomEvent}?)"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static For<T, TKey> Rows<T, TKey>(Func<IReadOnlySignal<IReadOnlyList<T>>> items, Func<T, TKey> key, Template template, int slots,
+        Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
+        where TKey : notnull
+    {
+        var signal = items();
+        return Rows(() => signal.Value, key, new RowBindings<T>(template, slots, setup, bind, events));
+    }
+
+    /// <summary>Without <c>@key</c> the items themselves are the keys.</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static For<T, T> Rows<T>(Func<IReadOnlyList<T>> items, Template template, int slots,
+        Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
+        where T : notnull =>
+        Rows(items, static item => item, new RowBindings<T>(template, slots, setup, bind, events));
+
+    /// <inheritdoc cref="Rows{T}(Func{IReadOnlyList{T}}, Template, int, Action{TemplateRow, T}?, Action{TemplateRow, T}?, Action{TemplateRow, T, int, DomEvent}?)"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static For<T, T> Rows<T>(Func<IReadOnlySignal<IReadOnlyList<T>>> items, Template template, int slots,
+        Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
+        where T : notnull
+    {
+        var signal = items();
+        return Rows(() => signal.Value, static item => item, new RowBindings<T>(template, slots, setup, bind, events));
+    }
+
+    private static For<T, TKey> Rows<T, TKey>(Func<IReadOnlyList<T>> items, Func<T, TKey> key, RowBindings<T> rows)
+        where TKey : notnull =>
+        new(items, key, rows);
+
+    /// <summary>Calls a row's event handler, whichever of the two shapes <c>@on…</c> accepts it has.</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static void Invoke(Action handler, DomEvent e) => handler();
+
+    /// <inheritdoc cref="Invoke(Action, DomEvent)"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static void Invoke(Action<DomEvent> handler, DomEvent e) => handler(e);
 
     /// <summary>Without <c>@key</c> the items themselves are the keys.</summary>
     public static For<T, T> Each<T>(Func<IReadOnlyList<T>> items, Func<T, Node> render)

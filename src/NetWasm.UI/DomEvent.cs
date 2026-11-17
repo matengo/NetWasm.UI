@@ -113,14 +113,16 @@ public readonly struct DomEvent
     public bool IsPlainClick => Button == 0 && Modifiers == EventModifiers.None;
 
     /// <summary>Decodes a payload produced by the host. An empty payload yields an event with default fields.</summary>
-    public static DomEvent Decode(string type, byte[] payload)
+    public static DomEvent Decode(string type, byte[] payload) => Decode(type, payload, 0);
+
+    internal static DomEvent Decode(string type, byte[] payload, int start)
     {
-        if (payload.Length == 0)
+        if (payload.Length == start)
         {
             return new DomEvent(type);
         }
 
-        var pos = 0;
+        var pos = start;
         var flags = payload[pos++];
         var button = ReadInt(payload, ref pos);
         var clientX = ReadInt(payload, ref pos);
