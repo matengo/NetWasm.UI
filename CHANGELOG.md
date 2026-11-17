@@ -35,6 +35,8 @@ See [Compatibility and versioning](docs/compatibility.md).
   walking to every hole of every clone. Creating 10,000 rows spends about 8 ms less in the browser.
 - The keyed list reuses its keys and lookup tables from one list to the next, and it clears a list
   or swaps two rows without building them. Swapping two of 1,000 rows no longer allocates per row.
+- The benchmark runner warms up every case the way js-framework-benchmark does: create 10,000
+  rows, append and select row were measured with less or no warm-up before.
 - The benchmark app is a `.nwui` template (`benchmarks/NetWasmBench/BenchApp.nwui`), so the
   benchmark measures what the template compiler emits.
 

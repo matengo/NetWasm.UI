@@ -46,6 +46,10 @@ the renderer and the template compiler; changes to `dom.mjs` still need the brow
 
 - Every DOM case opens a fresh page, runs the setup clicks, forces a GC and then times one
   `element.click()` until the DOM check passes (row count, labels, selected row).
+- The setup clicks are the warm-up that
+  [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) gives the same case,
+  so every case is measured warmed up. Create 10,000 rows, for example, follows five rounds of
+  create 1,000 rows and clear.
 - NetWasm.UI and Solid finish inside the click. React and Blazor may render after it, so the
   runner then waits on microtasks/macrotasks until the check passes.
 - *+ layout* adds a forced layout (`document.body.offsetHeight`). Paint is not measured.

@@ -164,6 +164,7 @@ await using var browser = await playwright.Chromium.LaunchAsync(new()
 Console.WriteLine($"Chromium {browser.Version}, {runs} runs per case, median shown.\n");
 
 // Each DOM case: setup clicks, the measured click, and a check that the DOM ended up as expected.
+// The setup is the warm-up js-framework-benchmark gives the same case, so every case is measured warmed up.
 // Every check is false before the click, so frameworks that render after the event (React, Blazor) are
 // timed until their DOM is done, not until the click returns.
 var ops = new (string Name, string[] Prep, string Click, string Check)[]
@@ -172,13 +173,13 @@ var ops = new (string Name, string[] Prep, string Click, string Check)[]
     ("replace 1,000 rows", [.. Repeat(5, "#run")], "#run", "rows() === 1000 && id(1) !== before1"),
     ("partial update (every 10th)", ["#run", .. Repeat(5, "#update")], "#update",
         "label(1).endsWith(' !!!'.repeat(6)) && !label(2).endsWith('!')"),
-    ("select row", ["#run"], "tbody tr:nth-child(2) td:nth-child(2) a",
+    ("select row", ["#run", .. Rows(5, 9, " td:nth-child(2) a")], "tbody tr:nth-child(2) td:nth-child(2) a",
         "document.querySelectorAll('tr.danger').length === 1 && document.querySelector('tbody tr:nth-child(2)').className === 'danger'"),
     ("swap rows", ["#run", .. Repeat(5, "#swaprows")], "#swaprows", "rows() === 1000 && id(2) !== before2"),
     ("remove row", ["#run", .. Repeat(5, "tbody tr:nth-child(4) td:nth-child(3) a")], "tbody tr:nth-child(4) td:nth-child(3) a",
         "rows() === 994"),
-    ("create 10,000 rows", [], "#runlots", "rows() === 10000"),
-    ("append 1,000 rows", ["#run"], "#add", "rows() === 2000"),
+    ("create 10,000 rows", [.. Repeat(5, "#run", "#clear")], "#runlots", "rows() === 10000"),
+    ("append 1,000 rows", [.. Repeat(5, "#run", "#clear"), "#run"], "#add", "rows() === 2000"),
     ("clear 1,000 rows", [.. Repeat(5, "#run", "#clear"), "#run"], "#clear", "rows() === 0"),
 };
 
@@ -391,6 +392,10 @@ async Task<IPage> OpenAsync(IBrowserContext context, string path)
 
 static IEnumerable<string> Repeat(int count, params string[] selectors) =>
     Enumerable.Repeat(selectors, count).SelectMany(s => s);
+
+// A selector inside each of the rows first..last (1-based), one click per row.
+static IEnumerable<string> Rows(int first, int last, string within) =>
+    Enumerable.Range(first, last - first + 1).Select(row => $"tbody tr:nth-child({row}){within}");
 
 static double Median(List<double> values)
 {
