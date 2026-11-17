@@ -303,9 +303,29 @@ internal sealed class KeyedList : IDisposable
         HashSet<object>? fresh = null;
         try
         {
-            // Validate before touching anything. A middle key that exists but is not in the old middle is a
-            // prefix/suffix key, i.e. a duplicate.
-            if (oldEnd > start)
+            // Validate before touching anything: no key twice among the new ones.
+            var old = oldEnd - start;
+            fresh = size > 1 || old > 0 ? newKeys ??= new HashSet<object>() : null;
+            if (fresh is not null)
+            {
+                for (var i = start; i < newEnd; i++)
+                {
+                    if (!fresh.Add(newOrder[i]))
+                    {
+                        throw DuplicateKey(newOrder[i]);
+                    }
+                }
+            }
+
+            // Does any key of the old middle survive? When none does (a replaced list), nothing asks where an
+            // old key was, so the table of old positions is not built.
+            var survives = false;
+            for (var i = start; !survives && i < oldEnd; i++)
+            {
+                survives = fresh!.Contains(order[i]);
+            }
+
+            if (survives)
             {
                 index = oldIndex ??= new Dictionary<object, int>();
                 for (var i = start; i < oldEnd; i++)
@@ -314,11 +334,11 @@ internal sealed class KeyedList : IDisposable
                 }
             }
 
-            fresh = size > 1 || index is not null ? newKeys ??= new HashSet<object>() : null;
+            // A middle key that exists but is not in the old middle is a prefix/suffix key, i.e. a duplicate.
             for (var i = start; i < newEnd; i++)
             {
                 var k = newOrder[i];
-                if ((fresh is not null && !fresh.Add(k)) || (entries.ContainsKey(k) && (index is null || !index.ContainsKey(k))))
+                if (entries.ContainsKey(k) && (index is null || !index.ContainsKey(k)))
                 {
                     throw DuplicateKey(k);
                 }
@@ -327,14 +347,9 @@ internal sealed class KeyedList : IDisposable
             // Remove entries of the old middle that disappeared. Each item is one node and they sit in order
             // before the next item (or the anchor), so when none of the old middle survives (replace)
             // one range op detaches them all.
-            if (index is not null)
+            if (old > 0)
             {
-                var bulk = oldEnd - start > 1;
-                for (var i = start; bulk && i < oldEnd; i++)
-                {
-                    bulk = !fresh!.Contains(order[i]);
-                }
-
+                var bulk = !survives && old > 1;
                 if (bulk)
                 {
                     var endId = oldEnd < oldCount ? rendered[oldEnd].Node.Id : anchor.Id;
@@ -344,16 +359,15 @@ internal sealed class KeyedList : IDisposable
                 for (var i = start; i < oldEnd; i++)
                 {
                     var k = order[i];
-                    if (bulk || !fresh!.Contains(k))
+                    if (!survives || !fresh!.Contains(k))
                     {
-                        var entry = entries[k];
+                        entries.Remove(k, out var entry);
                         if (!bulk)
                         {
                             entry.Node.Remove();
                         }
 
                         entry.Scope.Dispose();
-                        entries.Remove(k);
                     }
                 }
             }

@@ -170,6 +170,32 @@ public class ForTests : RendererTest
     }
 
     [Fact]
+    public void Duplicate_of_a_kept_key_in_a_list_that_replaces_the_rest_throws_before_touching_the_dom()
+    {
+        var v = new ListView(1, 2, 3);
+        App.Mount(v, "#app");
+        Dom.Log.Clear();
+
+        // 1 stays where it is, 2 and 3 go and nothing of them survives; the second 1 is the duplicate.
+        Assert.Throws<InvalidOperationException>(() => Set(v, 1, 8, 1, 9));
+        Assert.DoesNotContain(Dom.Log, l => l.Op is "Remove" or "RemoveRange" or "InsertBefore" or "CloneTemplate" or "CreateElement");
+    }
+
+    [Fact]
+    public void A_list_replaced_by_new_keys_detaches_the_old_rows_with_one_op_and_builds_the_new_ones()
+    {
+        var v = new ListView(1, 2, 3);
+        App.Mount(v, "#app");
+        Dom.Log.Clear();
+
+        Set(v, 7, 8, 9, 10);
+
+        Assert.Equal("7,8,9,10", Items(Dom.Html));
+        Assert.Equal(1, Dom.Log.Count(l => l.Op == "RemoveRange"));
+        Assert.DoesNotContain(Dom.Log, l => l.Op == "Remove");
+    }
+
+    [Fact]
     public void Swapping_two_rows_moves_only_those()
     {
         var v = new ListView(1, 2, 3, 4, 5, 6);

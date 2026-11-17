@@ -17,6 +17,8 @@ See [Compatibility and versioning](docs/compatibility.md).
   node, and clones whose ids follow each other share that op. Clearing a list of 1,000 rows
   sends 18 bytes instead of 25 KB, and replacing one sends a third less. A host of your own has
   to handle the new op.
+- The keyed list builds no table of the old keys' positions when none of them stays in the new
+  list (a list replaced by new rows, or rows removed from one end).
 
 ## [0.13.0] - 2026-11-17
 
