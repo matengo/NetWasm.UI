@@ -30,6 +30,9 @@ See [Compatibility and versioning](docs/compatibility.md).
     object it was created for. Keep the same object to keep the row.
   - The bindings of a row are evaluated together when something one of them reads changes. Only
     values that differ are written to the DOM.
+- `nwui.dom` clones a template from its own inert document (a template with custom elements is
+  still imported first) and finds a clone's text holes when they are first written to, instead of
+  walking to every hole of every clone. Creating 10,000 rows spends about 8 ms less in the browser.
 - The keyed list reuses its keys and lookup tables from one list to the next, and it clears a list
   or swaps two rows without building them. Swapping two of 1,000 rows no longer allocates per row.
 - The benchmark app is a `.nwui` template (`benchmarks/NetWasmBench/BenchApp.nwui`), so the

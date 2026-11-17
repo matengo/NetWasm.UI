@@ -272,6 +272,7 @@ export function createDomHost(options = {}) {
   }
 
   function onDelegated(e) {
+    settleEvent(e);
     const type = e.type;
     let payload = null;
     // relatedTarget containment depends on the listener's node, so such payloads are built per level.
@@ -350,9 +351,11 @@ export function createDomHost(options = {}) {
 
     const holes = [];
     const walker = doc.createTreeWalker(first, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT);
+    let custom = first.localName.includes("-") || first.hasAttribute("is");
     while (walker.nextNode()) {
       const n = walker.currentNode;
       if (n.nodeType === 1) {
+        custom ||= n.localName.includes("-") || n.hasAttribute("is");
         if (n.hasAttribute("$")) { n.removeAttribute("$"); holes.push(n); }
       } else if (n.data === "$" || n.data === "@") {
         holes.push(n);
@@ -376,24 +379,67 @@ export function createDomHost(options = {}) {
       return path;
     });
 
-    templates.set(id, { root: doc.importNode(first, true), paths, rows: null });
+    // Clones are made from the parsed template itself: a clone then stays in the template's inert document
+    // until it is inserted, which costs the browser less than cloning a node of this document. A template with
+    // custom elements is imported first, so that its clones are created upgraded and a property set on them
+    // before they are inserted reaches the element's own setter.
+    templates.set(id, { root: custom ? doc.importNode(first, true) : first, paths, rows: null });
   }
+
+  // A clone's text holes are found when something first writes to them. Until then a hole's entry in `nodes`
+  // is the clone's first id (a number), and `cloneOf` has the clone's template. A list of thousands of rows
+  // then walks only to the text it sets, and tags no element it never needs by id. Asking for any other hole
+  // (an element or an insertion point) finds all holes of the clone at once: what is done with those can
+  // change the clone's structure, and a hole's path is only valid while the structure is the template's.
+  const cloneOf = [];
 
   function cloneTemplate(id, firstId) {
     const t = templates.get(id);
     const clone = t.root.cloneNode(true);
     nodes[firstId] = clone;
     clone[idKey] = firstId;
+    const count = t.paths.length;
+    if (count > 0 || t.rows) cloneOf[firstId] = t;
+    for (let h = 1; h <= count; h++) nodes[firstId + h] = firstId;
+  }
+
+  function node(id) {
+    const n = nodes[id];
+    return typeof n === "number" ? resolveHole(id, n) : n;
+  }
+
+  function walk(clone, path) {
+    let n = clone;
+    for (let k = 0; k < path.length; k++) {
+      n = n.firstChild;
+      for (let j = path[k]; j > 0; j--) n = n.nextSibling;
+    }
+    return n;
+  }
+
+  function resolveHole(id, firstId) {
+    const n = walk(nodes[firstId], cloneOf[firstId].paths[id - firstId - 1]);
+    if (n.nodeType !== 3) {
+      settleClone(firstId);
+      return nodes[id];
+    }
+    nodes[id] = n;
+    return n;
+  }
+
+  // Finds every hole of a clone that is still unresolved and gives its elements their ids and the listeners
+  // of their template.
+  function settleClone(firstId) {
+    const t = cloneOf[firstId];
+    cloneOf[firstId] = undefined;
+    const clone = nodes[firstId];
     const paths = t.paths;
     for (let h = 0; h < paths.length; h++) {
-      const path = paths[h];
-      let n = clone;
-      for (let k = 0; k < path.length; k++) {
-        n = n.firstChild;
-        for (let j = path[k]; j > 0; j--) n = n.nextSibling;
-      }
-      nodes[firstId + 1 + h] = n;
-      if (n.nodeType === 1) n[idKey] = firstId + 1 + h;
+      const id = firstId + 1 + h;
+      if (typeof nodes[id] !== "number") continue;
+      const n = walk(clone, paths[h]);
+      nodes[id] = n;
+      if (n.nodeType === 1) n[idKey] = id;
     }
     const rows = t.rows;
     if (rows) {
@@ -401,6 +447,21 @@ export function createDomHost(options = {}) {
         if (rows[h]) nodes[firstId + h][rowKey] = rows[h];
       }
     }
+  }
+
+  // Before an event is dispatched or a node is asked for its id: every clone around the node is settled, so
+  // its elements carry their ids and the listeners of their template.
+  function settle(n) {
+    for (; n; n = n.parentNode) {
+      const id = n[idKey];
+      if (id !== undefined && cloneOf[id] && nodes[id] === n) settleClone(id);
+      if (n === root) return;
+    }
+  }
+
+  function settleEvent(e) {
+    settle(e.target);
+    if (e.relatedTarget) settle(e.relatedTarget);
   }
 
   function addGlobal(target, event, handlerId, flags, within) {
@@ -411,6 +472,7 @@ export function createDomHost(options = {}) {
       if (flags & FLAG_PREVENT_DEFAULT) e.preventDefault();
       if ((flags & FLAG_PREVENT_DEFAULT_PLAIN_CLICK) && isPlainClick(e)) e.preventDefault();
       if (flags & FLAG_STOP_PROPAGATION) e.stopPropagation();
+      settleEvent(e);
       send(handlerId, payloadFor(e, idKey, null, within), e);
     };
     target.addEventListener(event, fn);
@@ -499,61 +561,61 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.SetText: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           n.data = r.str();
           break;
         }
         case OP.SetTextInt: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           n.data = "" + r.i32();
           break;
         }
         case OP.SetAttribute: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           const name = r.str();
           n.setAttribute(name, r.str());
           break;
         }
         case OP.RemoveAttribute: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           n.removeAttribute(r.str());
           break;
         }
         case OP.SetProperty: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           const name = r.str();
           n[name] = r.str();
           break;
         }
         case OP.SetBoolProperty: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           const name = r.str();
           n[name] = r.u8() !== 0;
           break;
         }
         case OP.AppendChild: {
-          const parent = nodes[r.i32()];
-          const child = nodes[r.i32()];
+          const parent = node(r.i32());
+          const child = node(r.i32());
           // A comment parent is an insertion point (template <!--@--> hole): the child goes before it.
           if (parent.nodeType === 8) parent.parentNode.insertBefore(child, parent);
           else parent.appendChild(child);
           break;
         }
         case OP.InsertBefore: {
-          const ref = nodes[r.i32()];
-          const child = nodes[r.i32()];
+          const ref = node(r.i32());
+          const child = node(r.i32());
           ref.parentNode.insertBefore(child, ref);
           break;
         }
         case OP.Remove: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           n.parentNode?.removeChild(n);
           mounted.delete(n);
           break;
         }
         case OP.RemoveRange: {
-          const first = nodes[r.i32()];
-          const end = nodes[r.i32()];
+          const first = node(r.i32());
+          const end = node(r.i32());
           const parent = first.parentNode;
           if (!first.previousSibling && end.parentNode === parent && !end.nextSibling) {
             // The range is everything but the end marker (a list that is its parent's only content).
@@ -570,7 +632,9 @@ export function createDomHost(options = {}) {
         case OP.Release: {
           const id = r.i32();
           const n = nodes[id];
-          if (n) {
+          if (cloneOf[id]) cloneOf[id] = undefined;
+          // A hole nothing asked for is still the number of its clone.
+          if (n && typeof n === "object") {
             releaseListeners(n);
             if (n[key]) n[key] = undefined;
             if (n[rowKey]) n[rowKey] = undefined;
@@ -580,7 +644,7 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.AddListener: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           const event = r.str();
           const handlerId = r.i32();
           const flags = r.u8();
@@ -592,6 +656,7 @@ export function createDomHost(options = {}) {
             if (flags & FLAG_PREVENT_DEFAULT) e.preventDefault();
             if ((flags & FLAG_PREVENT_DEFAULT_PLAIN_CLICK) && isPlainClick(e)) e.preventDefault();
             if (flags & FLAG_STOP_PROPAGATION) e.stopPropagation();
+            settleEvent(e);
             send(handlerId, payloadFor(e, idKey, n, null), e);
           };
           n.addEventListener(event, fn);
@@ -602,7 +667,7 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.RemoveListener: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           const handlerId = r.i32();
           if (removeDelegated(n, handlerId)) break;
           const l = listeners.get(handlerId);
@@ -613,7 +678,7 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.Mount: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           const selector = r.str();
           const target = mountTarget(selector);
           if (!target) throw new Error(`NetWasm.UI: mount target '${selector}' not found`);
@@ -628,11 +693,11 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.Focus: {
-          nodes[r.i32()]?.focus?.();
+          node(r.i32())?.focus?.();
           break;
         }
         case OP.Call: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           const method = r.str();
           const count = r.u8();
           const args = [];
@@ -646,7 +711,7 @@ export function createDomHost(options = {}) {
           const handlerId = r.i32();
           const flags = r.u8();
           const withinId = r.i32();
-          addGlobal(which === 1 ? doc.defaultView : doc, event, handlerId, flags, withinId ? nodes[withinId] ?? null : null);
+          addGlobal(which === 1 ? doc.defaultView : doc, event, handlerId, flags, withinId ? node(withinId) ?? null : null);
           break;
         }
         case OP.RemoveGlobalListener: {
@@ -654,13 +719,13 @@ export function createDomHost(options = {}) {
           break;
         }
         case OP.ObserveResize: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           const handlerId = r.i32();
           if (n && typeof ResizeObserver === "function") observeResize(n, handlerId);
           break;
         }
         case OP.Portal: {
-          const n = nodes[r.i32()];
+          const n = node(r.i32());
           const selector = r.str();
           const target = mountTarget(selector);
           if (!target) throw new Error(`NetWasm.UI: portal target '${selector}' not found`);
@@ -753,9 +818,9 @@ export function createDomHost(options = {}) {
 
     // Synchronous reads (NetWasm.UI.Dom.IDomQueries) and element handles (BrowserDom.GetHandle).
     // double[] results must be Float64Arrays: NetWasm rejects plain arrays.
-    nodeById: id => nodes[id] ?? null,
+    nodeById: id => node(id) ?? null,
     getRect(id) {
-      const n = nodes[id];
+      const n = node(id);
       if (!n || typeof n.getBoundingClientRect !== "function") return new Float64Array(4);
       const b = n.getBoundingClientRect();
       return Float64Array.of(b.x, b.y, b.width, b.height);
@@ -763,10 +828,11 @@ export function createDomHost(options = {}) {
     activeElementId() {
       let a = doc.activeElement;
       while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement;
+      settle(a);
       return (a?.[idKey]) | 0;
     },
     contains(parentId, childId) {
-      const p = nodes[parentId], c = nodes[childId];
+      const p = node(parentId), c = node(childId);
       return !!(p && c && p.contains(c));
     },
     viewport() {
