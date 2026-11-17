@@ -97,7 +97,7 @@ public sealed class HomePage : Component
                 Stat("~135 KB", "a whole app with router and forms, Brotli, Wasm and JS together"),
                 Stat("≤ 1", "Wasm→JS call per state change, however many nodes it touches"),
                 Stat("0", "reflection, runtime template engines or virtual DOM"),
-                Stat("3–20×", "faster than Blazor WebAssembly, with a ~18× smaller download")));
+                Stat("3–30×", "faster than Blazor WebAssembly, with a ~18× smaller download")));
 
     private static Node Stat(string value, string label) =>
         Div(Class("stat"), Strong(value), Span(label));
@@ -168,16 +168,16 @@ public sealed class HomePage : Component
                 Div(
                     SectionHead(
                         "Speed, measured",
-                        "Faster than React. Close to Solid.",
-                        "In a js-framework-benchmark-style comparison NetWasm.UI is faster than React on every DOM case and between 0.9× and 1.3× SolidJS's time. Lower is better."),
+                        "Faster than React. On par with Solid.",
+                        "In a js-framework-benchmark-style comparison NetWasm.UI is faster than React on every DOM case, on par with SolidJS on DOM updates (0.95–1.25× its time) and faster than Solid on reactive and compute workloads. Lower is better."),
                     Link("/benchmarks", Class("btn"), "All benchmark results →")),
                 Div(
                     Class("bars"),
                     P(Class("bars-title"), "Create 1,000 rows, ms (script + layout)"),
-                    Bar("NetWasm.UI", 41.6, 174.8, true),
-                    Bar("SolidJS", 37.7, 174.8, false),
-                    Bar("React", 52.0, 174.8, false),
-                    Bar("Blazor WASM", 174.8, 174.8, false))));
+                    Bar("NetWasm.UI", 45.0, 211.1, true),
+                    Bar("SolidJS", 44.9, 211.1, false),
+                    Bar("React", 63.7, 211.1, false),
+                    Bar("Blazor WASM", 211.1, 211.1, false))));
 
     private static Node Bar(string name, double value, double max, bool highlight)
     {
