@@ -34,14 +34,33 @@ public sealed class For<T, TKey> : Fragment
             Tracker.Untracked(() =>
             {
                 // Keys are boxed so the diffing below is shared by every For<T, TKey> instead of being
-                // compiled once per instantiation (closed-world AOT doesn't share generic code).
-                var keys = new object[list.Count];
-                for (var i = 0; i < keys.Length; i++)
+                // compiled once per instantiation (closed-world AOT doesn't share generic code). They go into a
+                // buffer the list keeps, and a key that is where it was, counted from the start or from the end,
+                // keeps its boxed object: appending, removing or swapping rows then allocates a key only for the
+                // rows that changed, and unchanged keys compare by reference.
+                var count = list.Count;
+                var keys = keyed.KeyBuffer(count);
+                var oldCount = keyed.Count;
+                var fromEnd = oldCount - count;
+                for (var i = 0; i < count; i++)
                 {
-                    keys[i] = key(list[i]);
+                    var k = key(list[i]);
+                    if (i < oldCount && keyed.KeyAt(i) is TKey same && EqualityComparer<TKey>.Default.Equals(same, k))
+                    {
+                        keys[i] = keyed.KeyAt(i);
+                    }
+                    else if (fromEnd != 0 && i + fromEnd >= 0 && keyed.KeyAt(i + fromEnd) is TKey shifted &&
+                        EqualityComparer<TKey>.Default.Equals(shifted, k))
+                    {
+                        keys[i] = keyed.KeyAt(i + fromEnd);
+                    }
+                    else
+                    {
+                        keys[i] = k;
+                    }
                 }
 
-                keyed.Reconcile(keys, i => render(list[i]));
+                keyed.Reconcile(keys, count, i => render(list[i]));
             });
         });
     }
@@ -53,7 +72,21 @@ internal sealed class KeyedList : IDisposable
     private readonly Anchor anchor = new();
     private readonly Scope? owner;
     private readonly Dictionary<object, Entry> entries = new();
-    private readonly List<object> order = new();
+    // The keys in list order, and the buffer the next list's keys are written into. They change places after each
+    // reconcile, so a list change allocates neither.
+    private object[] order = Array.Empty<object>();
+    private object[] spare = Array.Empty<object>();
+    private int count;
+    // The items' nodes, in the same order as their keys.
+    private readonly List<Node> nodes = new();
+    // What the middle of a diff needs, kept from one reconcile to the next and emptied after each.
+    private Dictionary<object, int>? oldIndex;
+    private HashSet<object>? newKeys;
+    private List<int>? tails;
+    private int[] sequence = Array.Empty<int>();
+    private int[] predecessor = Array.Empty<int>();
+    private bool[] stable = Array.Empty<bool>();
+    private Node[] middle = Array.Empty<Node>();
 
     public KeyedList(Element parent, Scope? owner)
     {
@@ -64,9 +97,24 @@ internal sealed class KeyedList : IDisposable
         owner?.Register(this);
     }
 
+    internal int Count => count;
+
+    internal object KeyAt(int index) => order[index];
+
+    /// <summary>The buffer for the next list's keys; pass it to <see cref="Reconcile"/>.</summary>
+    internal object[] KeyBuffer(int size)
+    {
+        if (spare.Length < size)
+        {
+            spare = new object[Math.Max(size, spare.Length * 2)];
+        }
+
+        return spare;
+    }
+
     public void Dispose()
     {
-        for (var i = order.Count - 1; i >= 0; i--)
+        for (var i = count - 1; i >= 0; i--)
         {
             if (entries.TryGetValue(order[i], out var entry))
             {
@@ -75,157 +123,258 @@ internal sealed class KeyedList : IDisposable
         }
 
         entries.Clear();
-        order.Clear();
+        Array.Clear(order, 0, count);
+        count = 0;
+        nodes.Clear();
     }
 
-    public void Reconcile(object[] newOrder, Func<int, Node> render)
+    // Most keys of a new list are the very objects of the old one (see For), so try the reference first.
+    private static bool Same(object left, object right) => ReferenceEquals(left, right) || left.Equals(right);
+
+    // The new keys become the order, and the old order becomes the buffer for the next list.
+    private void Adopt(object[] newOrder, int newCount)
     {
+        Array.Clear(order, 0, count);
+        spare = order;
+        order = newOrder;
+        count = newCount;
+    }
+
+    public void Reconcile(object[] newOrder, int newCount, Func<int, Node> render)
+    {
+        var oldCount = count;
+
+        // An empty list: detach every row with one op and dispose them; nothing to diff.
+        if (newCount == 0)
+        {
+            if (oldCount > 1)
+            {
+                Renderer.RemoveRange(nodes[0].Id, anchor.Id);
+            }
+            else if (oldCount == 1)
+            {
+                nodes[0].Remove();
+            }
+
+            for (var i = 0; i < oldCount; i++)
+            {
+                entries[order[i]].Scope.Dispose();
+            }
+
+            entries.Clear();
+            nodes.Clear();
+            Adopt(newOrder, 0);
+            return;
+        }
+
         // Skip the common prefix and suffix: they stay where they are. Appending, removing one row or
         // swapping two then only diffs the few keys in between.
-        var oldCount = order.Count;
         var start = 0;
-        while (start < oldCount && start < newOrder.Length && order[start].Equals(newOrder[start]))
+        while (start < oldCount && start < newCount && Same(order[start], newOrder[start]))
         {
             start++;
         }
 
         var oldEnd = oldCount;
-        var newEnd = newOrder.Length;
-        while (oldEnd > start && newEnd > start && order[oldEnd - 1].Equals(newOrder[newEnd - 1]))
+        var newEnd = newCount;
+        while (oldEnd > start && newEnd > start && Same(order[oldEnd - 1], newOrder[newEnd - 1]))
         {
             oldEnd--;
             newEnd--;
         }
 
-        // Validate before touching anything. A middle key that exists but is not in the old middle is a
-        // prefix/suffix key, i.e. a duplicate.
-        Dictionary<object, int>? oldIndex = null;
-        if (oldEnd > start)
+        // Two rows changed places and everything between them stayed: move the two, with no lookup tables.
+        var length = oldEnd - start;
+        if (length >= 2 && newEnd - start == length &&
+            Same(order[start], newOrder[newEnd - 1]) && Same(order[oldEnd - 1], newOrder[start]))
         {
-            oldIndex = new Dictionary<object, int>();
-            for (var i = start; i < oldEnd; i++)
+            var between = start + 1;
+            while (between < oldEnd - 1 && Same(order[between], newOrder[between]))
             {
-                oldIndex[order[i]] = i;
-            }
-        }
-
-        HashSet<object>? newKeys = newEnd - start > 1 || oldIndex is not null ? new HashSet<object>() : null;
-        for (var i = start; i < newEnd; i++)
-        {
-            var k = newOrder[i];
-            if ((newKeys is not null && !newKeys.Add(k)) || (entries.ContainsKey(k) && (oldIndex is null || !oldIndex.ContainsKey(k))))
-            {
-                throw DuplicateKey(k);
-            }
-        }
-
-        // Remove entries of the old middle that disappeared. Each item is one node and they sit in order
-        // before the next item (or the anchor), so when none of the old middle survives (clear, replace)
-        // one range op detaches them all.
-        if (oldIndex is not null)
-        {
-            var bulk = oldEnd - start > 1;
-            for (var i = start; bulk && i < oldEnd; i++)
-            {
-                bulk = !newKeys!.Contains(order[i]);
+                between++;
             }
 
-            if (bulk)
+            if (between == oldEnd - 1)
             {
-                var endId = oldEnd < oldCount ? entries[order[oldEnd]].Node.Id : anchor.Id;
-                Renderer.RemoveRange(entries[order[start]].Node.Id, endId);
-            }
-
-            for (var i = start; i < oldEnd; i++)
-            {
-                var k = order[i];
-                if (bulk || !newKeys!.Contains(k))
+                var first = nodes[start];
+                var last = nodes[oldEnd - 1];
+                Renderer.InsertBefore(length > 2 ? nodes[start + 1].Id : first.Id, last.Id);
+                if (length > 2)
                 {
-                    var entry = entries[k];
-                    if (!bulk)
+                    Renderer.InsertBefore(oldEnd < oldCount ? nodes[oldEnd].Id : anchor.Id, first.Id);
+                }
+
+                nodes[start] = last;
+                nodes[oldEnd - 1] = first;
+                Adopt(newOrder, newCount);
+                return;
+            }
+        }
+
+        var size = newEnd - start;
+        Dictionary<object, int>? index = null;
+        HashSet<object>? fresh = null;
+        try
+        {
+            // Validate before touching anything. A middle key that exists but is not in the old middle is a
+            // prefix/suffix key, i.e. a duplicate.
+            if (oldEnd > start)
+            {
+                index = oldIndex ??= new Dictionary<object, int>();
+                for (var i = start; i < oldEnd; i++)
+                {
+                    index[order[i]] = i;
+                }
+            }
+
+            fresh = size > 1 || index is not null ? newKeys ??= new HashSet<object>() : null;
+            for (var i = start; i < newEnd; i++)
+            {
+                var k = newOrder[i];
+                if ((fresh is not null && !fresh.Add(k)) || (entries.ContainsKey(k) && (index is null || !index.ContainsKey(k))))
+                {
+                    throw DuplicateKey(k);
+                }
+            }
+
+            // Remove entries of the old middle that disappeared. Each item is one node and they sit in order
+            // before the next item (or the anchor), so when none of the old middle survives (replace)
+            // one range op detaches them all.
+            if (index is not null)
+            {
+                var bulk = oldEnd - start > 1;
+                for (var i = start; bulk && i < oldEnd; i++)
+                {
+                    bulk = !fresh!.Contains(order[i]);
+                }
+
+                if (bulk)
+                {
+                    var endId = oldEnd < oldCount ? nodes[oldEnd].Id : anchor.Id;
+                    Renderer.RemoveRange(nodes[start].Id, endId);
+                }
+
+                for (var i = start; i < oldEnd; i++)
+                {
+                    var k = order[i];
+                    if (bulk || !fresh!.Contains(k))
                     {
-                        entry.Node.Remove();
+                        var entry = entries[k];
+                        if (!bulk)
+                        {
+                            entry.Node.Remove();
+                        }
+
+                        entry.Scope.Dispose();
+                        entries.Remove(k);
+                    }
+                }
+            }
+
+            // Surviving items that form the longest increasing subsequence of old positions keep their
+            // relative order and are never moved; everything else is (re)inserted before its successor.
+            if (sequence.Length < size)
+            {
+                sequence = new int[size];
+                predecessor = new int[size];
+                stable = new bool[size];
+                middle = new Node[size];
+            }
+
+            var anySurvivor = false;
+            for (var i = 0; i < size; i++)
+            {
+                if (index is not null && index.TryGetValue(newOrder[start + i], out var idx))
+                {
+                    sequence[i] = idx;
+                    anySurvivor = true;
+                }
+                else
+                {
+                    sequence[i] = -1;
+                }
+            }
+
+            if (anySurvivor)
+            {
+                LongestIncreasingSubsequence(size);
+            }
+
+            // Walk the middle backwards so the reference node is always already in position.
+            var referenceId = oldEnd < oldCount ? nodes[oldEnd].Id : anchor.Id;
+            for (var i = newEnd - 1; i >= start; i--)
+            {
+                var k = newOrder[i];
+                int nodeId;
+
+                if (sequence[i - start] >= 0)
+                {
+                    middle[i - start] = entries[k].Node;
+                    nodeId = middle[i - start].Id;
+                    if (!stable[i - start])
+                    {
+                        Renderer.InsertBefore(referenceId, nodeId);
+                    }
+                }
+                else
+                {
+                    var scope = Scope.Detached(owner);
+                    var previousOwner = Tracker.CurrentOwner;
+                    Tracker.CurrentOwner = scope;
+                    Node node;
+                    try
+                    {
+                        node = render(i);
+                    }
+                    finally
+                    {
+                        Tracker.CurrentOwner = previousOwner;
                     }
 
-                    entry.Scope.Dispose();
-                    entries.Remove(k);
-                }
-            }
-        }
-
-        // Surviving items that form the longest increasing subsequence of old positions keep their
-        // relative order and are never moved; everything else is (re)inserted before its successor.
-        var sequence = new int[newEnd - start];
-        var anySurvivor = false;
-        for (var i = 0; i < sequence.Length; i++)
-        {
-            if (oldIndex is not null && oldIndex.TryGetValue(newOrder[start + i], out var idx))
-            {
-                sequence[i] = idx;
-                anySurvivor = true;
-            }
-            else
-            {
-                sequence[i] = -1;
-            }
-        }
-
-        var stable = anySurvivor ? LongestIncreasingSubsequence(sequence) : null;
-
-        // Walk the middle backwards so the reference node is always already in position.
-        var referenceId = newEnd < newOrder.Length ? entries[newOrder[newEnd]].Node.Id : anchor.Id;
-        for (var i = newEnd - 1; i >= start; i--)
-        {
-            var k = newOrder[i];
-            int nodeId;
-
-            if (sequence[i - start] >= 0)
-            {
-                nodeId = entries[k].Node.Id;
-                if (!stable![i - start])
-                {
+                    entries[k] = new Entry(node, scope);
+                    middle[i - start] = node;
+                    nodeId = node.Id;
                     Renderer.InsertBefore(referenceId, nodeId);
                 }
+
+                referenceId = nodeId;
+            }
+
+            if (size == oldEnd - start)
+            {
+                for (var i = 0; i < size; i++)
+                {
+                    nodes[start + i] = middle[i];
+                }
             }
             else
             {
-                var scope = Scope.Detached(owner);
-                var previousOwner = Tracker.CurrentOwner;
-                Tracker.CurrentOwner = scope;
-                Node node;
-                try
-                {
-                    node = render(i);
-                }
-                finally
-                {
-                    Tracker.CurrentOwner = previousOwner;
-                }
-
-                entries[k] = new Entry(node, scope);
-                nodeId = node.Id;
-                Renderer.InsertBefore(referenceId, nodeId);
+                nodes.RemoveRange(start, oldEnd - start);
+                nodes.InsertRange(start, new ArraySegment<Node>(middle, 0, size));
             }
 
-            referenceId = nodeId;
+            Adopt(newOrder, newCount);
         }
-
-        order.Clear();
-        order.AddRange(newOrder);
+        finally
+        {
+            index?.Clear();
+            fresh?.Clear();
+            Array.Clear(middle, 0, Math.Min(size, middle.Length));
+        }
     }
 
     private static InvalidOperationException DuplicateKey(object key) =>
         new("Duplicate key in For: " + key);
 
     /// <summary>Marks positions belonging to a longest increasing subsequence of non-negative values.</summary>
-    private static bool[] LongestIncreasingSubsequence(int[] sequence)
+    // Marks in stable the items of sequence[0..size) that form its longest increasing subsequence.
+    private void LongestIncreasingSubsequence(int size)
     {
-        var n = sequence.Length;
-        var result = new bool[n];
-        var predecessor = new int[n];
-        var tails = new List<int>(); // indices into sequence
+        var tail = tails ??= new List<int>(); // indices into sequence
+        tail.Clear();
+        Array.Clear(stable, 0, size);
 
-        for (var i = 0; i < n; i++)
+        for (var i = 0; i < size; i++)
         {
             if (sequence[i] < 0)
             {
@@ -233,11 +382,11 @@ internal sealed class KeyedList : IDisposable
             }
 
             var lo = 0;
-            var hi = tails.Count;
+            var hi = tail.Count;
             while (lo < hi)
             {
                 var mid = (lo + hi) >> 1;
-                if (sequence[tails[mid]] < sequence[i])
+                if (sequence[tail[mid]] < sequence[i])
                 {
                     lo = mid + 1;
                 }
@@ -247,26 +396,24 @@ internal sealed class KeyedList : IDisposable
                 }
             }
 
-            predecessor[i] = lo > 0 ? tails[lo - 1] : -1;
-            if (lo == tails.Count)
+            predecessor[i] = lo > 0 ? tail[lo - 1] : -1;
+            if (lo == tail.Count)
             {
-                tails.Add(i);
+                tail.Add(i);
             }
             else
             {
-                tails[lo] = i;
+                tail[lo] = i;
             }
         }
 
-        if (tails.Count > 0)
+        if (tail.Count > 0)
         {
-            for (var idx = tails[^1]; idx >= 0; idx = predecessor[idx])
+            for (var idx = tail[^1]; idx >= 0; idx = predecessor[idx])
             {
-                result[idx] = true;
+                stable[idx] = true;
             }
         }
-
-        return result;
     }
 
     private readonly struct Entry

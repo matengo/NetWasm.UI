@@ -14,6 +14,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ### Changed
 
+- The keyed list reuses its keys and lookup tables from one list to the next, and it clears a list
+  or swaps two rows without building them. Swapping two of 1,000 rows no longer allocates per row.
 - The benchmark app is a `.nwui` template (`benchmarks/NetWasmBench/BenchApp.nwui`), so the
   benchmark measures what the template compiler emits.
 
