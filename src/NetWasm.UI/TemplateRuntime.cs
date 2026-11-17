@@ -75,6 +75,12 @@ public static class TemplateRuntime
     /// slot below <paramref name="slots"/>) and runs again when something it read changes; <paramref name="events"/>
     /// receives the events of the template's listeners (see <see cref="Template.Listen"/>) with the listener's slot.
     /// </summary>
+    /// <remarks>
+    /// A row shows the item its key has in the current list. When a new list has a different item for a key that
+    /// stays (another object, or for a value type a value that is not equal), a row without
+    /// <paramref name="setup"/> takes it in place, and a row with <paramref name="setup"/> is disposed and built
+    /// again for the new item.
+    /// </remarks>
     public static For<T, TKey> Rows<T, TKey>(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Template template, int slots,
         Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
         where TKey : notnull =>

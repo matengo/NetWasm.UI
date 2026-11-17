@@ -50,7 +50,7 @@ public sealed class TemplateRow : Effect
     internal RowNode Root => root ??= new RowNode(first, this);
 
     // The list gave this row's key a different item: the bindings run for it now, and later events get it.
-    // Content the row's setup created keeps the item it was created with.
+    // Only for a row that is nothing but bindings and template listeners; a row with setup content is built again.
     internal void Take(object? item)
     {
         Item = item;
@@ -192,33 +192,29 @@ internal sealed class RowBindings<T> : RowBindings
 
     internal override void Handle(TemplateRow row, int slot, DomEvent e) => events!(row, (T)row.Item!, slot, e);
 
-    // A key that survives a new list keeps its row. When the list has a different item object for that key
-    // (new objects with the same keys, as after a refetch), the row takes it.
-    internal void Refresh(KeyedList list, IReadOnlyList<T> items)
+    // A key that survives a new list keeps its place. When the list has a different item for that key (new
+    // objects with the same keys, as after a refetch), the whole row shows the new item: a row that is nothing but
+    // bindings and template listeners takes it in place, and a row with setup content, which was applied once
+    // for the old item, is built again.
+    internal void Refresh(KeyedList list, IReadOnlyList<T> items, Func<int, Node> render)
     {
         var count = items.Count;
-        if (typeof(T).IsValueType)
-        {
-            for (var i = 0; i < count; i++)
-            {
-                var row = ((RowNode)list.NodeAt(i)).Row;
-                var item = items[i];
-                if (!EqualityComparer<T>.Default.Equals((T)row.Item!, item))
-                {
-                    row.Take(item);
-                }
-            }
-
-            return;
-        }
-
         for (var i = 0; i < count; i++)
         {
             var row = ((RowNode)list.NodeAt(i)).Row;
-            object? item = items[i];
-            if (!ReferenceEquals(row.Item, item))
+            var item = items[i];
+            if (KeyedList.SameItem((T)row.Item!, item))
+            {
+                continue;
+            }
+
+            if (setup is null)
             {
                 row.Take(item);
+            }
+            else
+            {
+                list.Replace(i, render);
             }
         }
     }

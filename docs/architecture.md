@@ -115,8 +115,12 @@ take the row and its item and are shared by all rows:
   the host does not delegate, and all attributes of an element that has `@attributes`. It runs
   once per row, as before.
 
-The keyed list keeps a row while its key is in the list. When a new list has a different item
-object for that key, the row takes it: `bind` runs for the new item and later events get it.
+The keyed list keeps a row while its key is in the list and has the same item. When a new list
+has a different item for that key (another object, or for a value type a value that is not
+equal), the whole row shows the new item. A row without `setup` takes it in place: `bind` runs
+for the new item and later events get it. A row with `setup` is disposed and rendered again
+for the new item where it was (`KeyedList.Replace`), because what `setup` created was built
+for the old one.
 
 ## Event delegation
 

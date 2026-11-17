@@ -22,6 +22,29 @@ public class TemplateRowTests : RendererTest
         public Signal<string> Label { get; }
     }
 
+    // Shows the label its item had when it was created, as a component with plain properties does.
+    private sealed class Tag : Component
+    {
+        private readonly Item item;
+        private readonly List<string> log;
+
+        public Tag(Item item, List<string> log)
+        {
+            this.item = item;
+            this.log = log;
+        }
+
+        protected override Node Build()
+        {
+            var label = item.Label.Peek();
+            log.Add("built " + label);
+            OnCleanup(() => log.Add("gone " + label));
+            return Span(label);
+        }
+    }
+
+    private readonly record struct Point(int Id, int X);
+
     private sealed class Host : Component
     {
         private readonly Func<Node> build;
@@ -152,6 +175,74 @@ public class TemplateRowTests : RendererTest
 
         Dom.RowEvent(Link(1), "click");
         Assert.Equal(["zwei"], clicks);
+    }
+
+    [Fact]
+    public void A_row_with_setup_content_is_built_again_when_its_key_gets_a_new_item()
+    {
+        var log = new List<string>();
+        var one = new Item(1, "one");
+        var three = new Item(3, "three");
+        items.Value = [one, new Item(2, "two"), three];
+        Mount(RowTemplate(), (row, item) => row.Instance.With(2, new Tag(item, log)));
+        var before = Dom.QueryAll("li");
+        log.Clear();
+        Dom.Log.Clear();
+
+        // The same keys, and a new object for the second one only.
+        items.Value = [one, new Item(2, "zwei"), three];
+
+        // The whole row shows the new item: its bindings and the component its setup created.
+        Assert.Equal(
+            "<ul><li>1 <a>one<span>one</span></a></li><li>2 <a>zwei<span>zwei</span></a></li><li>3 <a>three<span>three</span></a></li><!----></ul>",
+            Dom.Html);
+        Assert.Equal(["gone two", "built zwei"], log);
+        // It is a new row where the old one was; rows whose item is the same object are not touched.
+        var after = Dom.QueryAll("li");
+        Assert.Same(before[0], after[0]);
+        Assert.NotSame(before[1], after[1]);
+        Assert.Same(before[2], after[2]);
+        Assert.Equal(1, Dom.Log.Count(l => l.Op == "CloneTemplate"));
+
+        Dom.RowEvent(Link(1), "click");
+        Assert.Equal(["zwei"], clicks);
+    }
+
+    [Fact]
+    public void A_row_whose_item_is_the_same_object_keeps_its_setup_content()
+    {
+        var log = new List<string>();
+        var one = new Item(1, "one");
+        var two = new Item(2, "two");
+        items.Value = [one, two];
+        Mount(RowTemplate(), (row, item) => row.Instance.With(2, new Tag(item, log)));
+        var before = Dom.QueryAll("li");
+        log.Clear();
+        Dom.Log.Clear();
+
+        items.Value = [two, one];
+
+        Assert.Empty(log);
+        Assert.Equal([before[1], before[0]], Dom.QueryAll("li"));
+        Assert.DoesNotContain(Dom.Log, l => l.Op == "CloneTemplate");
+    }
+
+    [Fact]
+    public void A_value_item_is_compared_by_value()
+    {
+        var points = new Signal<IReadOnlyList<Point>>([new Point(1, 10), new Point(2, 20)]);
+        var template = new Template("<li><!--$--></li>");
+        App.Mount(new Host(() => Ul(TemplateRuntime.Rows(() => (IReadOnlySignal<IReadOnlyList<Point>>)points, point => point.Id, template, 1,
+            null,
+            (row, point) => row.Text(0, 1, point.X)))), "#app");
+        Dom.Log.Clear();
+
+        points.Value = [new Point(1, 10), new Point(2, 20)];
+        Assert.DoesNotContain(Dom.Log, l => l.Op == "SetTextInt");
+
+        points.Value = [new Point(1, 10), new Point(2, 21)];
+        Assert.Single(Dom.Log, l => l.Op == "SetTextInt");
+        Assert.Equal("<ul><li>10</li><li>21</li><!----></ul>", Dom.Html);
     }
 
     [Fact]

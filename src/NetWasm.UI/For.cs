@@ -25,7 +25,7 @@ public sealed class For<T, TKey> : Fragment
         this.render = render;
     }
 
-    // Rows of a template: after each new list, a row whose key got a different item object takes it.
+    // Rows of a template: after each new list, a row whose key got a different item shows that item.
     internal For(Func<IReadOnlyList<T>> items, Func<T, TKey> key, RowBindings<T> rows)
         : this(items, key, rows.Render)
     {
@@ -68,8 +68,9 @@ public sealed class For<T, TKey> : Fragment
                     }
                 }
 
-                keyed.Reconcile(keys, count, i => render(list[i]));
-                rows?.Refresh(keyed, list);
+                Func<int, Node> renderAt = i => render(list[i]);
+                keyed.Reconcile(keys, count, renderAt);
+                rows?.Refresh(keyed, list, renderAt);
             });
         });
     }
@@ -141,6 +142,47 @@ internal sealed class KeyedList : IDisposable
 
     // Most keys of a new list are the very objects of the old one (see For), so try the reference first.
     private static bool Same(object left, object right) => ReferenceEquals(left, right) || left.Equals(right);
+
+    /// <summary>
+    /// Whether a key's item is still the one its content was rendered for: the same object, or for a value type
+    /// an equal value. When it is not, the content has to show the new item (see <see cref="Replace"/>).
+    /// </summary>
+    internal static bool SameItem<T>(T rendered, T item) =>
+        typeof(T).IsValueType ? EqualityComparer<T>.Default.Equals(rendered, item) : ReferenceEquals(rendered, item);
+
+    /// <summary>
+    /// Renders the item at <paramref name="index"/> again, in place: what was rendered for it is removed and
+    /// disposed, and the new node goes where the old one was. The key, and every other item, stay as they are.
+    /// </summary>
+    internal void Replace(int index, Func<int, Node> render)
+    {
+        var k = order[index];
+        var old = entries[k];
+        old.Node.Remove();
+        old.Scope.Dispose();
+        entries.Remove(k);
+
+        var entry = Build(index, render);
+        entries[k] = entry;
+        nodes[index] = entry.Node;
+        Renderer.InsertBefore(index + 1 < count ? nodes[index + 1].Id : anchor.Id, entry.Node.Id);
+    }
+
+    // Renders an item inside a scope of its own, which the list disposes when the item goes.
+    private Entry Build(int index, Func<int, Node> render)
+    {
+        var scope = Scope.Detached(owner);
+        var previousOwner = Tracker.CurrentOwner;
+        Tracker.CurrentOwner = scope;
+        try
+        {
+            return new Entry(render(index), scope);
+        }
+        finally
+        {
+            Tracker.CurrentOwner = previousOwner;
+        }
+    }
 
     // The new keys become the order, and the old order becomes the buffer for the next list.
     private void Adopt(object[] newOrder, int newCount)
@@ -329,22 +371,10 @@ internal sealed class KeyedList : IDisposable
                 }
                 else
                 {
-                    var scope = Scope.Detached(owner);
-                    var previousOwner = Tracker.CurrentOwner;
-                    Tracker.CurrentOwner = scope;
-                    Node node;
-                    try
-                    {
-                        node = render(i);
-                    }
-                    finally
-                    {
-                        Tracker.CurrentOwner = previousOwner;
-                    }
-
-                    entries[k] = new Entry(node, scope);
-                    middle[i - start] = node;
-                    nodeId = node.Id;
+                    var entry = Build(i, render);
+                    entries[k] = entry;
+                    middle[i - start] = entry.Node;
+                    nodeId = entry.Node.Id;
                     Renderer.InsertBefore(referenceId, nodeId);
                 }
 

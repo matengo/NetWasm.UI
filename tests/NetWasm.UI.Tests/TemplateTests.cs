@@ -747,12 +747,44 @@ public partial class TemplateTests : RendererTest
         Fire(Dom.QueryAll("input")[1], "focus");
         Assert.Equal(2, view.Focused.Value);
 
-        // New objects with the same keys: the rows stay, show the new items and hand them to their handlers.
-        view.Entries.Value = [new(1, "Ada"), new(2, "Bob")];
-        Assert.Same(rows[1], Dom.QueryAll("li")[1]);
+        // A new object for the second key: its row shows it and hands it to every handler. The row has a handler
+        // that was added for the old object (focus), so it is built again; the first row's object is the same and
+        // the row stays.
+        view.Entries.Value = [view.Entries.Value[0], new(2, "Bob")];
+        Assert.Same(rows[0], Dom.QueryAll("li")[0]);
+        Assert.NotSame(rows[1], Dom.QueryAll("li")[1]);
         Assert.Equal("Bob", Dom.QueryAll("a", Has("pick"))[1].Children[0].Text);
         Fire(Dom.QueryAll("a", Has("key"))[1], new DomEvent("keydown", key: "q"));
         Assert.Equal(["Adax", "Bobq"], view.Keys);
+        view.Focused.Value = 0;
+        Fire(Dom.QueryAll("input")[1], "focus");
+        Assert.Equal(2, view.Focused.Value);
+    }
+
+    [Fact]
+    public void A_foreach_row_with_a_component_is_built_again_when_its_key_gets_a_new_item()
+    {
+        var view = new RowBadges();
+        App.Mount(view, "#app");
+        var ada = new RowBadges.Entry(1, "Ada", 3);
+        view.Entries.Value = [ada, new(2, "Bo", 5)];
+        var rows = Dom.QueryAll("li");
+        Assert.Equal(
+            "<ul><li><a>Ada</a><span class=\"badge\">Ada: 3</span></li><li><a>Bo</a><span class=\"badge\">Bo: 5</span></li><!----></ul>",
+            Dom.Query("ul")!.ToHtml());
+
+        // The same keys; the second one has a new object, as after a refetch.
+        view.Entries.Value = [ada, new(2, "Bob", 6)];
+
+        // The component's properties were set once, for the old object, so the row is built again for the new one.
+        Assert.Equal(
+            "<ul><li><a>Ada</a><span class=\"badge\">Ada: 3</span></li><li><a>Bob</a><span class=\"badge\">Bob: 6</span></li><!----></ul>",
+            Dom.Query("ul")!.ToHtml());
+        Assert.Same(rows[0], Dom.QueryAll("li")[0]);
+        Assert.NotSame(rows[1], Dom.QueryAll("li")[1]);
+
+        Fire(Dom.QueryAll("a")[1], "click");
+        Assert.Equal("Bob", view.Picked.Value);
     }
 
     private static Func<FakeDomHost.FakeNode, bool> Has(string cls) =>

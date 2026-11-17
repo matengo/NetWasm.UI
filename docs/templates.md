@@ -102,10 +102,16 @@ A list keeps one row per key. Adding, removing and reordering items moves the ex
 new keys get new rows.
 
 - **A row follows its key's item.** When the list is replaced by new objects with the same keys
-  (immutable records, a refetch), each row keeps its DOM and takes the new object: its `@expr`
-  text and bound attributes show the new item, and its `@on…` handlers receive it. Components and
-  blocks inside the row are created once and keep the item they were created with, so give them
-  signals or [reactive props](#props) for values that change.
+  (immutable records, a refetch), every row shows its key's new object, in all of its content:
+  - A row that is only `@expr` text, bound attributes and `@on…` handlers for
+    [delegated events](architecture.md#event-delegation) keeps its DOM and takes the new object.
+    Only the values that differ are written.
+  - A row with anything else (a component, an `@if` or `@foreach` block, `@bind`, `@ref`,
+    `@attributes`, a handler for another event) is built again for the new object, in the same
+    place. What lived in the old row starts over: a component's state, a typed-in value, focus.
+
+  Keep the same object to keep the row. An item counts as different when it is another object,
+  or for a value type when it is not equal to the old value.
 - **A row's bindings run together.** The `@expr` text and bound attributes of a row's own
   elements are one effect per row. When something one of them reads changes, all of them are
   evaluated again and only the values that differ are written to the DOM. Keep expensive work in

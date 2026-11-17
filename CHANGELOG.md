@@ -23,9 +23,11 @@ See [Compatibility and versioning](docs/compatibility.md).
   40 % less time on the C# side and sends about 40 % fewer bytes to the host. Templates need no
   change. Two things behave differently, see
   [Rows of an `@foreach`](docs/templates.md#rows-of-an-foreach):
-  - A row whose key gets a different item object in a new list now takes that object: its
-    bindings show it and its handlers receive it. Before, the row kept the object it was created
-    for.
+  - A row whose key gets a different item in a new list (another object, or for a value type a
+    value that is not equal) now shows that item in all of its content. A row that is only
+    bindings and delegated handlers takes it in place; a row with a component, a block, `@bind`,
+    `@ref` or other content that is applied once is built again for it. Before, the row kept the
+    object it was created for. Keep the same object to keep the row.
   - The bindings of a row are evaluated together when something one of them reads changes. Only
     values that differ are written to the DOM.
 - The keyed list reuses its keys and lookup tables from one list to the next, and it clears a list
