@@ -11,6 +11,14 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />
     <ProjectReference Include="..\..\src\NetWasm.UI.Browser\NetWasm.UI.Browser.csproj" />
+    <!-- Compiles BenchApp.nwui: the benchmark measures the code the template compiler generates. -->
+    <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                      UndefineProperties="TargetFramework" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="**\*.nwui" Exclude="bin\**;obj\**" />
+    <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
   </ItemGroup>
   <ItemGroup>
     <NetWasmJavaScriptModule Include="..\..\src\NetWasm.UI.Browser\dom.mjs" Module="nwui.dom" />

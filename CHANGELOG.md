@@ -6,6 +6,11 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Changed
+
+- The benchmark app is a `.nwui` template (`benchmarks/NetWasmBench/BenchApp.nwui`), so the
+  benchmark measures what the template compiler emits.
+
 ## [0.11.0] - 2026-11-16
 
 ### Added
