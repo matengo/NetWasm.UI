@@ -134,7 +134,7 @@ public sealed class CounterView : Component
   on par with SolidJS (0.95–1.25× its time; slowest when appending rows), and reactive and compute
   workloads are faster than Solid, most of them about 2× (up to 9× for compute). It is faster than
   React on every DOM case, and 3–30× faster than Blazor WebAssembly (interpreter) with a ~18×
-  smaller download. Startup is the trade-off against Solid: ~5× its time, with a larger download.
+  smaller download.
 - **Startup:** `dotnet publish` adds preload tags for the runtime modules and the Wasm to
   `index.html`, so everything downloads in parallel instead of one import level at a time. On
   ordinary broadband the demo app renders in about 315 ms instead of 700 ms. See
