@@ -92,7 +92,10 @@ the root element, elements with a bare `$` attribute, `<!--$-->` (becomes an emp
 `<!--@-->` (stays a comment and is used as an insertion point). `dom.mjs` finds the same holes
 in the parsed `<template>`, so both sides agree on the numbering. A template is defined lazily
 the first time it is cloned in a renderer generation; `Clone()` then reserves consecutive ids
-and emits one `CloneTemplate` op. The generator turns every native element subtree of a
+and emits one `CloneTemplate` op. `dom.mjs` clones the parsed template in its own inert document
+(a template with custom elements is imported into the page's document first) and finds a clone's
+text holes when they are first written to; asking for an element or an insertion point finds all of
+the clone's holes, because what is done with those can change the clone's structure. The generator turns every native element subtree of a
 `.nwui` file into a static template, so only bound attributes, handlers, `@expr` text and
 components/blocks cost ops per instance.
 
