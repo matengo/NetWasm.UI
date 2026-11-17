@@ -75,8 +75,9 @@ the mean of the medians of two runs with 20 runs per case (`--runs 20 --no-aot`)
 not re-measured; an earlier run had it at 142.3 ms for create 1,000 rows and 1,400 ms startup.
 
 These runs force the same last-resort GC before the measured click as js-framework-benchmark,
-which makes every app slower than the plain GC of earlier runs (Solid's create 1,000 rows went
-from 37.7 to 44.9 ms), so compare the columns with each other rather than with older tables.
+which makes most cases slower for every app than the plain GC of earlier runs (Solid's create
+1,000 rows went from 37.7 to 44.9 ms), so compare the columns with each other rather than with
+older tables.
 
 | Case                         | NetWasm.UI Oz | NetWasm.UI O3 | SolidJS |  React | Blazor |
 |------------------------------|--------------:|--------------:|--------:|-------:|-------:|
