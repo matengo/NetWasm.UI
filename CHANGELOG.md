@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-17
+
 ### Changed
 
 - `nwui.dom` keeps the browser's compiled code for applying a batch across the browser's own

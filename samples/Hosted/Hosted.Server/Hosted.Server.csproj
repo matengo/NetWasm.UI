@@ -9,7 +9,7 @@
     <NetWasmUIClientProject>..\Hosted.Client\Hosted.Client.csproj</NetWasmUIClientProject>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi.AspNetCore" Version="0.13.0" />
+    <PackageReference Include="NwUi.AspNetCore" Version="0.14.0" />
     <ProjectReference Include="..\Hosted.Shared\Hosted.Shared.csproj" />
   </ItemGroup>
 </Project>
