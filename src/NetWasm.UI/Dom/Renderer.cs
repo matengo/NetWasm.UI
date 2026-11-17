@@ -252,12 +252,7 @@ public static class Renderer
     /// <summary>Releases the nodes of a template clone, whose ids <see cref="CloneTemplate"/> handed out as one block.</summary>
     internal static void ReleaseBlock(int first, int count)
     {
-        for (var i = 0; i < count; i++)
-        {
-            batch.Op(Op.Release);
-            batch.Int(first + i);
-        }
-
+        batch.ReleaseBlock(first, count);
         if (!freeNodeBlocks.TryGetValue(count, out var blocks))
         {
             blocks = new Stack<int>();

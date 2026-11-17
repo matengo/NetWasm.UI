@@ -299,6 +299,18 @@ public sealed class FakeDomHost : IDomHost, IDomQueries
                     Log.Add(("Release", $"{id}"));
                     break;
                 }
+                case Op.ReleaseBlock:
+                {
+                    var first = ReadInt(ops, ref pos);
+                    var count = ReadInt(ops, ref pos);
+                    for (var id = first; id < first + count; id++)
+                    {
+                        Nodes.Remove(id);
+                    }
+
+                    Log.Add(("ReleaseBlock", $"{first} {count}"));
+                    break;
+                }
                 case Op.AddListener:
                 {
                     var id = ReadInt(ops, ref pos);

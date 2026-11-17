@@ -347,6 +347,12 @@ function createPrerenderHost({ path, base }) {
         case 25: r.i32(); r.str(); break;
         // Template listeners (rows) are skipped like any other listener.
         case 26: r.i32(); r.i32(); r.str(); r.u8(); r.u8(); break;
+        case 27: {
+          const first = r.i32();
+          const end = first + r.i32();
+          for (let id = first; id < end; id++) nodes.delete(id);
+          break;
+        }
         default:
           throw new Error(`NetWasm.UI prerender: unknown opcode ${op}`);
       }

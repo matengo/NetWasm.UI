@@ -6,6 +6,22 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Changed
+
+- `nwui.dom` keeps the browser's compiled code for applying a batch across the browser's own
+  garbage collections. It created a reader object per batch, and when a collection freed the
+  shape of those short-lived readers (or of a cleared list's rows) the browser threw away the
+  code compiled for them, so the next batch ran slower while it was compiled again. One reader
+  now reads every batch, and each template keeps one node shaped like its clones' root.
+- A template clone releases its node ids with one op (new `ReleaseBlock` op) instead of one per
+  node, and clones whose ids follow each other share that op. Clearing a list of 1,000 rows
+  sends 18 bytes instead of 25 KB, and replacing one sends a third less. A host of your own has
+  to handle the new op.
+- The keyed list builds no table of the old keys' positions when none of them stays in the new
+  list (a list replaced by new rows, or rows removed from one end).
+- The benchmark runner forces the same last-resort GC before the measured click as
+  js-framework-benchmark does, instead of a plain one.
+
 ## [0.13.0] - 2026-11-17
 
 ### Added

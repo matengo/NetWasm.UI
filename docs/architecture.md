@@ -73,6 +73,7 @@ Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs`, `build/prerend
 | SetText, SetAttribute, RemoveAttribute, SetProperty, SetBoolProperty | id, … | |
 | AppendChild, InsertBefore | parent/reference, child | `InsertBefore` uses `reference.parentNode`; appending to a comment inserts before it (template insertion points) |
 | Remove / Release | id | `Remove` detaches but keeps the handle; `Release` drops it and its listeners |
+| ReleaseBlock | firstId, count | `Release` for the ids `firstId` to `firstId + count - 1`: the nodes of a template clone, or of several clones whose ids follow each other (a cleared list sends one) |
 | AddListener / RemoveListener | id, event, handlerId, flags | flags: 1 = preventDefault, 2 = stopPropagation, 4 = preventDefault only for a plain primary click |
 | Mount | id, selector | `document.querySelector(selector).appendChild`; `replaceChildren` if the target has `data-nwui-prerender` |
 | Focus | id | |
