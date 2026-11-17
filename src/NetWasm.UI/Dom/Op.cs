@@ -32,6 +32,9 @@ public enum Op : byte
     RemoveGlobalListener = 23, // handlerId     (also stops an ObserveResize)
     ObserveResize = 24,   // id, handlerId      (ResizeObserver; dispatches an empty "resize" event)
     Portal = 25,          // id, selector       (append to the target like Mount, but never replaces prerendered content)
+    TemplateListener = 26, // templateId, hole, event, slot(u8), flags  (an element of every clone listens without a
+                           // listener op per clone: the event is dispatched to handler 0 with firstId, slot and
+                           // the event payload; see Template.Listen)
 }
 
 /// <summary>The target of <see cref="Op.AddGlobalListener"/>.</summary>

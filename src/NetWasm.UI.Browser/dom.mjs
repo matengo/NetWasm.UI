@@ -36,6 +36,7 @@ const OP = {
   RemoveGlobalListener: 23,
   ObserveResize: 24,
   Portal: 25,
+  TemplateListener: 26,
 };
 
 const FLAG_PREVENT_DEFAULT = 1;
@@ -210,6 +211,9 @@ export function createDomHost(options = {}) {
   const key = Symbol("nwui");
   // The renderer's id of an element, so events can report their target and focus reads can answer with an id.
   const idKey = Symbol("nwui.id");
+  // An element of a template clone that listens through the template (OP.TemplateListener): the listeners of
+  // its hole, one object shared by every clone.
+  const rowKey = Symbol("nwui.row");
 
   // Node ids are small integers that the renderer reuses once released, so an array indexes them without hashing
   // and stays dense however long the app runs.
@@ -257,6 +261,14 @@ export function createDomHost(options = {}) {
     }
   }
 
+  function sendRow(first, slot, payload, e) {
+    const out = new Uint8Array(5 + payload.length);
+    out[0] = first; out[1] = first >> 8; out[2] = first >> 16; out[3] = first >> 24;
+    out[4] = slot;
+    out.set(payload, 5);
+    send(0, out, e);
+  }
+
   function onDelegated(e) {
     const type = e.type;
     let payload = null;
@@ -272,6 +284,20 @@ export function createDomHost(options = {}) {
           if (flags & FLAG_STOP_PROPAGATION) e.stopPropagation();
           payload ??= payloadFor(e, idKey, n, null);
           send(handlerId, payload, e);
+        }
+        if (e.cancelBubble) return;
+      }
+      // Template listeners: the row is the clone this hole belongs to, named by its first node id.
+      const rows = n[rowKey]?.[type];
+      if (rows) {
+        if (perNode) payload = null;
+        for (let i = 0; i < rows.length; i++) {
+          const [slot, flags, hole] = rows[i];
+          if (flags & FLAG_PREVENT_DEFAULT) e.preventDefault();
+          if ((flags & FLAG_PREVENT_DEFAULT_PLAIN_CLICK) && isPlainClick(e)) e.preventDefault();
+          if (flags & FLAG_STOP_PROPAGATION) e.stopPropagation();
+          payload ??= payloadFor(e, idKey, n, null);
+          sendRow(n[idKey] - hole, slot, payload, e);
         }
         if (e.cancelBubble) return;
       }
@@ -348,7 +374,7 @@ export function createDomHost(options = {}) {
       return path;
     });
 
-    templates.set(id, { root: doc.importNode(first, true), paths });
+    templates.set(id, { root: doc.importNode(first, true), paths, rows: null });
   }
 
   function cloneTemplate(id, firstId) {
@@ -366,6 +392,12 @@ export function createDomHost(options = {}) {
       }
       nodes[firstId + 1 + h] = n;
       if (n.nodeType === 1) n[idKey] = firstId + 1 + h;
+    }
+    const rows = t.rows;
+    if (rows) {
+      for (let h = 0; h < rows.length; h++) {
+        if (rows[h]) nodes[firstId + h][rowKey] = rows[h];
+      }
     }
   }
 
@@ -539,6 +571,7 @@ export function createDomHost(options = {}) {
           if (n) {
             releaseListeners(n);
             if (n[key]) n[key] = undefined;
+            if (n[rowKey]) n[rowKey] = undefined;
             if (n[idKey] === id) n[idKey] = undefined;
           }
           nodes[id] = undefined;
@@ -641,6 +674,20 @@ export function createDomHost(options = {}) {
         case OP.CloneTemplate: {
           const id = r.i32();
           cloneTemplate(id, r.i32());
+          break;
+        }
+        case OP.TemplateListener: {
+          const t = templates.get(r.i32());
+          const hole = r.i32();
+          const event = r.str();
+          const slot = r.u8();
+          const flags = r.u8();
+          if (!DELEGATED.has(event)) throw new Error(`NetWasm.UI: a template cannot listen for '${event}'`);
+          if (!delegatedTypes.has(event)) {
+            delegatedTypes.add(event);
+            root.addEventListener(event, onDelegated);
+          }
+          (((t.rows ??= [])[hole] ??= {})[event] ??= []).push([slot, flags, hole]);
           break;
         }
         default:

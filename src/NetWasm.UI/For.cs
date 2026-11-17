@@ -16,12 +16,20 @@ public sealed class For<T, TKey> : Fragment
     private readonly Func<IReadOnlyList<T>> items;
     private readonly Func<T, TKey> key;
     private readonly Func<T, Node> render;
+    private readonly RowBindings<T>? rows;
 
     public For(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Func<T, Node> render)
     {
         this.items = items;
         this.key = key;
         this.render = render;
+    }
+
+    // Rows of a template: after each new list, a row whose key got a different item object takes it.
+    internal For(Func<IReadOnlyList<T>> items, Func<T, TKey> key, RowBindings<T> rows)
+        : this(items, key, rows.Render)
+    {
+        this.rows = rows;
     }
 
     protected override void Apply(Element parent)
@@ -61,6 +69,7 @@ public sealed class For<T, TKey> : Fragment
                 }
 
                 keyed.Reconcile(keys, count, i => render(list[i]));
+                rows?.Refresh(keyed, list);
             });
         });
     }
@@ -100,6 +109,8 @@ internal sealed class KeyedList : IDisposable
     internal int Count => count;
 
     internal object KeyAt(int index) => order[index];
+
+    internal Node NodeAt(int index) => nodes[index];
 
     /// <summary>The buffer for the next list's keys; pass it to <see cref="Reconcile"/>.</summary>
     internal object[] KeyBuffer(int size)

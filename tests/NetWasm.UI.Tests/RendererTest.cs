@@ -20,8 +20,26 @@ public abstract class RendererTest : IDisposable
     protected void Fire(FakeDomHost.FakeNode node, string eventName, string value = "") =>
         Fire(node, new DomEvent(eventName, value));
 
-    protected void Fire(FakeDomHost.FakeNode node, DomEvent e) =>
+    protected void Fire(FakeDomHost.FakeNode node, DomEvent e)
+    {
+        // A listener the node has through its template (a row of an @foreach) goes to handler 0, with the row's
+        // first node id and the listener's slot before the payload, as dom.mjs sends it.
+        foreach (var listener in node.RowListeners)
+        {
+            if (listener.Event == e.Type)
+            {
+                var payload = e.Encode();
+                var bytes = new byte[5 + payload.Length];
+                BitConverter.TryWriteBytes(bytes, listener.First);
+                bytes[4] = (byte)listener.Slot;
+                payload.CopyTo(bytes, 5);
+                Renderer.Dispatch(Renderer.RowEventHandler, bytes);
+                return;
+            }
+        }
+
         Renderer.Dispatch(Dom.HandlerFor(node, e.Type), e.Encode());
+    }
 
     public virtual void Dispose()
     {

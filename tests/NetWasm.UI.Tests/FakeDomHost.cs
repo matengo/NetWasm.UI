@@ -20,6 +20,9 @@ public sealed class FakeDomHost : IDomHost, IDomQueries
         public Dictionary<string, string> Attributes { get; } = new();
         public Dictionary<string, object> Properties { get; } = new();
         public Dictionary<int, (string Event, byte Flags)> Listeners { get; } = new();
+
+        /// <summary>Listeners this node has through its template (Op.TemplateListener), with its row's first node id.</summary>
+        public List<(string Event, int Slot, byte Flags, int First)> RowListeners { get; } = new();
         public List<FakeNode> Children { get; } = new();
         public FakeNode? Parent { get; set; }
 
@@ -87,6 +90,7 @@ public sealed class FakeDomHost : IDomHost, IDomQueries
 
     public Dictionary<int, FakeNode> Nodes { get; } = new();
     private readonly Dictionary<int, FakeTemplate> templates = new();
+    private readonly Dictionary<int, List<(int Hole, string Event, int Slot, byte Flags)>> templateListeners = new();
     public FakeNode Document { get; } = new() { Id = 0, Kind = "element", Tag = "body" };
     public List<(string Op, string Detail)> Log { get; } = new();
     public int BatchCount { get; private set; }
@@ -385,6 +389,28 @@ public sealed class FakeDomHost : IDomHost, IDomQueries
                     Log.Add(("DefineTemplate", $"{id} {html}"));
                     break;
                 }
+                case Op.TemplateListener:
+                {
+                    var id = ReadInt(ops, ref pos);
+                    var hole = ReadInt(ops, ref pos);
+                    var eventName = ReadString(ops, ref pos);
+                    var slot = ops[pos++];
+                    var flags = ops[pos++];
+                    if (!Template.CanListen(eventName))
+                    {
+                        // As dom.mjs: a template listener is one of the events the host delegates.
+                        throw new InvalidOperationException($"A template cannot listen for '{eventName}'.");
+                    }
+
+                    if (!templateListeners.TryGetValue(id, out var list))
+                    {
+                        templateListeners[id] = list = new();
+                    }
+
+                    list.Add((hole, eventName, slot, flags));
+                    Log.Add(("TemplateListener", $"{id} hole {hole} {eventName} slot {slot}"));
+                    break;
+                }
                 case Op.CloneTemplate:
                 {
                     var id = ReadInt(ops, ref pos);
@@ -395,6 +421,14 @@ public sealed class FakeDomHost : IDomHost, IDomQueries
                         ExpectFree(first + i);
                         holes[i].Id = first + i;
                         Nodes[first + i] = holes[i];
+                    }
+
+                    if (templateListeners.TryGetValue(id, out var listeners))
+                    {
+                        foreach (var (hole, eventName, slot, flags) in listeners)
+                        {
+                            holes[hole].RowListeners.Add((eventName, slot, flags, first));
+                        }
                     }
 
                     Log.Add(("CloneTemplate", $"{id} -> {first}"));
@@ -414,6 +448,16 @@ public sealed class FakeDomHost : IDomHost, IDomQueries
         {
             throw new InvalidOperationException($"Node id {id} is created while its node is still live.");
         }
+    }
+
+    /// <summary>
+    /// Delivers an event to a node's template listener for <paramref name="eventName"/>, as dom.mjs does: to the
+    /// node's row with the listener's slot.
+    /// </summary>
+    public void RowEvent(FakeNode node, string eventName, DomEvent? e = null)
+    {
+        var listener = node.RowListeners.First(l => l.Event == eventName);
+        Renderer.DispatchRow(listener.First, listener.Slot, e ?? new DomEvent(eventName));
     }
 
     /// <summary>Finds the handler id of the first listener for <paramref name="eventName"/> on a node.</summary>
