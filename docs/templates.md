@@ -65,7 +65,7 @@ using static NetWasm.UI.Html;
 | `@bind="signal"` | `Spread(Bind(signal))` for `Signal<string>` / `Signal<bool>`, and for `Field<string>` / `Field<bool>` (with `id`, touched and ARIA state; see [Forms](forms.md)) |
 | `@ref="field"` | assigns the `Element` (or component) to a generated field |
 | `@if (c) { … } else if (c2) { … } else { … }` | `When(...)`; a chain shares one memoized selector |
-| `@foreach (var x in items) { <li @key="x.Id">…</li> }` | keyed `Each(...)`; `items` may be a list expression or an `IReadOnlySignal<IReadOnlyList<T>>`; without `@key` the item itself is the key |
+| `@foreach (var x in items) { <li @key="x.Id">…</li> }` | a keyed list (see [Rows of an `@foreach`](#rows-of-an-foreach)); `items` may be a list expression or an `IReadOnlySignal<IReadOnlyList<T>>`; without `@key` the item itself is the key |
 | `<Badge Label="hi" Count="@n" />` | `new Badge { Label = "hi", Count = n }` (an uppercase tag is a component; constructor parameters are filled with `Inject<T>()`, see [constructor injection](services.md#constructor-injection)) |
 | `<Button Variant="ghost" class="w-4" aria-label="Save" @onclick="Save" />` | lowercase or dashed names and `@on…` handlers on a component tag go to `Attributes`; see [Attribute splatting](#attribute-splatting) |
 | `@attributes="expr"` | applies a `Content[]` (such as a component's `Attributes`) to the element or passes it on to the component |
@@ -95,6 +95,28 @@ using static NetWasm.UI.Html;
 - Each template, `@if`/`else` block and `@foreach` body must have exactly one root node. `@if` and
   `@foreach` must sit inside an element.
 - Literal attribute values are strings, so pass other types as code: `Step="@(2)"`, `Max="@max"`.
+
+## Rows of an `@foreach`
+
+A list keeps one row per key. Adding, removing and reordering items moves the existing rows; only
+new keys get new rows.
+
+- **A row follows its key's item.** When the list is replaced by new objects with the same keys
+  (immutable records, a refetch), each row keeps its DOM and takes the new object: its `@expr`
+  text and bound attributes show the new item, and its `@on…` handlers receive it. Components and
+  blocks inside the row are created once and keep the item they were created with, so give them
+  signals or [reactive props](#props) for values that change.
+- **A row's bindings run together.** The `@expr` text and bound attributes of a row's own
+  elements are one effect per row. When something one of them reads changes, all of them are
+  evaluated again and only the values that differ are written to the DOM. Keep expensive work in
+  a `Computed`, not in a row's expression.
+- **A row's handlers cost nothing per row.** `@onclick` and the other
+  [delegated events](architecture.md#event-delegation) on a row's elements are registered once for
+  the whole list. A handler can use the loop variable as before:
+  `@onclick="() => Remove(item.Id)"`.
+
+This is what makes long lists cheap: a row is one template clone and one object, however many
+bindings and handlers it has.
 
 ## Props
 

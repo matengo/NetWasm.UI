@@ -37,6 +37,24 @@ internal sealed class TemplateEmitter
     private readonly StringBuilder sb = new();
     private readonly List<(string Type, string Name)> refs = new();
     private readonly List<string> templates = new();
+    // Per template: its ".Listen(...)" calls (rows of an @foreach), or "" for a plain template.
+    private readonly List<string> templateListeners = new();
+
+    // The events a template can listen for: the ones dom.mjs delegates (Template.CanListen has the same list).
+    private static readonly HashSet<string> DelegatedEvents = new(System.StringComparer.Ordinal)
+    {
+        "click", "dblclick", "contextmenu", "input", "change", "beforeinput", "submit",
+        "keydown", "keyup", "mousedown", "mouseup", "pointerdown", "pointerup", "focusin", "focusout",
+    };
+
+    /// <summary>What an @foreach row's template turns into besides its markup; see <see cref="EmitRows"/>.</summary>
+    private sealed class RowParts
+    {
+        public readonly List<System.Action> Bind = new();
+        public readonly List<System.Action> Events = new();
+        public readonly StringBuilder Listeners = new();
+        public int Slots;
+    }
     private bool noSep;
     private bool lineHidden;
 
@@ -125,8 +143,16 @@ internal sealed class TemplateEmitter
 
         for (var i = 0; i < templates.Count; i++)
         {
-            header.Append("    private static readonly global::NetWasm.UI.Template __nwT").Append(i.ToString(CultureInfo.InvariantCulture))
-                .Append(" = new(").Append(Literal(templates[i])).Append(");\n");
+            header.Append("    private static readonly global::NetWasm.UI.Template __nwT").Append(i.ToString(CultureInfo.InvariantCulture));
+            if (templateListeners[i].Length == 0)
+            {
+                header.Append(" = new(").Append(Literal(templates[i])).Append(");\n");
+            }
+            else
+            {
+                header.Append(" = new global::NetWasm.UI.Template(").Append(Literal(templates[i])).Append(')')
+                    .Append(templateListeners[i]).Append(";\n");
+            }
         }
 
         foreach (var p in file.Props)
@@ -264,14 +290,7 @@ internal sealed class TemplateEmitter
         var holeCount = 0;
         BuildTemplate(el, skip, isRoot: true, html, calls, ref holeCount);
 
-        var markup = html.ToString();
-        var index = templates.IndexOf(markup);
-        if (index < 0)
-        {
-            index = templates.Count;
-            templates.Add(markup);
-        }
-
+        var index = TemplateIndex(html.ToString(), string.Empty);
         sb.Append("__nwT").Append(index.ToString(CultureInfo.InvariantCulture)).Append(".Clone()");
         foreach (var call in calls)
         {
@@ -281,7 +300,118 @@ internal sealed class TemplateEmitter
         sb.Append(".Root");
     }
 
-    private void BuildTemplate(TElement el, TAttribute? skip, bool isRoot, StringBuilder html, List<System.Action> calls, ref int holeCount)
+    private int TemplateIndex(string markup, string listeners)
+    {
+        for (var i = 0; i < templates.Count; i++)
+        {
+            if (templates[i] == markup && templateListeners[i] == listeners)
+            {
+                return i;
+            }
+        }
+
+        templates.Add(markup);
+        templateListeners.Add(listeners);
+        return templates.Count - 1;
+    }
+
+    /// <summary>
+    /// The element of an <c>@foreach</c> body as rows of a template (<c>TemplateRuntime.Rows</c>). What a row
+    /// needs is emitted as functions of the loop variable, shared by all rows, instead of a closure, effect and
+    /// listener per row and binding: <c>@expr</c> text and plain bound attributes go into one bind function,
+    /// delegated <c>@on…</c> handlers become listeners of the template plus one events function, and everything
+    /// else (components, blocks, <c>@bind</c>, <c>@ref</c>, …) stays content applied once per row.
+    /// </summary>
+    private void EmitRows(TForeach node, TElement root, TAttribute? key)
+    {
+        var html = new StringBuilder();
+        var calls = new List<System.Action>();
+        var holeCount = 0;
+        var row = new RowParts();
+        BuildTemplate(root, key, isRoot: true, html, calls, ref holeCount, row);
+        var index = TemplateIndex(html.ToString(), row.Listeners.ToString());
+
+        // With a typed loop variable every lambda parameter needs its type.
+        var typed = node.Type is not null;
+        var head = typed
+            ? "(global::NetWasm.UI.TemplateRow __nwRow, " + node.Type + " " + node.Variable
+            : "(__nwRow, " + node.Variable;
+
+        sb.Append(R).Append("Rows(() => ");
+        User(node.Collection);
+        if (key is not null)
+        {
+            sb.Append(", ").Append(typed ? "(" + node.Type + " " + node.Variable + ")" : node.Variable).Append(" => ");
+            User(key.Code ?? throw Parse("'@key' needs a value.", key.Start, 4));
+        }
+
+        sb.Append(", __nwT").Append(index.ToString(CultureInfo.InvariantCulture))
+            .Append(", ").Append(row.Slots.ToString(CultureInfo.InvariantCulture)).Append(", ");
+        if (calls.Count == 0)
+        {
+            sb.Append("null");
+        }
+        else
+        {
+            sb.Append(head).Append(") => __nwRow.Instance");
+            foreach (var call in calls)
+            {
+                call();
+            }
+        }
+
+        sb.Append(", ");
+        if (row.Bind.Count == 0)
+        {
+            sb.Append("null");
+        }
+        else
+        {
+            sb.Append(head).Append(") => { ");
+            foreach (var bind in row.Bind)
+            {
+                bind();
+            }
+
+            sb.Append(" }");
+        }
+
+        if (row.Events.Count > 0)
+        {
+            sb.Append(", ").Append(head)
+                .Append(typed ? ", int __nwSlot, global::NetWasm.UI.DomEvent __nwEvent) => { switch (__nwSlot) { " : ", __nwSlot, __nwEvent) => { switch (__nwSlot) { ");
+            foreach (var handler in row.Events)
+            {
+                handler();
+            }
+
+            sb.Append(" } }");
+        }
+
+        sb.Append(')');
+    }
+
+    // In a row, a bound attribute that is plain text (not value, not a boolean attribute) is written by the
+    // row's bind function.
+    private static bool IsRowAttribute(TAttribute a)
+    {
+        if (a.IsDirective || !a.HasValue || a.Name == "value" || (a.Segments.Count == 1 && BooleanAttributes.Contains(a.Name)))
+        {
+            return false;
+        }
+
+        foreach (var seg in a.Segments)
+        {
+            if (seg.IsCode)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void BuildTemplate(TElement el, TAttribute? skip, bool isRoot, StringBuilder html, List<System.Action> calls, ref int holeCount, RowParts? row = null)
     {
         var refName = RefOf(el, "global::NetWasm.UI.Element");
         var dynamic = new TElement(el.Tag);
@@ -378,6 +508,61 @@ internal sealed class TemplateEmitter
             calls.Add(() => sb.Append(".Ref(").Append(hole.ToString(CultureInfo.InvariantCulture)).Append(", out ").Append(refName).Append(')'));
         }
 
+        if (row is not null && !splat)
+        {
+            // Listeners first, in source order: a handler's modifiers decide its flags wherever they stand.
+            var handlers = new List<TAttribute>();
+            foreach (var a in dynamic.Attributes)
+            {
+                if (a.IsDirective && a.Name.StartsWith("@on", System.StringComparison.Ordinal) && a.Name.Length > 3)
+                {
+                    handlers.Add(a);
+                }
+            }
+
+            var listened = new HashSet<string>(System.StringComparer.Ordinal);
+            foreach (var (evt, handler, flags) in ResolveHandlers(handlers))
+            {
+                if (!DelegatedEvents.Contains(evt) || row.Events.Count == 255)
+                {
+                    continue;
+                }
+
+                listened.Add(evt);
+                var slot = row.Events.Count;
+                row.Listeners.Append(".Listen(").Append(hole.ToString(CultureInfo.InvariantCulture)).Append(", ").Append(Literal(evt))
+                    .Append(", (global::NetWasm.UI.Dom.ListenerFlags)").Append(flags.ToString(CultureInfo.InvariantCulture)).Append(')');
+                row.Events.Add(() =>
+                {
+                    sb.Append("case ").Append(slot.ToString(CultureInfo.InvariantCulture)).Append(": ").Append(R).Append("Invoke(");
+                    User(handler.Code!);
+                    sb.Append(", __nwEvent); break; ");
+                });
+            }
+
+            var rest = new TElement(el.Tag);
+            foreach (var a in dynamic.Attributes)
+            {
+                if (IsRowAttribute(a))
+                {
+                    var slot = row.Slots++;
+                    row.Bind.Add(() =>
+                    {
+                        sb.Append("__nwRow.Attr(").Append(slot.ToString(CultureInfo.InvariantCulture)).Append(", ")
+                            .Append(hole.ToString(CultureInfo.InvariantCulture)).Append(", ").Append(Literal(a.Name)).Append(", ");
+                        EmitInterpolated(a.Segments, "AttrStr");
+                        sb.Append("); ");
+                    });
+                }
+                else if (!(a.IsDirective && a.Name.StartsWith("@on", System.StringComparison.Ordinal) && listened.Contains(EventOf(a))))
+                {
+                    rest.Attributes.Add(a);
+                }
+            }
+
+            dynamic = rest;
+        }
+
         if (dynamic.Attributes.Count > 0)
         {
             calls.Add(() =>
@@ -405,6 +590,19 @@ internal sealed class TemplateEmitter
                 {
                     html.Append("<!--$-->");
                     var h = ++holeCount;
+                    if (row is not null)
+                    {
+                        var slot = row.Slots++;
+                        row.Bind.Add(() =>
+                        {
+                            sb.Append("__nwRow.Text(").Append(slot.ToString(CultureInfo.InvariantCulture)).Append(", ")
+                                .Append(h.ToString(CultureInfo.InvariantCulture)).Append(", ");
+                            User(x.Code);
+                            sb.Append("); ");
+                        });
+                        break;
+                    }
+
                     calls.Add(() =>
                     {
                         sb.Append(".Text(").Append(h.ToString(CultureInfo.InvariantCulture)).Append(", () => ");
@@ -415,7 +613,7 @@ internal sealed class TemplateEmitter
                 }
 
                 case TElement e when !e.IsComponent:
-                    BuildTemplate(e, null, isRoot: false, html, calls, ref holeCount);
+                    BuildTemplate(e, null, isRoot: false, html, calls, ref holeCount, row);
                     break;
                 default:
                 {
@@ -689,7 +887,26 @@ internal sealed class TemplateEmitter
         sb.Append(" })");
     }
 
+    private static string EventOf(TAttribute a)
+    {
+        var spec = a.Name.Substring(3);
+        var colon = spec.IndexOf(':');
+        return colon < 0 ? spec : spec.Substring(0, colon);
+    }
+
     private void EmitHandlers(List<TAttribute> attrs)
+    {
+        foreach (var (evt, a, flags) in ResolveHandlers(attrs))
+        {
+            Sep();
+            sb.Append(H).Append("On(").Append(Literal(evt)).Append(", ");
+            User(a.Code!);
+            sb.Append(", (global::NetWasm.UI.Dom.ListenerFlags)").Append(flags.ToString(CultureInfo.InvariantCulture)).Append(')');
+        }
+    }
+
+    // Each event's handler and listener flags, in the order the events first appear.
+    private List<(string Event, TAttribute Handler, int Flags)> ResolveHandlers(List<TAttribute> attrs)
     {
         var events = new List<string>();
         var handler = new Dictionary<string, TAttribute>();
@@ -758,6 +975,7 @@ internal sealed class TemplateEmitter
             flags[evt] = on ? flags[evt] | bit : flags[evt] & ~bit;
         }
 
+        var resolved = new List<(string Event, TAttribute Handler, int Flags)>();
         foreach (var evt in events)
         {
             if (!handler.TryGetValue(evt, out var a))
@@ -766,11 +984,10 @@ internal sealed class TemplateEmitter
                 throw Structure($"Modifier '{f.Name}' without an '@on{evt}' handler.", f.Start, f.Name.Length);
             }
 
-            Sep();
-            sb.Append(H).Append("On(").Append(Literal(evt)).Append(", ");
-            User(a.Code!);
-            sb.Append(", (global::NetWasm.UI.Dom.ListenerFlags)").Append(flags[evt].ToString(CultureInfo.InvariantCulture)).Append(')');
+            resolved.Add((evt, a, flags[evt]));
         }
+
+        return resolved;
     }
 
     private void EmitComponent(TElement el, bool nodePosition, TAttribute? skip = null)
@@ -1397,6 +1614,12 @@ internal sealed class TemplateEmitter
             }
         }
 
+        if (body is TElement { IsComponent: false } rows)
+        {
+            EmitRows(node, rows, key);
+            return;
+        }
+
         var param = node.Type is null ? node.Variable : "(" + node.Type + " " + node.Variable + ")";
         sb.Append(R).Append("Each(() => ");
         User(node.Collection);
@@ -1407,16 +1630,9 @@ internal sealed class TemplateEmitter
         }
 
         sb.Append(", ").Append(param).Append(" => ");
-        if (body is TElement root)
+        if (body is TElement component)
         {
-            if (root.IsComponent)
-            {
-                EmitComponent(root, nodePosition: true, skip: key);
-            }
-            else
-            {
-                EmitElement(root, key);
-            }
+            EmitComponent(component, nodePosition: true, skip: key);
         }
         else
         {

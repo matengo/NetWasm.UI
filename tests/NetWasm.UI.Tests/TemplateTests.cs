@@ -647,6 +647,114 @@ public partial class TemplateTests : RendererTest
         Assert.Contains(".Root", source);
     }
 
+    [Fact]
+    public void A_foreach_over_an_element_compiles_to_rows_of_a_template()
+    {
+        const string template =
+            "<ul>\n" +
+            "  @foreach (var item in Items) {\n" +
+            "    <li @key=\"item.Id\" class=\"@(item.On ? \"on\" : null)\">@item.Name <a @onclick=\"() => Pick(item)\" @onclick:preventDefault>go</a>" +
+            "<input @bind=\"item.Text\" @onfocus=\"Focus\"><Badge Label=\"@item.Name\" /></li>\n" +
+            "  }\n" +
+            "</ul>";
+        var result = TemplateCompiler.Compile("C:\\p\\List.nwui", template, "App", "C:\\p\\");
+        Assert.Null(result.Diagnostic?.Message);
+        var source = result.Source!;
+
+        // The delegated handler is a listener of the template; its modifier is the listener's flags.
+        Assert.Contains(".Listen(2, \"click\", (global::NetWasm.UI.Dom.ListenerFlags)1);", source);
+        Assert.DoesNotContain("On(\"click\"", source);
+        Assert.Contains("global::NetWasm.UI.TemplateRuntime.Rows(() => ", source);
+        // Two slots: the bound class and the text. They are written by one function of the row.
+        Assert.Contains(", __nwT1, 2, (__nwRow, item) => __nwRow.Instance.With(3, ", source);
+        Assert.Contains("(__nwRow, item) => { __nwRow.Attr(0, 0, \"class\", global::NetWasm.UI.TemplateRuntime.AttrStr(", source);
+        Assert.Contains("__nwRow.Text(1, 1, ", source);
+        Assert.Contains("(__nwRow, item, __nwSlot, __nwEvent) => { switch (__nwSlot) { case 0: global::NetWasm.UI.TemplateRuntime.Invoke(", source);
+        // What is not a plain binding or a delegated handler stays content of each row.
+        Assert.Contains("global::NetWasm.UI.Html.Bind(", source);
+        Assert.Contains("global::NetWasm.UI.Html.On(\"focus\", ", source);
+        Assert.Contains("new Badge {", source);
+        Assert.DoesNotContain("TemplateRuntime.Each(", source);
+    }
+
+    [Fact]
+    public void A_foreach_with_a_typed_variable_types_every_row_parameter()
+    {
+        var result = TemplateCompiler.Compile(
+            "C:\\p\\List.nwui",
+            "<ul>\n  @foreach (Item item in Items) {\n    <li @onclick=\"Pick\">@item.Name</li>\n  }\n</ul>",
+            "App",
+            "C:\\p\\");
+        Assert.Null(result.Diagnostic?.Message);
+        var source = result.Source!;
+
+        Assert.Contains(", __nwT1, 1, null, (global::NetWasm.UI.TemplateRow __nwRow, Item item) => { __nwRow.Text(0, 1, ", source);
+        Assert.Contains("(global::NetWasm.UI.TemplateRow __nwRow, Item item, int __nwSlot, global::NetWasm.UI.DomEvent __nwEvent) => { switch (__nwSlot) { ", source);
+    }
+
+    [Fact]
+    public void A_foreach_row_with_attribute_splatting_or_a_component_body_is_emitted_as_before()
+    {
+        var splat = TemplateCompiler.Compile(
+            "C:\\p\\List.nwui",
+            "<ul>\n  @foreach (var item in Items) {\n    <li @attributes=\"Extra\" title=\"@item.Name\" @onclick=\"Pick\">x</li>\n  }\n</ul>",
+            "App",
+            "C:\\p\\");
+        Assert.Null(splat.Diagnostic?.Message);
+        // Source order decides between a splat and the element's own attributes, so they stay together.
+        Assert.DoesNotContain(".Listen(", splat.Source!);
+        Assert.DoesNotContain("__nwRow.Attr(", splat.Source!);
+        Assert.Contains("__nwRow.Instance.With(0, global::NetWasm.UI.Html.Splat(", splat.Source!);
+
+        var component = TemplateCompiler.Compile(
+            "C:\\p\\List.nwui",
+            "<ul>\n  @foreach (var item in Items) {\n    <Badge Label=\"@item.Name\" />\n  }\n</ul>",
+            "App",
+            "C:\\p\\");
+        Assert.Null(component.Diagnostic?.Message);
+        Assert.Contains("global::NetWasm.UI.TemplateRuntime.Each(() => ", component.Source!);
+    }
+
+    [Fact]
+    public void Foreach_rows_bind_listen_and_follow_their_items()
+    {
+        var view = new RowEvents();
+        App.Mount(view, "#app");
+        view.Entries.Value = [new(1, "Ada"), new(2, "Bo")];
+
+        Assert.Equal(
+            "<ul><li data-id=\"1\"><a class=\"pick\">Ada</a><a class=\"key\">k</a><a class=\"go\" href=\"/x\">go</a><input class=\"edit\"></li>" +
+            "<li data-id=\"2\"><a class=\"pick\">Bo</a><a class=\"key\">k</a><a class=\"go\" href=\"/x\">go</a><input class=\"edit\"></li><!----></ul>",
+            Dom.Query("ul")!.ToHtml());
+        // Click and keydown are listeners of the template; only focus, which the host does not delegate, is added per row.
+        Assert.Equal(2, Dom.Log.Count(l => l.Op == "AddListener"));
+        Assert.All(Dom.Log.Where(l => l.Op == "AddListener"), l => Assert.Contains(" focus ", l.Detail));
+
+        var rows = Dom.QueryAll("li");
+        Fire(Dom.QueryAll("a", Has("pick"))[1], "click");
+        Assert.Equal(2, view.Picked.Value);
+        Assert.Equal("on", rows[1].Attributes["class"]);
+        Assert.False(rows[0].Attributes.ContainsKey("class"));
+
+        Fire(Dom.QueryAll("a", Has("key"))[0], new DomEvent("keydown", key: "x"));
+        Assert.Equal(["Adax"], view.Keys);
+
+        var go = Dom.QueryAll("a", Has("go"))[0];
+        Fire(go, "click");
+        Assert.Equal(1, view.Went);
+        Assert.Equal((byte)ListenerFlags.PreventDefault, go.RowListeners.Single().Flags);
+
+        Fire(Dom.QueryAll("input")[1], "focus");
+        Assert.Equal(2, view.Focused.Value);
+
+        // New objects with the same keys: the rows stay, show the new items and hand them to their handlers.
+        view.Entries.Value = [new(1, "Ada"), new(2, "Bob")];
+        Assert.Same(rows[1], Dom.QueryAll("li")[1]);
+        Assert.Equal("Bob", Dom.QueryAll("a", Has("pick"))[1].Children[0].Text);
+        Fire(Dom.QueryAll("a", Has("key"))[1], new DomEvent("keydown", key: "q"));
+        Assert.Equal(["Adax", "Bobq"], view.Keys);
+    }
+
     private static Func<FakeDomHost.FakeNode, bool> Has(string cls) =>
         n => n.Attributes.GetValueOrDefault("class") == cls;
 
