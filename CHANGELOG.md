@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-17
+
 ### Added
 
 - `TemplateRuntime.Rows`, `TemplateRow` and `Template.Listen`: the rows of a keyed list as clones of
