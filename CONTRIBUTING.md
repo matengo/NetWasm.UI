@@ -103,7 +103,8 @@ profile name) and the secret `VSCE_PAT` for the Marketplace. Without them the st
 ### Benchmarks
 
 See [docs/benchmarks.md](docs/benchmarks.md). Run them before and after changes to the
-reactive core, the renderer or `dom.mjs`.
+reactive core, the renderer or `dom.mjs`. For the C# side, `benchmarks/WasmBench` under Wasmtime
+gives figures that repeat within about 1 %.
 
 ### The website
 
