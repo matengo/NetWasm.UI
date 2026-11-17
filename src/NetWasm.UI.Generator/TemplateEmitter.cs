@@ -40,8 +40,9 @@ internal sealed class TemplateEmitter
     // Per template: its ".Listen(...)" calls (rows of an @foreach), or "" for a plain template.
     private readonly List<string> templateListeners = new();
 
-    // The events a template can listen for: the ones dom.mjs delegates (Template.CanListen has the same list).
-    private static readonly HashSet<string> DelegatedEvents = new(System.StringComparer.Ordinal)
+    // The events a template can listen for: the ones dom.mjs delegates (Template.CanListen has the same list;
+    // a test compares the three).
+    internal static readonly HashSet<string> DelegatedEvents = new(System.StringComparer.Ordinal)
     {
         "click", "dblclick", "contextmenu", "input", "change", "beforeinput", "submit",
         "keydown", "keyup", "mousedown", "mouseup", "pointerdown", "pointerup", "focusin", "focusout",

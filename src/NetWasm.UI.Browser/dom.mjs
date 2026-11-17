@@ -52,6 +52,8 @@ const EMPTY = new Uint8Array(0);
 // Bubbling events get one listener on the host root per type; the handlers live on the node itself
 // (node[key][type] = [handlerId, flags, ...]) and are found by walking up from the target.
 // Delegated handlers therefore run after native listeners added directly on ancestors.
+// Template.CanListen and the template compiler (TemplateEmitter.DelegatedEvents) have the same list; a unit test
+// compares the three.
 const DELEGATED = new Set([
   "click", "dblclick", "contextmenu", "input", "change", "beforeinput", "submit",
   "keydown", "keyup", "mousedown", "mouseup", "pointerdown", "pointerup", "focusin", "focusout",

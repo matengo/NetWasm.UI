@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using NetWasm.UI.Reactive;
 
 namespace NetWasm.UI.Dom;
@@ -116,7 +117,10 @@ public static class Renderer
         batch.String(html);
     }
 
-    /// <summary>Clones a defined template; returns the id of its root, holes get the following ids.</summary>
+    /// <summary>
+    /// Declares a listener of a defined template: the element at <paramref name="hole"/> of every clone listens
+    /// for the event, with no op per clone (see <see cref="Template.Listen"/>).
+    /// </summary>
     internal static void TemplateListener(int templateId, int hole, string eventName, int slot, ListenerFlags flags)
     {
         batch.Op(Op.TemplateListener);
@@ -145,6 +149,7 @@ public static class Renderer
         }
     }
 
+    /// <summary>Clones a defined template; returns the id of its root, holes get the following ids.</summary>
     internal static int CloneTemplate(int templateId, int nodeCount)
     {
         if (!freeNodeBlocks.TryGetValue(nodeCount, out var blocks) || !blocks.TryPop(out var first))
@@ -419,11 +424,11 @@ public static class Renderer
         Invoke(listener, DomEvent.Decode(listener.EventName, payload));
     }
 
-    /// <summary>Dispatches an already-decoded event (tests, fake hosts).</summary>
     /// <summary>
     /// Delivers an event that a host already decoded to a row's template listener (see <see cref="Template.Listen"/>):
     /// <paramref name="firstId"/> is the row's first node id and <paramref name="slot"/> the listener's slot.
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static void DispatchRow(int firstId, int slot, DomEvent e)
     {
         if ((uint)firstId < (uint)rows.Length && rows[firstId] is { } row)
@@ -432,6 +437,7 @@ public static class Renderer
         }
     }
 
+    /// <summary>Dispatches an already-decoded event (tests, fake hosts).</summary>
     public static void Dispatch(int handlerId, DomEvent e)
     {
         if (handlers.TryGetValue(handlerId, out var listener))

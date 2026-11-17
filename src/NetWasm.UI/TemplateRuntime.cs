@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using NetWasm.UI.Reactive;
 
@@ -81,12 +82,14 @@ public static class TemplateRuntime
     /// <paramref name="setup"/> takes it in place, and a row with <paramref name="setup"/> is disposed and built
     /// again for the new item.
     /// </remarks>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static For<T, TKey> Rows<T, TKey>(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Template template, int slots,
         Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
         where TKey : notnull =>
         Rows(items, key, new RowBindings<T>(template, slots, setup, bind, events));
 
     /// <inheritdoc cref="Rows{T, TKey}(Func{IReadOnlyList{T}}, Func{T, TKey}, Template, int, Action{TemplateRow, T}?, Action{TemplateRow, T}?, Action{TemplateRow, T, int, DomEvent}?)"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static For<T, TKey> Rows<T, TKey>(Func<IReadOnlySignal<IReadOnlyList<T>>> items, Func<T, TKey> key, Template template, int slots,
         Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
         where TKey : notnull
@@ -96,12 +99,14 @@ public static class TemplateRuntime
     }
 
     /// <summary>Without <c>@key</c> the items themselves are the keys.</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static For<T, T> Rows<T>(Func<IReadOnlyList<T>> items, Template template, int slots,
         Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
         where T : notnull =>
         Rows(items, static item => item, new RowBindings<T>(template, slots, setup, bind, events));
 
     /// <inheritdoc cref="Rows{T}(Func{IReadOnlyList{T}}, Template, int, Action{TemplateRow, T}?, Action{TemplateRow, T}?, Action{TemplateRow, T, int, DomEvent}?)"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static For<T, T> Rows<T>(Func<IReadOnlySignal<IReadOnlyList<T>>> items, Template template, int slots,
         Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
         where T : notnull
@@ -115,9 +120,11 @@ public static class TemplateRuntime
         new(items, key, rows);
 
     /// <summary>Calls a row's event handler, whichever of the two shapes <c>@on…</c> accepts it has.</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static void Invoke(Action handler, DomEvent e) => handler();
 
     /// <inheritdoc cref="Invoke(Action, DomEvent)"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static void Invoke(Action<DomEvent> handler, DomEvent e) => handler(e);
 
     /// <summary>Without <c>@key</c> the items themselves are the keys.</summary>

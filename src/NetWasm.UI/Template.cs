@@ -125,8 +125,8 @@ public sealed class Template
 
     /// <summary>
     /// Whether a template can <see cref="Listen"/> for the event: the ones the browser host handles with one
-    /// listener at its root (<c>DELEGATED</c> in <c>dom.mjs</c>). <see cref="Listen"/> does not call this, so an
-    /// app pays nothing for the list; the host checks.
+    /// listener at its root (<c>DELEGATED</c> in <c>dom.mjs</c>; a test compares the two lists and the template
+    /// compiler's). <see cref="Listen"/> does not call this, so an app pays nothing for the list; the host checks.
     /// </summary>
     public static bool CanListen(string eventName) => eventName is
         "click" or "dblclick" or "contextmenu" or "input" or "change" or "beforeinput" or "submit" or

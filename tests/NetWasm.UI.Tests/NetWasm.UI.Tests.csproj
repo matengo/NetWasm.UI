@@ -17,6 +17,10 @@
     <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The browser host's script, for the test that compares its delegated events with the C# side. -->
+    <EmbeddedResource Include="..\..\src\NetWasm.UI.Browser\dom.mjs" LogicalName="dom.mjs" />
+  </ItemGroup>
+  <ItemGroup>
     <AdditionalFiles Include="Templates\**\*.nwui" />
     <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
   </ItemGroup>

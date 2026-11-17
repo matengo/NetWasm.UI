@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using NetWasm.UI.Dom;
 using NetWasm.UI.Reactive;
 using static NetWasm.UI.Html;
@@ -296,6 +297,29 @@ public class TemplateRowTests : RendererTest
 
         Assert.Throws<InvalidOperationException>(() =>
             App.Mount(new Host(() => Ul(TemplateRuntime.Rows<int>(() => (IReadOnlySignal<IReadOnlyList<int>>)one, scroll, 0, null, null))), "#app"));
+    }
+
+    [Fact]
+    public void The_host_the_runtime_and_the_template_compiler_agree_on_the_delegated_events()
+    {
+        using var stream = typeof(TemplateRowTests).Assembly.GetManifestResourceStream("dom.mjs")!;
+        using var reader = new StreamReader(stream);
+        var script = reader.ReadToEnd();
+
+        // const DELEGATED = new Set([ "click", ... ]);
+        var start = script.IndexOf("const DELEGATED = new Set([", StringComparison.Ordinal);
+        Assert.True(start >= 0, "dom.mjs no longer declares DELEGATED as a Set literal.");
+        var list = script[start..script.IndexOf("]);", start, StringComparison.Ordinal)];
+        var host = Regex.Matches(list, "\"([a-z]+)\"").Select(m => m.Groups[1].Value).ToHashSet();
+        Assert.NotEmpty(host);
+
+        Assert.Equal(host.Order(), NetWasm.UI.Generator.TemplateEmitter.DelegatedEvents.Order());
+        // Template.CanListen is a pattern, not a list, so ask it about every name the host script quotes: the
+        // delegated events and the ones it handles in other ways.
+        foreach (var name in Regex.Matches(script, "\"([a-z]+)\"").Select(m => m.Groups[1].Value).Distinct())
+        {
+            Assert.True(Template.CanListen(name) == host.Contains(name), name);
+        }
     }
 
     [Fact]
