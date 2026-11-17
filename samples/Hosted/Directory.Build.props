@@ -1,0 +1,8 @@
+<Project>
+  <!-- samples/Hosted stands on its own, as an app outside this repository would: it uses the NwUi packages from
+       nuget.org and does not inherit the repository's Directory.Build.props. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>

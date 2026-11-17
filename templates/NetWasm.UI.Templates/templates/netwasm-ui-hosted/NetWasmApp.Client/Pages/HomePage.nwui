@@ -1,0 +1,9 @@
+<section class="container narrow page">
+    <p class="eyebrow">NetWasm.UI + ASP.NET Core</p>
+    <h1>Hello, <span class="grad">world!</span></h1>
+    <p class="lead">Welcome to your new app. The UI is C# compiled to WebAssembly; the API next to it is ASP.NET Core.</p>
+    <div class="cta">
+        <Link href="/counter" class="btn btn-primary">Counter</Link>
+        <Link href="/weather" class="btn">Weather</Link>
+    </div>
+</section>

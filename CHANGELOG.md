@@ -6,6 +6,26 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-17
+
+### Added
+
+- `NwUi.AspNetCore`: hosts a NetWasm.UI app in ASP.NET Core on the same origin as your API.
+  `app.MapNetWasmUI()` serves the client with the right MIME types and the prerendered page for
+  each route; `app.UseNetWasmUIDevServer()` adds live reload and the error overlay in
+  development (rebuilds use `O0` and reuse the startup prerender, about 5 s; turn that off with
+  `NetWasmUIReusePrerender=false`); setting
+  `NetWasmUIClientProject` publishes the client into the server on build
+  and publish. See [ASP.NET Core](docs/deployment.md#aspnet-core-with-an-api-on-the-same-origin)
+  and the new `samples/Hosted`.
+- **Template:** `dotnet new netwasm-ui-hosted` creates a client, an ASP.NET Core server and a
+  shared library (Home, Counter and Weather, prerendering, live reload). Needs .NET 11.
+
+### Changed
+
+- Live reload also reloads the page when the connection to the dev server comes back, for
+  example after `dotnet watch` restarts the server.
+
 ## [0.11.0] - 2026-11-16
 
 ### Added

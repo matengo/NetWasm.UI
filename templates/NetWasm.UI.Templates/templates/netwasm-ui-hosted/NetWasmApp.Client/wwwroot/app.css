@@ -1,0 +1,4 @@
+/* site.css is the layout and theme; these are the few additions this app needs. */
+.shell { min-height: 100vh; display: flex; flex-direction: column; }
+.site-main { flex: 1; }
+.bench th:last-child { text-align: left; }

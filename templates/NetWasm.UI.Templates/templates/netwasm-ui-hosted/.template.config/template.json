@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "NetWasm.UI contributors",
+  "classifications": [ "Web", "WebAssembly", "NetWasm", "SPA", "ASP.NET Core" ],
+  "identity": "NetWasm.UI.HostedApp",
+  "name": "NetWasm.UI app hosted in ASP.NET Core",
+  "description": "A NetWasm.UI client served by an ASP.NET Core server with an API on the same origin, a shared class library, prerendering and live reload.",
+  "shortName": "netwasm-ui-hosted",
+  "sourceName": "NetWasmApp",
+  "preferNameDirectory": true,
+  "tags": { "language": "C#", "type": "solution" },
+  "symbols": {
+    "skipRestore": {
+      "type": "parameter",
+      "datatype": "bool",
+      "description": "Skip the automatic restore after creating the projects.",
+      "defaultValue": "false"
+    },
+    "httpPort": {
+      "type": "generated",
+      "generator": "port",
+      "parameters": { "low": 5000, "high": 5300 },
+      "replaces": "5180"
+    }
+  },
+  "primaryOutputs": [
+    { "path": "NetWasmApp.Shared/NetWasmApp.Shared.csproj" },
+    { "path": "NetWasmApp.Client/NetWasmApp.Client.csproj" },
+    { "path": "NetWasmApp.Server/NetWasmApp.Server.csproj" }
+  ],
+  "postActions": [
+    {
+      "condition": "(!skipRestore)",
+      "description": "Restore NuGet packages.",
+      "manualInstructions": [ { "text": "Run 'dotnet restore'" } ],
+      "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
+      "continueOnError": true
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Hosted.Client/Hosted.Client.csproj" />
+  <Project Path="Hosted.Server/Hosted.Server.csproj">
+    <!-- The server publishes the client into its output; build the client first so they never build it concurrently. -->
+    <BuildDependency Project="Hosted.Client/Hosted.Client.csproj" />
+  </Project>
+  <Project Path="Hosted.Shared/Hosted.Shared.csproj" />
+</Solution>

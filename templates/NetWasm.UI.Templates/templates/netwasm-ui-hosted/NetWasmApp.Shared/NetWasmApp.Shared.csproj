@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Types shared by NetWasmApp.Server (net11.0) and NetWasmApp.Client (netwasm0.1). Plain C# with no UI can target
+       .NET Standard and be referenced from both; components and .nwui templates need a netwasm0.1 library instead. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>NetWasmApp.Shared</RootNamespace>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+</Project>

@@ -8,7 +8,7 @@ changed, and every state change crosses the Wasm→JS boundary **at most once**.
 **Website and live examples: [matengo.github.io/NetWasm.UI](https://matengo.github.io/NetWasm.UI/)**,
 itself a NetWasm.UI app ([source](site/)).
 
-> **Status: 0.11, an early but usable release.** The packages are on NuGet and the framework is
+> **Status: 0.12, an early but usable release.** The packages are on NuGet and the framework is
 > tested in Chromium, Firefox and WebKit. The public API may still change in 0.x releases; every
 > change is listed in the [CHANGELOG](CHANGELOG.md). See
 > [Compatibility and versioning](docs/compatibility.md).
@@ -32,6 +32,15 @@ The template brings:
 - CSS,
 - the `nwui-dev` dev server, as a local .NET tool.
 
+Want an ASP.NET Core backend on the same origin? Use the hosted template (needs .NET 11). It
+creates a client, a server and a shared library, with prerendering and live reload:
+
+```shell
+dotnet new netwasm-ui-hosted -o MyApp
+cd MyApp
+dotnet watch --project MyApp.Server --no-hot-reload
+```
+
 Read [Getting started](docs/getting-started.md) next.
 
 ## Packages
@@ -44,8 +53,9 @@ namespaces are `NetWasm.UI`.
 |---|---|---|
 | [`NwUi.Browser`](https://www.nuget.org/packages/NwUi.Browser) | The package an app references: the browser host and the `nwui.dom` module. It brings in `NwUi`. | `dotnet add package NwUi.Browser` |
 | [`NwUi`](https://www.nuget.org/packages/NwUi) | The core: signals, components, router, forms and the `.nwui` template compiler. | Comes with `NwUi.Browser`. |
-| [`NwUi.Templates`](https://www.nuget.org/packages/NwUi.Templates) | `dotnet new netwasm-ui`. | `dotnet new install NwUi.Templates` |
+| [`NwUi.Templates`](https://www.nuget.org/packages/NwUi.Templates) | `dotnet new netwasm-ui` and `dotnet new netwasm-ui-hosted` (ASP.NET Core). | `dotnet new install NwUi.Templates` |
 | [`NwUi.DevServer`](https://www.nuget.org/packages/NwUi.DevServer) | `dotnet nwui-dev`: publishes, serves (Brotli, SPA fallback) and live-reloads. | In the template. Otherwise `dotnet tool install --local NwUi.DevServer`. |
+| [`NwUi.AspNetCore`](https://www.nuget.org/packages/NwUi.AspNetCore) | Hosts the app in ASP.NET Core next to your API: `MapNetWasmUI()`, live reload and client publishing. See [ASP.NET Core](docs/deployment.md#aspnet-core-with-an-api-on-the-same-origin). | `dotnet add package NwUi.AspNetCore` (in the server). |
 | VS Code: *NetWasm.UI templates (.nwui)* | Syntax highlighting for `.nwui`. | See below. |
 
 ### VS Code extension
@@ -161,6 +171,7 @@ dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one 
 dotnet run --project tools/DevServer -- samples/Interop   # a JS library wrapped in a component
 dotnet run --project tools/DevServer -- samples/Primitives # dialog, popover, tabs, generic select and table
 dotnet run --project tools/DevServer -- site              # the project website
+dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Core with an API
 ```
 
 ## Documentation
@@ -193,13 +204,15 @@ dotnet run --project tools/DevServer -- site              # the project website
 | `src/NetWasm.UI`             | Core: reactivity, binary renderer, component/builder API, router, forms. Targets `netwasm0.1`, plus `net10.0` for tests. |
 | `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings and the `dom.mjs` decoder. `netwasm0.1` only. |
 | `src/NetWasm.UI.Generator`   | Roslyn source generator: `*.nwui` templates → `Component` partial classes. Ships inside the `NwUi` package. |
+| `src/NetWasm.UI.AspNetCore`  | `NwUi.AspNetCore`: hosting in ASP.NET Core, live reload and client publishing. |
 | `samples/Counter`            | Demo app: counter, todos, routing, nested routes, forms and `/components`. |
 | `samples/Fetch`              | `HttpClient` + `System.Text.Json` with `Resource` and `Suspense`.    |
 | `samples/Widgets`            | Several independent apps (Wasm instances) on one page.              |
 | `samples/Interop`            | `[JSImport]`, `JSObject`, callbacks and Promises: a JS library in a component. |
 | `samples/Primitives`         | Reference components for a component library: dialog, popover, tabs, generic select and data table. |
+| `samples/Hosted`             | ASP.NET Core server with a weather API hosting a prerendered client; uses only the NuGet packages. |
 | `site/`                      | The project website, built with NetWasm.UI and published to GitHub Pages. |
-| `templates/`                 | The `dotnet new netwasm-ui` template package.                        |
+| `templates/`                 | The `dotnet new netwasm-ui` and `netwasm-ui-hosted` template package. |
 | `tests/NetWasm.UI.Tests`     | xunit tests against an in-memory `FakeDomHost`.                      |
 | `tests/NetWasm.UI.E2E`       | Playwright browser tests against the samples (Chromium, Firefox, WebKit). |
 | `tools/DevServer`            | `nwui-dev`: Kestrel dev server with Brotli, live reload and an error overlay. |

@@ -1,7 +1,7 @@
 name: Release
 
 # Push a tag such as v0.1.0 (or v0.2.0-preview.1) to publish:
-#   NuGet:   NwUi, NwUi.Browser, NwUi.DevServer, NwUi.Templates
+#   NuGet:   NwUi, NwUi.Browser, NwUi.AspNetCore, NwUi.DevServer, NwUi.Templates
 #   VS Code: the .nwui extension (version from tools/vscode-nwui/package.json)
 #   GitHub:  a release with the packages and the .vsix attached
 # NuGet uses Trusted Publishing (no API key): add a policy on nuget.org (your name > Trusted
@@ -32,6 +32,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+          dotnet-version: 11.0.x # the netwasm-ui-hosted template targets net11.0
 
       - name: Version from tag
         run: |
@@ -42,6 +43,11 @@ jobs:
             || { echo "::error::NetWasmApp.csproj does not reference NwUi.Browser $VERSION"; exit 1; }
           grep -q "\"version\": \"$VERSION\"" templates/NetWasm.UI.Templates/templates/netwasm-ui/.config/dotnet-tools.json \
             || { echo "::error::dotnet-tools.json does not pin nwui.devserver $VERSION"; exit 1; }
+          HOSTED=templates/NetWasm.UI.Templates/templates/netwasm-ui-hosted
+          grep -q "Include=\"NwUi.Browser\" Version=\"$VERSION\"" $HOSTED/NetWasmApp.Client/NetWasmApp.Client.csproj \
+            || { echo "::error::NetWasmApp.Client.csproj does not reference NwUi.Browser $VERSION"; exit 1; }
+          grep -q "Include=\"NwUi.AspNetCore\" Version=\"$VERSION\"" $HOSTED/NetWasmApp.Server/NetWasmApp.Server.csproj \
+            || { echo "::error::NetWasmApp.Server.csproj does not reference NwUi.AspNetCore $VERSION"; exit 1; }
           grep -q "## \[$VERSION\]" CHANGELOG.md \
             || { echo "::error::CHANGELOG.md has no '## [$VERSION]' section"; exit 1; }
 
@@ -50,7 +56,7 @@ jobs:
 
       - name: Pack
         run: |
-          for p in src/NetWasm.UI src/NetWasm.UI.Browser tools/DevServer templates/NetWasm.UI.Templates; do
+          for p in src/NetWasm.UI src/NetWasm.UI.Browser src/NetWasm.UI.AspNetCore tools/DevServer templates/NetWasm.UI.Templates; do
             dotnet pack "$p" -c Release -p:Version=$VERSION -o "$RUNNER_TEMP/feed"
           done
           ls -l "$RUNNER_TEMP/feed"
@@ -68,6 +74,13 @@ jobs:
           dotnet tool restore
           dotnet publish -c Release
           test -f bin/Release/netwasm0.1/publish/browser/SmokeApp.wasm
+          cd "$RUNNER_TEMP"
+          dotnet new netwasm-ui-hosted -o SmokeHosted --skipRestore
+          cd SmokeHosted
+          dotnet new nugetconfig
+          dotnet nuget add source "$RUNNER_TEMP/feed" -n local --configfile nuget.config
+          dotnet publish SmokeHosted.Server -c Release -o out
+          test -f out/client/counter.html
 
       - name: VS Code extension
         working-directory: tools/vscode-nwui

@@ -1,0 +1,17 @@
+<section class="container narrow page">
+    <h1>Counter</h1>
+    <p class="muted">Runs entirely in the browser.</p>
+    <div class="live">
+        <div class="live-body demo-counter">
+            <p role="status">Current count:</p>
+            <p class="big" id="count">@Count</p>
+            <div class="row">
+                <button id="inc" class="btn btn-primary" @onclick="() => Count++">Click me</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    [Reactive] private partial int Count { get; set; }
+}

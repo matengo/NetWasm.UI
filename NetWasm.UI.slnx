@@ -15,6 +15,7 @@
     <Project Path="site/Site.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/NetWasm.UI.AspNetCore/NetWasm.UI.AspNetCore.csproj" />
     <Project Path="src/NetWasm.UI.Browser/NetWasm.UI.Browser.csproj" />
     <Project Path="src/NetWasm.UI.Generator/NetWasm.UI.Generator.csproj" />
     <Project Path="src/NetWasm.UI/NetWasm.UI.csproj" />

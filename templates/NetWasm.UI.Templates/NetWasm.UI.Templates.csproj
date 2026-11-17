@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>NwUi.Templates</PackageId>
     <PackageType>Template</PackageType>
-    <Description>dotnet new templates for NetWasm.UI: `dotnet new netwasm-ui` creates a routed browser app with a component, a .nwui page and CSS.</Description>
+    <Description>dotnet new templates for NetWasm.UI: `dotnet new netwasm-ui` creates a routed browser app with a component, a .nwui page and CSS; `dotnet new netwasm-ui-hosted` creates a client, an ASP.NET Core server and a shared library.</Description>
     <PackageTags>$(PackageTags);dotnet-new;templates</PackageTags>
     <IsPackable>true</IsPackable>
     <IncludeContentInPack>true</IncludeContentInPack>

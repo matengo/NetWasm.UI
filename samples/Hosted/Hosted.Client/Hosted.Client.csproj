@@ -1,0 +1,33 @@
+<Project Sdk="NetWasm.Sdk">
+  <!-- The browser half of samples/Hosted: a NetWasm.UI app. Hosted.Server publishes it and serves it. -->
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <OutputType>JsModule</OutputType>
+    <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
+    <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
+    <RootNamespace>Hosted.Client</RootNamespace>
+    <!-- Hosted.Shared targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- NetWasm.UI, its browser host and the .nwui source generator (through the NwUi package it depends on). -->
+    <PackageReference Include="NwUi.Browser" Version="0.12.0" />
+    <ProjectReference Include="..\Hosted.Shared\Hosted.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- index.html, app.mjs and the styles, at the root of the published app. -->
+    <Content Include="wwwroot\**" CopyToPublishDirectory="PreserveNewest" Link="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Publish-time prerendering (NwUi.Browser): each route is rendered into its own page (index.html, counter.html,
+       weather.html), which Hosted.Server returns for that path. Other paths get the bare shell.html and render once
+       the Wasm has loaded. -->
+  <PropertyGroup>
+    <NetWasmUIPrerender>true</NetWasmUIPrerender>
+    <NetWasmUIPrerenderShell>shell.html</NetWasmUIPrerenderShell>
+    <NetWasmUIPrerenderExport>prerender</NetWasmUIPrerenderExport>
+  </PropertyGroup>
+  <ItemGroup>
+    <NetWasmUIPrerenderRoute Include="/counter;/weather" />
+  </ItemGroup>
+</Project>

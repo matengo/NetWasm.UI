@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>NetWasm.UI.AspNetCore</RootNamespace>
+    <PackageId>NwUi.AspNetCore</PackageId>
+    <Description>Hosts a NetWasm.UI app in ASP.NET Core on the same origin: builds the client project into the server (NetWasmUIClientProject), serves it and its prerendered pages (MapNetWasmUI), and live-reloads the browser in development (UseNetWasmUIDevServer).</Description>
+    <PackageTags>$(PackageTags);aspnetcore;hosting</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Shared with the nwui-dev tool, so both dev servers watch and reload the same way. -->
+    <Compile Include="..\..\tools\DevServer\SourceWatcher.cs;..\..\tools\DevServer\ReloadHub.cs" Link="DevServer\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\tools\DevServer\reload-client.js" LogicalName="reload-client.js" Link="DevServer\reload-client.js" />
+    <None Include="build\NwUi.AspNetCore.targets" Pack="true" PackagePath="build" />
+  </ItemGroup>
+</Project>

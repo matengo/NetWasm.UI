@@ -101,10 +101,11 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+          dotnet-version: 11.0.x # the netwasm-ui-hosted template targets net11.0
 
       - name: Pack
         run: |
-          for p in src/NetWasm.UI src/NetWasm.UI.Browser tools/DevServer templates/NetWasm.UI.Templates; do
+          for p in src/NetWasm.UI src/NetWasm.UI.Browser src/NetWasm.UI.AspNetCore tools/DevServer templates/NetWasm.UI.Templates; do
             dotnet pack "$p" -c Release -o "$RUNNER_TEMP/feed"
           done
           ls -l "$RUNNER_TEMP/feed"
@@ -124,6 +125,20 @@ jobs:
           test -f bin/Release/netwasm0.1/publish/index.html
           test -f bin/Release/netwasm0.1/publish/browser/SmokeApp.wasm
           grep -q '<link rel="modulepreload" href="/browser/SmokeApp.mjs" />' bin/Release/netwasm0.1/publish/index.html
+
+      - name: Hosted template smoke test (new → publish server with prerendered client)
+        env:
+          NUGET_PACKAGES: ${{ runner.temp }}/nuget-template
+        run: |
+          cd "$RUNNER_TEMP"
+          dotnet new netwasm-ui-hosted -o SmokeHosted --skipRestore
+          cd SmokeHosted
+          dotnet new nugetconfig
+          dotnet nuget add source "$RUNNER_TEMP/feed" -n local --configfile nuget.config
+          dotnet publish SmokeHosted.Server -c Release -o out
+          test -f out/client/index.html
+          test -f out/client/counter.html
+          test -f out/client/browser/SmokeHosted.Client.wasm
 
       - uses: actions/upload-artifact@v4
         with:

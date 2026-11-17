@@ -1,4 +1,4 @@
-// Injected by the NetWasm.UI dev server. Reloads the page when a new publish succeeds and keeps the
+// Injected by the NetWasm.UI dev server (nwui-dev, or UseNetWasmUIDevServer in NwUi.AspNetCore). Reloads the page when a new publish succeeds and keeps the
 // app's state across that reload: int/bool/string signals (through dom.mjs), form fields, focus and
 // scroll position. A reload you start yourself (F5) starts clean.
 (() => {
@@ -122,8 +122,16 @@
     overlay = null;
   }
 
+  // Reconnecting after a lost connection means the server restarted (for example under dotnet watch) and may
+  // serve a new build: reload too.
+  let connected = false;
+
   function connect() {
     const ws = new WebSocket(url);
+    ws.onopen = () => {
+      if (connected) reload();
+      connected = true;
+    };
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
       switch (msg.type) {

@@ -244,6 +244,48 @@ app.Run();
 `tools/DevServer` (`nwui-dev`) is a working Kestrel reference with compression, MIME types and
 fallback. It is a development server; do not use it in production.
 
+### ASP.NET Core with an API on the same origin
+
+To serve the app from an ASP.NET Core server that also has your API, reference `NwUi.AspNetCore`
+from the server and point it at the client project:
+
+```xml
+<!-- Server.csproj (Microsoft.NET.Sdk.Web) -->
+<PropertyGroup>
+  <NetWasmUIClientProject>..\Client\Client.csproj</NetWasmUIClientProject>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="NwUi.AspNetCore" Version="x.y.z" />
+</ItemGroup>
+```
+
+```csharp
+var app = WebApplication.Create(args);
+if (app.Environment.IsDevelopment())
+    app.UseNetWasmUIDevServer();   // live reload: a client change rebuilds it and reloads the browser
+app.MapGet("/api/hello", () => "Hello");
+app.MapNetWasmUI();               // client files, MIME types and a page for every other path
+app.Run();
+```
+
+- Every server build publishes the client into `client/` next to the server, and
+  `dotnet publish` includes it. Set `NetWasmUIClientFolder` to use another folder name. Debug
+  builds use `NetWasmOptimization=O0` for the client, like `nwui-dev`, so rebuilds stay fast;
+  set `NetWasmUIClientOptimization` to change it.
+- `MapNetWasmUI` serves the client files and answers other extension-less paths with the
+  [prerendered](#prerendering) page for the route (`counter.html` for `/counter`), then
+  `shell.html`, `404.html` or `index.html`. Map your API before it.
+- `UseNetWasmUIDevServer` watches the client and its project references, republishes on change
+  and reloads the browser, keeping signal and form state, like `nwui-dev`. Build errors show in
+  the error overlay. It needs `dotnet run` (or `dotnet watch --no-hot-reload`) from source.
+  Rebuilds skip prerendering and keep the pages prerendered at startup (the app replaces them when
+  it starts anyway); a change to an `.html` file or the project prerenders again. Set
+  `<NetWasmUIReusePrerender>false</NetWasmUIReusePrerender>` in the server project to prerender on
+  every rebuild.
+
+[`samples/Hosted`](../samples/Hosted/) is a complete example: Blazor-template-style pages, a
+weather API, a shared class library and prerendering.
+
 ### GitHub Pages
 
 Pages serves files from a sub-path (`https://<user>.github.io/<repo>/`), gzips on the fly and

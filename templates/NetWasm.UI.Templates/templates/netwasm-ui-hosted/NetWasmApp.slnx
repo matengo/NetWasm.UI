@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="NetWasmApp.Client/NetWasmApp.Client.csproj" />
+  <Project Path="NetWasmApp.Server/NetWasmApp.Server.csproj">
+    <!-- The server publishes the client into its output; build the client first so they never build it concurrently. -->
+    <BuildDependency Project="NetWasmApp.Client/NetWasmApp.Client.csproj" />
+  </Project>
+  <Project Path="NetWasmApp.Shared/NetWasmApp.Shared.csproj" />
+</Solution>

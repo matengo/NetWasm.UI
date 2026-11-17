@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/global.json",
+  "sdk": {
+    "version": "11.0.100",
+    "rollForward": "latestMajor",
+    "allowPrerelease": false
+  },
+  "msbuild-sdks": {
+    "NetWasm.Sdk": "0.14.2"
+  }
+}

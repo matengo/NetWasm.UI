@@ -90,7 +90,7 @@ Reference a class library with `ProjectReference`:
     <RootNamespace>MyComponents</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi" Version="0.11.0" />
+    <PackageReference Include="NwUi" Version="0.12.0" />
   </ItemGroup>
 </Project>
 ```

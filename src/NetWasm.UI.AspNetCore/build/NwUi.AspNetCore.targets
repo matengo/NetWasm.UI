@@ -1,0 +1,64 @@
+<Project>
+  <!-- NwUi.AspNetCore: builds a NetWasm.UI client into this ASP.NET Core app, which serves it with MapNetWasmUI.
+
+       NetWasmUIClientProject   the client's .csproj, relative to this project. Not a ProjectReference: the client is
+                                published (it runs in the browser), and dotnet watch would try to hot reload it into
+                                this process. UseNetWasmUIDevServer rebuilds it on change instead.
+       NetWasmUIClientFolder    folder in the output and publish directories (default client; MapNetWasmUI's default).
+       NetWasmUIClientOptimization  the client's NetWasmOptimization. Default O0 in Debug, like nwui-dev: wasm-opt is
+                                most of a rebuild, so live reload stays fast. Empty in other configurations (the
+                                client's own setting, Oz by default).
+       NetWasmUIReusePrerender  false makes every UseNetWasmUIDevServer rebuild prerender. Default true: rebuilds keep the
+                                pages prerendered at startup (the app replaces them when it starts) and only prerender
+                                again when an .html file or the project changes. -->
+  <PropertyGroup>
+    <NetWasmUIClientFolder Condition="'$(NetWasmUIClientFolder)' == ''">client</NetWasmUIClientFolder>
+    <NetWasmUIClientOptimization Condition="'$(NetWasmUIClientOptimization)' == '' and '$(Configuration)' == 'Debug'">O0</NetWasmUIClientOptimization>
+    <NetWasmUIRestoreClient Condition="'$(NetWasmUIRestoreClient)' == ''">true</NetWasmUIRestoreClient>
+    <NetWasmUIReusePrerender Condition="'$(NetWasmUIReusePrerender)' == ''">true</NetWasmUIReusePrerender>
+  </PropertyGroup>
+
+  <!-- After Build, not ResolveProjectReferences: `dotnet run` resolves references again after building, which would
+       delete the client while the server starts. The client stays out of wwwroot: static web assets (which dotnet watch
+       needs) snapshot wwwroot at evaluation time and fail when a build regenerates it. -->
+  <Target Name="NetWasmUIPublishClient" AfterTargets="Build" Condition="'$(NetWasmUIClientProject)' != ''">
+    <PropertyGroup>
+      <NetWasmUIClientDir Condition="'$(NetWasmUIClientDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), $(OutDir), $(NetWasmUIClientFolder)))</NetWasmUIClientDir>
+      <_NwUiClientProject>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(NetWasmUIClientProject)))</_NwUiClientProject>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_NwUiClientProject)')" Text="NetWasmUIClientProject '$(NetWasmUIClientProject)' does not exist." />
+    <!-- Start clean so files from another configuration (whose hashes no longer match deployment.json) or stale hashed
+         runtime chunks never survive. -->
+    <RemoveDir Directories="$(NetWasmUIClientDir)" />
+    <!-- The server's TargetFramework and RuntimeIdentifier are global properties here; the client has its own. A fresh
+         session id gives the client's restore its own evaluation. -->
+    <MSBuild Projects="$(_NwUiClientProject)" Targets="Restore" RemoveProperties="TargetFramework;RuntimeIdentifier"
+             Properties="Configuration=$(Configuration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+             Condition="'$(NetWasmUIRestoreClient)' == 'true'" />
+    <MSBuild Projects="$(_NwUiClientProject)" Targets="Publish" RemoveProperties="TargetFramework;RuntimeIdentifier"
+             Properties="Configuration=$(Configuration);PublishDir=$(NetWasmUIClientDir)"
+             Condition="'$(NetWasmUIClientOptimization)' == ''" />
+    <MSBuild Projects="$(_NwUiClientProject)" Targets="Publish" RemoveProperties="TargetFramework;RuntimeIdentifier"
+             Properties="Configuration=$(Configuration);PublishDir=$(NetWasmUIClientDir);NetWasmOptimization=$(NetWasmUIClientOptimization)"
+             Condition="'$(NetWasmUIClientOptimization)' != ''" />
+    <!-- Build artifacts of the client, never downloaded by the browser. -->
+    <ItemGroup>
+      <_NwUiClientArtifact Include="$(NetWasmUIClientDir)*.dll;$(NetWasmUIClientDir)*.pdb;$(NetWasmUIClientDir)*.json" />
+    </ItemGroup>
+    <Delete Files="@(_NwUiClientArtifact)" />
+    <!-- For UseNetWasmUIDevServer, which republishes the client through this target. Not part of the publish output. -->
+    <WriteLinesToFile File="$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(OutDir), 'netwasmui.dev.txt'))"
+                      Lines="ServerProject=$(MSBuildProjectFullPath);ClientProject=$(_NwUiClientProject);ClientDir=$(NetWasmUIClientDir);Configuration=$(Configuration);ReusePrerender=$(NetWasmUIReusePrerender)"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <Target Name="_NetWasmUIPublishClientFiles" BeforeTargets="ComputeResolvedFilesToPublishList"
+          DependsOnTargets="NetWasmUIPublishClient" Condition="'$(NetWasmUIClientProject)' != ''">
+    <ItemGroup>
+      <_NwUiClientFile Include="$(NetWasmUIClientDir)**" />
+      <ResolvedFileToPublish Include="@(_NwUiClientFile)"
+                             RelativePath="$(NetWasmUIClientFolder)\%(_NwUiClientFile.RecursiveDir)%(_NwUiClientFile.Filename)%(_NwUiClientFile.Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+</Project>
