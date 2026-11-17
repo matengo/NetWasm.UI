@@ -215,7 +215,9 @@ foreach (var (name, prep, click, check) in ops.Where(o => Selected(o.Name)))
                   const before1 = rows() >= 1 ? id(1) : 0;
                   const before2 = rows() >= 2 ? id(2) : 0;
                   const el = document.querySelector(sel);
-                  window.gc();
+                  // The collection js-framework-benchmark forces before each measured run (forceGC in
+                  // webdriver-ts/src/forkedBenchmarkRunnerPuppeteer.ts).
+                  window.gc({ type: 'major', execution: 'sync', flavor: 'last-resort' });
                   await new Promise(r => setTimeout(r, 20));
                   const t0 = performance.now();
                   el.click();

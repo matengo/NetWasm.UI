@@ -19,6 +19,8 @@ See [Compatibility and versioning](docs/compatibility.md).
   to handle the new op.
 - The keyed list builds no table of the old keys' positions when none of them stays in the new
   list (a list replaced by new rows, or rows removed from one end).
+- The benchmark runner forces the same last-resort GC before the measured click as
+  js-framework-benchmark does, instead of a plain one.
 
 ## [0.13.0] - 2026-11-17
 

@@ -45,7 +45,8 @@ the renderer and the template compiler; changes to `dom.mjs` still need the brow
 ## Method
 
 - Every DOM case opens a fresh page, runs the setup clicks, forces a GC and then times one
-  `element.click()` until the DOM check passes (row count, labels, selected row).
+  `element.click()` until the DOM check passes (row count, labels, selected row). The GC is the
+  same one js-framework-benchmark forces before each measured run (a last-resort major GC).
 - The setup clicks are the warm-up that
   [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) gives the same case,
   so every case is measured warmed up. Create 10,000 rows, for example, follows five rounds of
