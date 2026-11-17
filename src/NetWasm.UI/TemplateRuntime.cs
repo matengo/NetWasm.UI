@@ -86,7 +86,7 @@ public static class TemplateRuntime
     public static For<T, TKey> Rows<T, TKey>(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Template template, int slots,
         Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
         where TKey : notnull =>
-        Rows(items, key, new RowBindings<T>(template, slots, setup, bind, events));
+        Rows(items, key, new RowBindings<T>(template, slots, setup, bind, events), keyIsItem: false);
 
     /// <inheritdoc cref="Rows{T, TKey}(Func{IReadOnlyList{T}}, Func{T, TKey}, Template, int, Action{TemplateRow, T}?, Action{TemplateRow, T}?, Action{TemplateRow, T, int, DomEvent}?)"/>
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -95,7 +95,7 @@ public static class TemplateRuntime
         where TKey : notnull
     {
         var signal = items();
-        return Rows(() => signal.Value, key, new RowBindings<T>(template, slots, setup, bind, events));
+        return Rows(() => signal.Value, key, new RowBindings<T>(template, slots, setup, bind, events), keyIsItem: false);
     }
 
     /// <summary>Without <c>@key</c> the items themselves are the keys.</summary>
@@ -103,7 +103,7 @@ public static class TemplateRuntime
     public static For<T, T> Rows<T>(Func<IReadOnlyList<T>> items, Template template, int slots,
         Action<TemplateRow, T>? setup, Action<TemplateRow, T>? bind, Action<TemplateRow, T, int, DomEvent>? events = null)
         where T : notnull =>
-        Rows(items, static item => item, new RowBindings<T>(template, slots, setup, bind, events));
+        Rows(items, static item => item, new RowBindings<T>(template, slots, setup, bind, events), keyIsItem: true);
 
     /// <inheritdoc cref="Rows{T}(Func{IReadOnlyList{T}}, Template, int, Action{TemplateRow, T}?, Action{TemplateRow, T}?, Action{TemplateRow, T, int, DomEvent}?)"/>
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -112,12 +112,12 @@ public static class TemplateRuntime
         where T : notnull
     {
         var signal = items();
-        return Rows(() => signal.Value, static item => item, new RowBindings<T>(template, slots, setup, bind, events));
+        return Rows(() => signal.Value, static item => item, new RowBindings<T>(template, slots, setup, bind, events), keyIsItem: true);
     }
 
-    private static For<T, TKey> Rows<T, TKey>(Func<IReadOnlyList<T>> items, Func<T, TKey> key, RowBindings<T> rows)
+    private static For<T, TKey> Rows<T, TKey>(Func<IReadOnlyList<T>> items, Func<T, TKey> key, RowBindings<T> rows, bool keyIsItem)
         where TKey : notnull =>
-        new(items, key, rows);
+        new(items, key, rows, keyIsItem);
 
     /// <summary>Calls a row's event handler, whichever of the two shapes <c>@on…</c> accepts it has.</summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -130,9 +130,9 @@ public static class TemplateRuntime
     /// <summary>Without <c>@key</c> the items themselves are the keys.</summary>
     public static For<T, T> Each<T>(Func<IReadOnlyList<T>> items, Func<T, Node> render)
         where T : notnull =>
-        new(items, static x => x, render);
+        new(items, static x => x, render, keyIsItem: true);
 
     public static For<T, T> Each<T>(Func<IReadOnlySignal<IReadOnlyList<T>>> items, Func<T, Node> render)
         where T : notnull =>
-        new(() => items().Value, static x => x, render);
+        new(() => items().Value, static x => x, render, keyIsItem: true);
 }

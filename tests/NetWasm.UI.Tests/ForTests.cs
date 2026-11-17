@@ -313,4 +313,109 @@ public class ForTests : RendererTest
             Assert.Equal(string.Join(",", items), Items(Dom.Html));
         }
     }
+
+    private sealed class Person
+    {
+        public Person(int id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
+
+        public int Id { get; }
+        public string Name { get; }
+    }
+
+    private readonly record struct Point(int Id, string Label);
+
+    private static Signal<IReadOnlyList<Person>> MountPeople(params Person[] people)
+    {
+        var items = new Signal<IReadOnlyList<Person>>(people);
+        App.Mount(new Lambda(() => Ul(Each(items, p => p.Id, p => Li(p.Name)))), "#app");
+        return items;
+    }
+
+    [Fact]
+    public void A_key_with_a_new_item_is_rendered_again_in_place_and_the_others_are_kept()
+    {
+        var ann = new Person(1, "Ann");
+        var cid = new Person(3, "Cid");
+        var items = MountPeople(ann, new Person(2, "Bo"), cid);
+        var kept = Dom.Nodes.Count;
+        Dom.Log.Clear();
+
+        items.Value = new[] { ann, new Person(2, "Bob"), cid };
+
+        Assert.Equal("Ann,Bob,Cid", Items(Dom.Html));
+        Assert.Equal(1, Dom.Log.Count(l => l.Op == "CreateElement"));
+        Assert.Equal(1, Dom.Log.Count(l => l.Op == "Remove"));
+        Assert.Equal(kept, Dom.Nodes.Count);
+    }
+
+    [Fact]
+    public void The_same_items_are_not_rendered_again()
+    {
+        var people = new[] { new Person(1, "Ann"), new Person(2, "Bo"), new Person(3, "Cid") };
+        var items = MountPeople(people);
+        Dom.Log.Clear();
+
+        items.Value = new[] { people[2], people[0], people[1] };
+
+        Assert.Equal("Cid,Ann,Bo", Items(Dom.Html));
+        Assert.DoesNotContain(Dom.Log, l => l.Op is "CreateElement" or "Remove");
+    }
+
+    [Fact]
+    public void New_items_and_a_new_order_in_one_update()
+    {
+        var items = MountPeople(new Person(1, "Ann"), new Person(2, "Bo"), new Person(3, "Cid"), new Person(4, "Dag"));
+
+        items.Value = new[] { new Person(4, "Dag!"), new Person(2, "Bo!"), new Person(5, "Eva"), new Person(1, "Ann!") };
+
+        Assert.Equal("Dag!,Bo!,Eva,Ann!", Items(Dom.Html));
+    }
+
+    [Fact]
+    public void A_replaced_item_stops_reacting()
+    {
+        var name = new Signal<string>("Ann");
+        var first = new Person(1, "Ann");
+        var items = new Signal<IReadOnlyList<Person>>(new[] { first });
+        App.Mount(new Lambda(() => Ul(Each(items, p => p.Id, p => Li(Text(() => p == first ? name.Value : p.Name))))), "#app");
+
+        items.Value = new[] { new Person(1, "Bo") };
+        Dom.Log.Clear();
+        name.Value = "changed";
+
+        Assert.Equal("Bo", Items(Dom.Html));
+        Assert.Empty(Dom.Log);
+    }
+
+    [Fact]
+    public void A_value_type_item_is_rendered_again_only_when_its_value_changes()
+    {
+        var items = new Signal<IReadOnlyList<Point>>(new[] { new Point(1, "a"), new Point(2, "b") });
+        App.Mount(new Lambda(() => Ul(Each(items, p => p.Id, p => Li(p.Label)))), "#app");
+        Dom.Log.Clear();
+
+        items.Value = new[] { new Point(1, "a"), new Point(2, "b") };
+        Assert.DoesNotContain(Dom.Log, l => l.Op == "CreateElement");
+
+        items.Value = new[] { new Point(1, "a"), new Point(2, "B") };
+        Assert.Equal("a,B", Items(Dom.Html));
+        Assert.Equal(1, Dom.Log.Count(l => l.Op == "CreateElement"));
+    }
+
+    [Fact]
+    public void Items_that_are_their_own_keys_are_kept_when_an_equal_item_comes()
+    {
+        var items = new Signal<IReadOnlyList<string>>(new[] { "a", "b" });
+        App.Mount(new Lambda(() => Ul(TemplateRuntime.Each(() => items, s => Li(s)))), "#app");
+        Dom.Log.Clear();
+
+        items.Value = new[] { new string('a', 1), new string('b', 1) };
+
+        Assert.Equal("a,b", Items(Dom.Html));
+        Assert.DoesNotContain(Dom.Log, l => l.Op is "CreateElement" or "Remove");
+    }
 }

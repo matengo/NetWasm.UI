@@ -150,6 +150,10 @@ Ul(Each(items, i => i.Id, item =>
   `IReadOnlySignal<IReadOnlyList<T>>`. Rows are keyed: a row is built once per key and moved, not
   rebuilt, when the list is reordered (a longest-increasing-subsequence diff gives the minimum
   number of moves). Put per-row state that changes in signals on the item (`item.Done`).
+- A row shows its key's item. When a new list has a different item for a key that stays (another
+  object, or for a value type a value that is not equal), that row is disposed and rendered again
+  for the new item, in the same place, and its local state starts over. Keep the same object to
+  keep the row.
 - To change a list, assign a new list to the signal (`items.Value = newList`) or mutate and call
   `items.Touch()`.
 

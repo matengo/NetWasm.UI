@@ -30,6 +30,10 @@ See [Compatibility and versioning](docs/compatibility.md).
     object it was created for. Keep the same object to keep the row.
   - The bindings of a row are evaluated together when something one of them reads changes. Only
     values that differ are written to the DOM.
+- `Each` and every other keyed list follow the same rule: a key that stays but gets a different
+  item has its row disposed and rendered again for that item, in the same place. Before, the row
+  kept the object it was created for. Lists without `@key` (the items are the keys) are not
+  affected. See [Conditionals and lists](docs/components.md#conditionals-and-lists).
 - `nwui.dom` clones a template from its own inert document (a template with custom elements is
   still imported first) and finds a clone's text holes when they are first written to, instead of
   walking to every hole of every clone. Creating 10,000 rows spends about 8 ms less in the browser.
