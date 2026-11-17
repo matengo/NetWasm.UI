@@ -6,6 +6,14 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Changed
+
+- `nwui.dom` keeps the browser's compiled code for applying a batch across the browser's own
+  garbage collections. It created a reader object per batch, and when a collection freed the
+  shape of those short-lived readers (or of a cleared list's rows) the browser threw away the
+  code compiled for them, so the next batch ran slower while it was compiled again. One reader
+  now reads every batch, and each template keeps one node shaped like its clones' root.
+
 ## [0.13.0] - 2026-11-17
 
 ### Added

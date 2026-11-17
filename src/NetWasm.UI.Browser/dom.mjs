@@ -65,6 +65,13 @@ class Reader {
     this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     this.pos = 0;
   }
+  /** Starts reading another batch. */
+  reset(bytes) {
+    this.bytes = bytes;
+    this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    this.pos = 0;
+    return this;
+  }
   get done() { return this.pos >= this.bytes.length; }
   u8() { return this.bytes[this.pos++]; }
   i32() { const v = this.view.getInt32(this.pos, true); this.pos += 4; return v; }
@@ -383,7 +390,11 @@ export function createDomHost(options = {}) {
     // until it is inserted, which costs the browser less than cloning a node of this document. A template with
     // custom elements is imported first, so that its clones are created upgraded and a property set on them
     // before they are inserted reaches the element's own setter.
-    templates.set(id, { root: custom ? doc.importNode(first, true) : first, paths, rows: null });
+    // `shape` is one node shaped like the root of every clone once it has its id (see `reader` below for why the
+    // shape has to stay alive). It is cloned from the inert template, so it never runs a custom element's code.
+    const shape = first.cloneNode(false);
+    shape[idKey] = 0;
+    templates.set(id, { root: custom ? doc.importNode(first, true) : first, paths, rows: null, shape });
   }
 
   // A clone's text holes are found when something first writes to them. Until then a hole's entry in `nodes`
@@ -539,8 +550,25 @@ export function createDomHost(options = {}) {
     return root.querySelector(selector);
   }
 
+  // The browser compiles the loop below and what it calls for the shapes of the objects they see. A shape that
+  // only short-lived objects have is freed by the browser's next full collection, and the code compiled for it is
+  // thrown away with it: a reader created per batch, or the clones of a template after a list was cleared. The
+  // next batch then runs in the browser's slowest tiers while it compiles the loop again (about a millisecond for
+  // 1,000 rows). So one reader reads every batch, and each template keeps one node shaped like its clones' root.
+  const reader = new Reader(EMPTY);
+
   function apply(bytes) {
-    const r = new Reader(bytes);
+    // A batch applied while another one is (it cannot happen today) gets a reader of its own.
+    const r = reader.bytes === EMPTY ? reader.reset(bytes) : new Reader(bytes);
+    try {
+      read(r);
+    } finally {
+      // Holds no view of the module's memory between batches.
+      if (r === reader) reader.reset(EMPTY);
+    }
+  }
+
+  function read(r) {
     while (!r.done) {
       const op = r.u8();
       switch (op) {
