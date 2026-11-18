@@ -165,6 +165,55 @@ var count = Use(AppState.Context).Count;
 - For services looked up by type (API clients, stores shared app-wide), `Services` and
   `Inject<T>()` are the shorter form of the same mechanism. See [Services and DI](services.md).
 
+## Events
+
+A `Signal` holds state: subscribers see the latest value, and writing an equal value may notify no
+one. For things that *happen* (a message arrived, a toast should show, a form was saved) use an
+`EventChannel<T>`. Each `Publish` reaches every subscriber, also when the value equals the previous one.
+
+Register one channel per message type as a service:
+
+```csharp
+var services = new Services()
+    .Add(new EventChannel<ChatMessage>());
+
+// publish from anywhere, for example a SignalR callback in a service:
+channel.Publish(message);
+
+// subscribe in any component while building; it unsubscribes when the component is removed:
+Inject<EventChannel<ChatMessage>>().Subscribe(m => toast.Value = m.Text);
+```
+
+Services are looked up by type, so there is one `EventChannel<ChatMessage>` per scope. When two
+events carry the same type (a message received and a message sent), give each event its own
+message type, or group the channels in a class and register that:
+
+```csharp
+public sealed class ChatEvents
+{
+    public EventChannel<ChatMessage> Received { get; } = new();
+    public EventChannel<ChatMessage> Sent { get; } = new();
+}
+
+Inject<ChatEvents>().Received.Subscribe(m => toast.Value = m.Text);
+```
+
+- `Publish` is synchronous and fire-and-forget: handlers run right away, in subscription order, in
+  one batch, so all their signal writes reach the browser as one update.
+- Handlers run untracked. Publishing from an effect does not make the effect depend on what the
+  handlers read.
+- A handler that throws goes to the error boundary of the component that subscribed (then
+  `App.OnError`). The other handlers still run.
+- Called while building, the subscription ends with the component, `When` branch or `Each` row;
+  inside an `Effect`, before its next run. Elsewhere, such as in a service, dispose the
+  `IDisposable` that `Subscribe` returns.
+- A handler that unsubscribes during a `Publish` is skipped; one that subscribes gets the next
+  message. A `Publish` inside a handler runs its handlers right away.
+
+Keep data that components render in signals (a store), and use a channel only for the event
+itself. A service that receives server messages often does both: it updates the store and then
+publishes.
+
 ## Lifecycle
 
 ```csharp

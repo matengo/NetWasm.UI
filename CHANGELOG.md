@@ -8,6 +8,9 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ### Added
 
+- `EventChannel<T>`: a typed, synchronous event channel for in-app pub/sub. `Publish` runs every handler in
+  one batch, and a `Subscribe` made while building a component ends with that component. Handler
+  errors go to the subscriber's error boundary. See [Events](docs/reactivity.md#events).
 - `Services.AddServiceProvider(IServiceProvider)`: `Inject<T>()` falls back to any
   `IServiceProvider`, such as a `Microsoft.Extensions.DependencyInjection` container from
   `NetWasm.Microsoft.Extensions.DependencyInjection`, for types that are not registered by type.
