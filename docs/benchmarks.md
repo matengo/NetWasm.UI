@@ -44,9 +44,11 @@ the renderer and the template compiler; changes to `dom.mjs` still need the brow
 
 ## Method
 
-- Every DOM case opens a fresh page, runs the setup clicks, forces a GC and then times one
-  `element.click()` until the DOM check passes (row count, labels, selected row). The GC is the
-  same one js-framework-benchmark forces before each measured run (a last-resort major GC).
+- Every DOM case opens a fresh page, waits until it has made no request for 500 ms, runs the setup
+  clicks, forces a GC and then times one `element.click()` until the DOM check passes (row count,
+  labels, selected row). The wait and the GC are the ones js-framework-benchmark uses: it loads
+  each page with `waitUntil: "networkidle0"` before its warm-up, and forces a last-resort major GC
+  before each measured run.
 - The setup clicks are the warm-up that
   [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) gives the same case,
   so every case is measured warmed up. Create 10,000 rows, for example, follows five rounds of
@@ -57,6 +59,10 @@ the renderer and the template compiler; changes to `dom.mjs` still need the brow
 - DOM-free workloads return checksums that must match across implementations. React and Blazor
   have no signals, so the reactive workloads are "–" for them (React's `sort`/`sieve` would be
   Solid's JS again).
+- *Startup* is `window.__ready`, the page's own `performance.now()` once the app has started. The
+  runner reads it after the same network-idle wait, so nothing of the runner's runs in the page
+  while the app is starting. Polling for `__ready` from the load event on added about 5 ms to
+  NetWasm.UI's startup, whose module chain is still running at that point.
 - *Download* sums every response of a first visit, compressed with Brotli quality 11.
 - Values are medians in ms. Cases under ~10 ms move by a few ms between runs.
 - Script time is stable within a few percent between runs. Script + layout is not: even on an
