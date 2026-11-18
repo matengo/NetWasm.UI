@@ -13,6 +13,9 @@ See [Compatibility and versioning](docs/compatibility.md).
   cases of the JavaScript frameworks faster than the official benchmark measures them. The same
   wait keeps the runner from polling the page while NetWasm.UI is still starting, which had added
   about 5 ms to its startup figure.
+- The renderer no longer keeps a render batch buffer that one large batch grew (a list of thousands
+  of rows) for the small batches after it. It kept two of them, about 1 MB each after 10,000 rows;
+  a later large batch grows its buffer again.
 
 ## [0.14.0] - 2026-11-17
 

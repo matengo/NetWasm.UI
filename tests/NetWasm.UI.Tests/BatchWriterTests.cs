@@ -18,6 +18,44 @@ public class BatchWriterTests
         Assert.True(w.IsEmpty);
     }
 
+    // Writes a batch of about `bytes` bytes, flushes it as the renderer does and returns the buffer it went out in.
+    private static byte[] Flush(BatchWriter w, int bytes)
+    {
+        for (var i = 0; i < bytes / 5; i++)
+        {
+            w.Op(Op.Release);
+            w.Int(i);
+        }
+
+        var ops = w.Detach(out _);
+        w.Return(ops);
+        return ops;
+    }
+
+    [Fact]
+    public void A_buffer_that_one_large_batch_grew_is_not_kept_for_the_small_batches_after_it()
+    {
+        var w = new BatchWriter(1024);
+        Flush(w, 512 * 1024);
+        Assert.True(w.Capacity >= 512 * 1024);
+
+        Flush(w, 100);
+        Flush(w, 100);
+
+        Assert.True(w.Capacity <= BatchWriter.KeepAtMost, $"capacity {w.Capacity}");
+    }
+
+    [Fact]
+    public void Large_batches_one_after_another_keep_using_the_same_two_buffers()
+    {
+        var w = new BatchWriter(1024);
+        var first = Flush(w, 512 * 1024);
+        var second = Flush(w, 512 * 1024);
+
+        Assert.Same(first, Flush(w, 512 * 1024));
+        Assert.Same(second, Flush(w, 400 * 1024));
+    }
+
     [Fact]
     public void A_block_release_next_to_the_one_before_it_extends_that_op()
     {
