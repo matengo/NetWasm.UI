@@ -130,6 +130,52 @@ so there is nothing for that attribute to protect. Here the constructor is chose
 the generated code is an ordinary `new`, and a type that cannot be built is a compile error
 instead of a run-time failure.
 
+## Using Microsoft.Extensions.DependencyInjection
+
+Some libraries register their services on an `IServiceCollection` (`AddHttpClient`, `AddLogging`,
+`AddOptions`). NetWasm.UI does not include that container. It only accepts any
+`System.IServiceProvider` through `Services.AddServiceProvider`, so apps that don't use one pay
+nothing for it. To use Microsoft's container, reference
+`NetWasm.Microsoft.Extensions.DependencyInjection` (the release that matches your NetWasm.Sdk). It
+provides `ServiceCollection`, `AddSingleton`, `AddScoped` and `BuildServiceProvider`, and its source
+generator writes the constructor calls at build time, so `AddSingleton<IService, Service>()` works
+without reflection. Then hand the container to `AddServiceProvider`:
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+
+var container = new ServiceCollection()
+    .AddSingleton<IClock, SystemClock>()
+    .AddSingleton<WeatherApi>()
+    .AddScoped<PageState>()
+    .BuildServiceProvider();
+
+BrowserApp.Start(new App(), new Services().AddServiceProvider(container));
+```
+
+`Inject<T>()` and `@inject` work as before. When no registration of `T` exists at a level, they
+ask that level's provider for `typeof(T)`. If the provider returns null, the lookup continues
+further up. So the nearest level still wins, and at a single level a registration by type wins
+over the provider. The provider passed in belongs to you and is never disposed.
+
+For scoped services, give each page or subtree its own container scope.
+`AddServiceProvider(factory)` creates the provider on the first lookup in each providing scope and
+disposes it with that scope, like `AddLazy`:
+
+```csharp
+protected override Node Build()
+{
+    Provide(new Services().AddServiceProvider(() => container.CreateScope().ServiceProvider));
+    return Div(new EditForm());   // each EditForm page gets its own PageState, disposed with it
+}
+```
+
+Adding `NetWasm.Microsoft.Extensions.DependencyInjection` to the app costs download size. In a
+small test app, the Wasm grew from 45 KB with `Services` alone to 96 KB with the package and a
+container (Brotli, Release). `AddServiceProvider` itself adds almost nothing. Reference the package
+when you need libraries that build on `IServiceCollection`, and use `Services` alone otherwise.
+Note that a container scope does not dispose services that implement only `IAsyncDisposable`.
+
 ## Keys and lookup
 
 - A service is registered under exactly the type argument. `Add(new WeatherApi())` registers

@@ -42,9 +42,11 @@ Code that NetWasm does not support usually still compiles, and it throws when it
   `Type.GetType(string)` and so on) throws `PlatformNotSupportedException`. Newtonsoft.Json builds
   but throws when it serializes; use `System.Text.Json` with source generation.
 - **Dependency injection.** Microsoft DI finds constructors by reflection for registrations such
-  as `AddSingleton<IService, Service>()`. Register a factory instead, use
-  `NetWasm.Microsoft.Extensions.DependencyInjection`, or use NetWasm.UI's own
-  [Services](services.md).
+  as   `AddSingleton<IService, Service>()`. Register a factory instead, or use
+  `NetWasm.Microsoft.Extensions.DependencyInjection`, which generates that code at build time, and
+  hand the container to NetWasm.UI with
+  [`Services.AddServiceProvider`](services.md#using-microsoftextensionsdependencyinjection). For
+  most apps, NetWasm.UI's own [Services](services.md) are enough and smaller.
 - **Resources.** NetWasm deploys no embedded resources. Exception messages from Microsoft.Extensions
   and many other packages show the resource key, such as
   `TryAddIndistinguishableTypeToEnumerable`, instead of a sentence.

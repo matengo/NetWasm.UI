@@ -83,6 +83,18 @@ public sealed class Scope : IDisposable
         return false;
     }
 
+    /// <summary>Looks <paramref name="key"/> up in this scope only.</summary>
+    internal bool TryGetLocalContext(object key, out object? value)
+    {
+        if (contexts is not null && contexts.TryGetValue(key, out value))
+        {
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
     /// <summary>Runs <paramref name="action"/> with this scope as the current owner.</summary>
     public void Run(Action action)
     {
