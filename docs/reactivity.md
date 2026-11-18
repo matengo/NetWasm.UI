@@ -100,6 +100,11 @@ Each(rows, r => r.Id, row =>
 `isSelected.Is(key)` subscribes to that key only, so changing the selection re-runs two rows
 instead of all of them (Solid's `createSelector`).
 
+In a template `@foreach` whose row asks about its own `@key` (`isSelected.Is(row.Id)` with
+`@key="row.Id"`), the selector keeps nothing per row: when the selection moves, the list re-runs the
+rows with the old and the new key. This needs the selector's default comparer, since the list finds
+rows by their keys' own `Equals`.
+
 ## Batching
 
 Event handlers already run in a batch. Elsewhere (timers, JS callbacks), group writes so that

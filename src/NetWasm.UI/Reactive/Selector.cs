@@ -18,12 +18,16 @@ public sealed class Selector<TKey> : Computation
     private readonly IEqualityComparer<TKey> comparer;
     private readonly Dictionary<TKey, KeyNode> keys;
     private TKey current;
+    // Lists of template rows whose rows ask about their own key (see IRowKeys).
+    private List<IRowKeys<TKey>>? lists;
+    private readonly bool defaultComparer;
 
     public Selector(IReadOnlySignal<TKey> source, IEqualityComparer<TKey>? comparer = null)
     {
         this.source = source;
         this.comparer = comparer ?? EqualityComparer<TKey>.Default;
         keys = new Dictionary<TKey, KeyNode>(this.comparer);
+        defaultComparer = ReferenceEquals(this.comparer, EqualityComparer<TKey>.Default);
         Tracker.CurrentOwner?.Register(this);
         current = Read();
     }
@@ -31,8 +35,18 @@ public sealed class Selector<TKey> : Computation
     /// <summary>True when <paramref name="key"/> equals the source's value. Tracks only this key.</summary>
     public bool Is(TKey key)
     {
-        if (Tracker.Current is not null && !IsDisposed)
+        var running = Tracker.Current;
+        if (running is not null && !IsDisposed)
         {
+            // The list finds a row by its key with the key's own Equals, so only a selector that compares the same
+            // way can leave the row to its list.
+            if (defaultComparer && running is TemplateRow row && row.Keys is IRowKeys<TKey> rows &&
+                comparer.Equals(rows.KeyOf(row), key))
+            {
+                Watch(rows);
+                return comparer.Equals(key, current);
+            }
+
             if (!keys.TryGetValue(key, out var node))
             {
                 node = new KeyNode(this, key);
@@ -64,6 +78,8 @@ public sealed class Selector<TKey> : Computation
         {
             Notify(previous);
             Notify(current);
+            NotifyLists(previous);
+            NotifyLists(current);
         }
         finally
         {
@@ -75,6 +91,42 @@ public sealed class Selector<TKey> : Computation
     {
         base.Dispose();
         keys.Clear();
+        lists = null;
+    }
+
+    private void Watch(IRowKeys<TKey> rows)
+    {
+        var all = lists ??= new List<IRowKeys<TKey>>();
+        for (var i = 0; i < all.Count; i++)
+        {
+            if (ReferenceEquals(all[i], rows))
+            {
+                return;
+            }
+        }
+
+        all.Add(rows);
+    }
+
+    private void NotifyLists(TKey key)
+    {
+        var all = lists;
+        if (key is null || all is null)
+        {
+            return;
+        }
+
+        for (var i = all.Count - 1; i >= 0; i--)
+        {
+            if (all[i].IsAlive)
+            {
+                all[i].Changed(key);
+            }
+            else
+            {
+                all.RemoveAt(i);
+            }
+        }
     }
 
     private void Notify(TKey key)
