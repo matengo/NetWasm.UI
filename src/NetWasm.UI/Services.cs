@@ -72,6 +72,39 @@ public sealed class Services
     /// <exception cref="InvalidOperationException">The call was not rewritten (the generator is not running for this project).</exception>
     public Services AddLazy<T>() => throw NotGenerated();
 
+    /// <summary>
+    /// Resolves services that are not registered by type from <paramref name="provider"/>, for example a
+    /// <c>Microsoft.Extensions.DependencyInjection</c> container. <see cref="Html.Inject{T}"/> asks it for
+    /// <c>typeof(T)</c> when nothing at this level or nearer registers <c>T</c>; when it returns null the lookup
+    /// continues further up. The provider belongs to the caller and is never disposed.
+    /// </summary>
+    public Services AddServiceProvider(IServiceProvider provider)
+    {
+        if (provider is null)
+        {
+            throw new ArgumentNullException(nameof(provider));
+        }
+
+        Append(new ProviderRegistration(provider, null));
+        return this;
+    }
+
+    /// <summary>
+    /// Like <see cref="AddServiceProvider(IServiceProvider)"/>, with a provider that <paramref name="factory"/> creates on
+    /// the first lookup in each providing scope, and that is disposed with that scope if it is <see cref="IDisposable"/>.
+    /// Use it for a scope of a DI container per subtree: <c>AddServiceProvider(() =&gt; root.CreateScope().ServiceProvider)</c>.
+    /// </summary>
+    public Services AddServiceProvider(Func<IServiceProvider> factory)
+    {
+        if (factory is null)
+        {
+            throw new ArgumentNullException(nameof(factory));
+        }
+
+        Append(new ProviderRegistration(null, factory));
+        return this;
+    }
+
     private static InvalidOperationException NotGenerated() => new(
         "AddLazy<TService, TImplementation>() is rewritten at compile time by the NetWasm.UI source generator, which did not run for this call. " +
         "Reference the NwUi package (or the generator as an analyzer) and include NetWasm.UI.Generated in InterceptorsNamespaces, or register a factory with AddLazy(() => new ...).");
@@ -100,10 +133,22 @@ public sealed class Services
 
     internal static bool TryResolve<T>(out T value)
     {
-        if (Scope.Current is { } scope && scope.TryGetContext(Key<T>.Value, out var entry))
+        // Per level, a registration of T wins over a provider; the nearest level wins overall.
+        for (var s = Scope.Current; s is not null; s = s.Parent)
         {
-            value = ((Entry<T>)entry!).Get();
-            return true;
+            if (s.TryGetLocalContext(Key<T>.Value, out var entry))
+            {
+                value = ((Entry<T>)entry!).Get();
+                return true;
+            }
+
+            if (s.TryGetLocalContext(ProviderKey, out var provider)
+                && ((Entry<IServiceProvider>)provider!).Get() is { } sp
+                && s.Run(() => Tracker.Untracked(() => sp.GetService(typeof(T)))) is T service)
+            {
+                value = service;
+                return true;
+            }
         }
 
         value = default!;
@@ -114,6 +159,33 @@ public sealed class Services
     private static class Key<T>
     {
         public static readonly object Value = new();
+    }
+
+    private static readonly object ProviderKey = new();
+
+    private sealed class ProviderRegistration : Registration
+    {
+        private readonly IServiceProvider? provider;
+        private readonly Func<IServiceProvider>? factory;
+
+        public ProviderRegistration(IServiceProvider? provider, Func<IServiceProvider>? factory)
+        {
+            this.provider = provider;
+            this.factory = factory;
+        }
+
+        public override void Apply(Scope scope)
+        {
+            if (factory is null)
+            {
+                scope.SetContext(ProviderKey, new Entry<IServiceProvider>(provider!));
+                return;
+            }
+
+            var entry = new Entry<IServiceProvider>(factory, scope);
+            scope.SetContext(ProviderKey, entry);
+            scope.Register(entry);
+        }
     }
 
     private abstract class Registration

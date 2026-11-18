@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using NetWasm.UI.Dom;
 using NetWasm.UI.Reactive;
 using NetWasm.UI.Tests.Templates;
@@ -226,6 +227,8 @@ public class ServicesTests : RendererTest
     {
         Assert.Throws<ArgumentNullException>(() => new Services().Add<IApi>(null!));
         Assert.Throws<ArgumentNullException>(() => new Services().AddLazy<IApi>(null!));
+        Assert.Throws<ArgumentNullException>(() => new Services().AddServiceProvider((IServiceProvider)null!));
+        Assert.Throws<ArgumentNullException>(() => new Services().AddServiceProvider((Func<IServiceProvider>)null!));
         Assert.Throws<ArgumentNullException>(() => App.Mount(new Lambda(() => P("x")), "#app", null!));
     }
 
@@ -257,5 +260,70 @@ public class ServicesTests : RendererTest
     public void Constructor_injection_without_a_provider_throws()
     {
         Assert.Throws<InvalidOperationException>(() => App.Mount(new WelcomeHost(), "#app"));
+    }
+
+    [Fact]
+    public void Service_provider_resolves_types_that_are_not_registered()
+    {
+        var provider = new ServiceCollection()
+            .AddSingleton<IApi>(new Api("container"))
+            .AddSingleton(new Tracked())
+            .BuildServiceProvider();
+        var services = new Services().AddServiceProvider(provider).Add<IApi>(new Api("typed"));
+
+        App.Mount(new Lambda(() => Div(
+            Span(Inject<IApi>().Name),
+            B(ReferenceEquals(Inject<Tracked>(), provider.GetService<Tracked>()) ? "same" : "different"),
+            TryInject<string>(out _) ? "yes" : "no")), "#app", services);
+
+        Assert.Equal("<div><span>typed</span><b>same</b>no</div>", Dom.Html);
+    }
+
+    [Fact]
+    public void Nearest_level_wins_between_registrations_and_providers()
+    {
+        var outer = new ServiceCollection().AddSingleton<IApi>(new Api("outer container")).BuildServiceProvider();
+        var inner = new ServiceCollection().AddSingleton(new Tracked()).BuildServiceProvider();
+
+        App.Mount(new Lambda(() => Div(
+            // A nearer provider wins over an outer registration of the same type...
+            Provide(new Services().AddServiceProvider(outer), () => B(Inject<IApi>().Name)),
+            // ...and a provider that returns null falls through to the levels above.
+            Provide(new Services().AddServiceProvider(inner), () => Span(Inject<IApi>().Name)))),
+            "#app", new Services().Add<IApi>(new Api("root")));
+
+        Assert.Equal("<div><b>outer container</b><span>root</span></div>", Dom.Html);
+    }
+
+    [Fact]
+    public void Lazy_service_provider_gives_each_subtree_a_container_scope()
+    {
+        var root = new ServiceCollection().AddScoped<Tracked>().BuildServiceProvider();
+        var scoped = new Services().AddServiceProvider(() => root.CreateScope().ServiceProvider);
+        var show = new Signal<bool>(true);
+        Tracked? a1 = null, a2 = null, b = null;
+
+        App.Mount(new Lambda(() => Div(
+            When(() => show.Value, () => Provide(scoped, () =>
+            {
+                a1 = Inject<Tracked>();
+                a2 = Inject<Tracked>();
+                return B("a");
+            })),
+            Provide(scoped, () =>
+            {
+                b = Inject<Tracked>();
+                return B("b");
+            }))), "#app");
+
+        Assert.Same(a1, a2);
+        Assert.NotSame(a1, b);
+
+        show.Value = false;
+        Assert.Equal(1, a1!.Disposals);
+        Assert.Equal(0, b!.Disposals);
+
+        App.Unmount();
+        Assert.Equal(1, b.Disposals);
     }
 }

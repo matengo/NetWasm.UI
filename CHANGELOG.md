@@ -6,6 +6,15 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `Services.AddServiceProvider(IServiceProvider)`: `Inject<T>()` falls back to any
+  `IServiceProvider`, such as a `Microsoft.Extensions.DependencyInjection` container from
+  `NetWasm.Microsoft.Extensions.DependencyInjection`, for types that are not registered by type.
+  `AddServiceProvider(Func<IServiceProvider>)` creates the provider per providing scope and disposes
+  it with that scope, so `() => root.CreateScope().ServiceProvider` gives each subtree its own
+  container scope. See [Using Microsoft.Extensions.DependencyInjection](docs/services.md#using-microsoftextensionsdependencyinjection).
+
 ### Changed
 
 - The benchmark runner waits until a page has made no request for 500 ms before the setup clicks,
