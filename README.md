@@ -182,7 +182,7 @@ dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Co
   [building component libraries](docs/components.md#building-component-libraries): element calls,
   outside-click listeners, DOM reads, portals and ids
 - [Templates (`.nwui`)](docs/templates.md)
-- [Reactivity](docs/reactivity.md): signals, batching, context, lifecycle
+- [Reactivity](docs/reactivity.md): signals, batching, context, events, lifecycle
 - [Services and DI](docs/services.md): `Services`, `Inject<T>()`, `@inject`
 - [Async data and Suspense](docs/async.md): `Resource<T>`, `Suspense`, `HttpClient`
 - [Forms and validation](docs/forms.md)

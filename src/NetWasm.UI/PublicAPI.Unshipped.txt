@@ -110,3 +110,8 @@ static NetWasm.UI.TemplateRuntime.Rows<T>(System.Func<System.Collections.Generic
 NetWasm.UI.Dom.Op.ReleaseBlock = 27 -> NetWasm.UI.Dom.Op
 NetWasm.UI.Services.AddServiceProvider(System.Func<System.IServiceProvider!>! factory) -> NetWasm.UI.Services!
 NetWasm.UI.Services.AddServiceProvider(System.IServiceProvider! provider) -> NetWasm.UI.Services!
+NetWasm.UI.Reactive.EventChannel<T>
+NetWasm.UI.Reactive.EventChannel<T>.EventChannel() -> void
+NetWasm.UI.Reactive.EventChannel<T>.HasSubscribers.get -> bool
+NetWasm.UI.Reactive.EventChannel<T>.Subscribe(System.Action<T>! handler) -> System.IDisposable!
+NetWasm.UI.Reactive.EventChannel<T>.Publish(T message) -> void
