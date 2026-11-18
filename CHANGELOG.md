@@ -16,6 +16,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 - A computation keeps its first two sources inline, and a signal its first two observers. A list
   row whose bindings read two signals (its label and the selected key, say) no longer allocates
   two arrays for the second one.
+- A `Scope` keeps its first registration inline. A list row's scope, which owns one thing, no
+  longer allocates an array of eight.
 
 ## [0.14.0] - 2026-11-17
 
