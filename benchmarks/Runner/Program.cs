@@ -387,7 +387,9 @@ async Task<IPage> OpenAsync(IBrowserContext context, string path)
 {
     var page = await context.NewPageAsync();
     page.PageError += (_, e) => Console.Error.WriteLine($"[{path}] page error: {e}");
-    await page.GotoAsync($"{baseUrl}/{path}/");
+    // js-framework-benchmark loads each page with waitUntil: "networkidle0" (no request for 500 ms) before its
+    // warm-up (webdriver-ts/src/forkedBenchmarkRunnerPuppeteer.ts). Playwright's NetworkIdle is the same wait.
+    await page.GotoAsync($"{baseUrl}/{path}/", new() { WaitUntil = WaitUntilState.NetworkIdle });
     await page.WaitForFunctionAsync("window.__ready !== undefined");
     return page;
 }

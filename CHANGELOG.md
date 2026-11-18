@@ -6,6 +6,14 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Changed
+
+- The benchmark runner waits until a page has made no request for 500 ms before the setup clicks,
+  as js-framework-benchmark does. Starting the warm-up right after the app is ready made some
+  cases of the JavaScript frameworks faster than the official benchmark measures them. The same
+  wait keeps the runner from polling the page while NetWasm.UI is still starting, which had added
+  about 5 ms to its startup figure.
+
 ## [0.14.0] - 2026-11-17
 
 ### Changed
