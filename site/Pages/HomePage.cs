@@ -169,15 +169,15 @@ public sealed class HomePage : Component
                     SectionHead(
                         "Speed, measured",
                         "Faster than React. On par with Solid.",
-                        "In a js-framework-benchmark-style comparison NetWasm.UI is faster than React on every DOM case, on par with SolidJS on DOM updates (0.95–1.25× its time) and faster than Solid on reactive and compute workloads. Lower is better."),
+                        "In a js-framework-benchmark-style comparison NetWasm.UI is faster than React on every DOM case, on par with SolidJS on DOM updates (0.95–1.11× its time) and faster than Solid on reactive and compute workloads. Lower is better."),
                     Link("/benchmarks", Class("btn"), "All benchmark results →")),
                 Div(
                     Class("bars"),
                     P(Class("bars-title"), "Create 1,000 rows, ms (script + layout)"),
-                    Bar("NetWasm.UI", 45.0, 211.1, true),
-                    Bar("SolidJS", 44.9, 211.1, false),
-                    Bar("React", 63.7, 211.1, false),
-                    Bar("Blazor WASM", 211.1, 211.1, false))));
+                    Bar("NetWasm.UI", 43.2, 200.2, true),
+                    Bar("SolidJS", 43.2, 200.2, false),
+                    Bar("React", 60.8, 200.2, false),
+                    Bar("Blazor WASM", 200.2, 200.2, false))));
 
     private static Node Bar(string name, double value, double max, bool highlight)
     {

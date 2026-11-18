@@ -76,7 +76,7 @@ the renderer and the template compiler; changes to `dom.mjs` still need the brow
 
 Windows arm64 laptop on an otherwise idle machine in the "Best performance" power mode, mains
 power, Chromium 153 from Playwright 1.63, script + layout, NetWasm.Sdk 0.14.2 with NetWasmGC,
-NetWasm.UI after 0.13.0 (with shared row bindings and listeners, and `ReleaseBlock`). Each value is
+NetWasm.UI after 0.14.0 (with smaller rows and the render buffer change). Each value is
 the mean of the medians of two runs with 20 runs per case (`--runs 20 --no-aot`). Blazor AOT was
 not re-measured; an earlier run had it at 142.3 ms for create 1,000 rows and 1,400 ms startup.
 
@@ -87,32 +87,32 @@ older tables.
 
 | Case                         | NetWasm.UI Oz | NetWasm.UI O3 | SolidJS |  React | Blazor |
 |------------------------------|--------------:|--------------:|--------:|-------:|-------:|
-| create 1,000 rows            |          45.0 |          43.0 |    44.9 |   63.7 |  211.1 |
-| replace 1,000 rows           |          50.5 |          48.3 |    51.9 |   76.7 |  245.7 |
-| partial update (every 10th)  |          24.6 |          23.5 |    24.7 |   32.8 |   83.2 |
-| select row                   |           1.9 |           1.6 |     1.6 |    7.8 |   62.3 |
-| swap rows                    |           5.7 |           5.0 |     5.9 |   49.1 |   58.6 |
-| remove row                   |           5.5 |           4.7 |     5.6 |   10.7 |   64.6 |
-| create 10,000 rows           |         437.9 |         423.2 |   410.9 |  605.4 | 1336.9 |
-| append 1,000 rows            |          63.3 |          59.9 |    50.6 |   72.3 |  209.6 |
-| clear 1,000 rows             |           8.5 |           8.6 |     8.9 |   16.0 |   48.2 |
-| reactive: deep (100-chain)   |           9.0 |           7.5 |    17.7 |      – |      – |
-| reactive: broad (1,000 fan-out) |        27.6 |          18.2 |    32.8 |      – |      – |
-| reactive: diamond            |           2.2 |           1.5 |     4.2 |      – |      – |
-| reactive: create/dispose 10k |           7.6 |           4.8 |    13.9 |      – |      – |
-| sort 100k strings (no UI)    |          51.3 |          47.9 |   108.2 |      – |  263.9 |
-| sieve 2M (no UI)             |           5.9 |           7.2 |    55.6 |      – |   32.8 |
-| startup (`__ready`)          |         103.7 |         108.9 |    20.9 |   48.6 |  917.8 |
-| download, Brotli (KB)        |         118.5 |         137.3 |     6.2 |   58.4 | 2087.3 |
+| create 1,000 rows            |          43.2 |          42.0 |    43.2 |   60.8 |  200.2 |
+| replace 1,000 rows           |          50.1 |          47.3 |    50.9 |   74.1 |  236.7 |
+| partial update (every 10th)  |          23.1 |          22.6 |    24.2 |   31.8 |   78.9 |
+| select row                   |           1.7 |           1.6 |     1.7 |    7.7 |   57.0 |
+| swap rows                    |           5.8 |           4.9 |     5.9 |   45.9 |   54.7 |
+| remove row                   |           5.6 |           4.8 |     5.7 |   10.6 |   59.1 |
+| create 10,000 rows           |         425.9 |         407.1 |   389.8 |  582.0 | 1366.1 |
+| append 1,000 rows            |          55.7 |          54.3 |    50.4 |   70.1 |  207.9 |
+| clear 1,000 rows             |           8.5 |           8.8 |     8.3 |   15.6 |   47.7 |
+| reactive: deep (100-chain)   |           9.3 |           6.9 |    17.9 |      – |      – |
+| reactive: broad (1,000 fan-out) |        27.8 |          17.1 |    32.2 |      – |      – |
+| reactive: diamond            |           2.4 |           1.6 |     5.0 |      – |      – |
+| reactive: create/dispose 10k |           7.8 |           4.8 |    14.4 |      – |      – |
+| sort 100k strings (no UI)    |          48.7 |          44.0 |   104.4 |      – |  261.1 |
+| sieve 2M (no UI)             |           5.8 |           6.7 |    55.5 |      – |   32.5 |
+| startup (`__ready`)          |          98.3 |         106.1 |    21.3 |   47.6 |  911.3 |
+| download, Brotli (KB)        |         119.2 |         138.0 |     6.2 |   58.4 | 2087.4 |
 
-Script time alone (without layout), Oz vs. Solid: create 1,000 rows 11.6 vs 11.6, create 10,000
-rows 102.2 vs 90.0, append 25.1 vs 13.4, replace 17.2 vs 18.4, partial update 3.0 vs 3.7.
+Script time alone (without layout), Oz vs. Solid: create 1,000 rows 10.6 vs 11.3, create 10,000
+rows 103.0 vs 87.7, append 14.3 vs 13.5, replace 16.8 vs 18.4, partial update 2.8 vs 4.1.
 
-In short: NetWasm.UI is faster than React on every DOM case, 0.95–1.25× Solid's time on every
-DOM case (level at create 1,000 rows and partial update, faster at replace, swap, remove and
-clear), faster than Solid on every reactive and compute workload, and 3–30× faster than Blazor
+In short: NetWasm.UI is faster than React on every DOM case, 0.95–1.11× Solid's time on every
+DOM case (level at create 1,000 rows, select row and clear, faster at replace, partial update,
+swap and remove), faster than Solid on every reactive and compute workload, and 3–30× faster than Blazor
 (interpreter) with a ~18× smaller download and ~9× faster startup. The two runs agreed within
-about 0.1× of Solid on every DOM case except select row, where 0.4 ms of a 2 ms case is 30 %.
+about 0.1× of Solid on every DOM case except select row, where 0.2 ms of a 1.7 ms case is 12 %.
 The pure-compute rows vary between runs because Chromium tiers Wasm and JS up at different
 times (Liftoff → TurboFan).
 
