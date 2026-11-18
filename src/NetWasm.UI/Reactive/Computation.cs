@@ -99,16 +99,22 @@ internal struct Links<T>
 /// computed, a selector key). Links are bidirectional and remember their index on both sides, so
 /// subscribing and unsubscribing are O(1) no matter how many observers a source has.
 /// </summary>
-internal class SourceNode
+[System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+public class SourceNode
 {
+    // Only NetWasm.UI's own sources derive from this; it is public because Signal<T> is one.
+    private protected SourceNode()
+    {
+    }
+
     // Slot(i) is the index of this source in Item(i)'s source list.
     internal Links<Computation> Observers;
 
     /// <summary>Registers the currently running computation, if any, as an observer.</summary>
-    public void Track() => Tracker.Current?.Link(this);
+    internal void Track() => Tracker.Current?.Link(this);
 
     /// <summary>Marks every observer dirty: this source's value changed.</summary>
-    public void Notify()
+    internal void Notify()
     {
         var count = Observers.Count;
         if (count == 0)

@@ -9,9 +9,8 @@ public interface IReadOnlySignal<out T>
 }
 
 /// <summary>A mutable reactive value. Reads inside an <see cref="Effect"/> or <see cref="Computed{T}"/> register a dependency.</summary>
-public sealed class Signal<T> : IReadOnlySignal<T>
+public sealed class Signal<T> : SourceNode, IReadOnlySignal<T>
 {
-    private readonly SourceNode observers = new();
     private readonly IEqualityComparer<T> comparer;
     private T value;
 
@@ -26,7 +25,7 @@ public sealed class Signal<T> : IReadOnlySignal<T>
     {
         get
         {
-            observers.Track();
+            Track();
             return value;
         }
         set
@@ -37,7 +36,7 @@ public sealed class Signal<T> : IReadOnlySignal<T>
             }
 
             this.value = value;
-            Notify();
+            NotifyInBatch();
         }
     }
 
@@ -47,14 +46,14 @@ public sealed class Signal<T> : IReadOnlySignal<T>
     public void Update(System.Func<T, T> updater) => Value = updater(value);
 
     /// <summary>Forces dependents to re-run even if the value compares equal (useful for mutated collections).</summary>
-    public void Touch() => Notify();
+    public void Touch() => NotifyInBatch();
 
-    private void Notify()
+    private void NotifyInBatch()
     {
         Scheduler.BeginBatch();
         try
         {
-            observers.Notify();
+            Notify();
         }
         finally
         {

@@ -13,6 +13,8 @@ See [Compatibility and versioning](docs/compatibility.md).
   cases of the JavaScript frameworks faster than the official benchmark measures them. The same
   wait keeps the runner from polling the page while NetWasm.UI is still starting, which had added
   about 5 ms to its startup figure.
+- A `Signal<T>` is one object: it no longer keeps its observers in a separate `SourceNode`, which
+  is now its (public, but not browsable) base class. 16 bytes and one allocation less per signal.
 
 ## [0.14.0] - 2026-11-17
 
