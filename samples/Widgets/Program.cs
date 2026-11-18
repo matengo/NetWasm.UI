@@ -8,10 +8,6 @@ namespace Widgets;
 
 public static partial class Program
 {
-    public static void Main()
-    {
-    }
-
     /// <summary>Mounts a counter widget directly into the root the page gave this instance's DOM host.</summary>
     [JSExport("start")]
     public static void Start(string label) => BrowserApp.Start(new CounterWidget(label), "");

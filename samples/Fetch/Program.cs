@@ -8,10 +8,6 @@ namespace Fetch;
 
 public static partial class Program
 {
-    public static void Main()
-    {
-    }
-
     /// <summary>The page passes its origin so relative API paths resolve.</summary>
     [JSExport("start")]
     public static void Start(string origin)

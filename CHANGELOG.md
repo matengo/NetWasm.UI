@@ -17,6 +17,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ### Changed
 
+- The templates, samples and docs no longer declare an empty `Main` in `Program.cs`. A
+  `JsModule` app only needs its `[JSExport]` methods. Existing apps can delete theirs.
 - The benchmark runner waits until a page has made no request for 500 ms before the setup clicks,
   as js-framework-benchmark does. Starting the warm-up right after the app is ready made some
   cases of the JavaScript frameworks faster than the official benchmark measures them. The same

@@ -179,10 +179,6 @@ returns an object with the exports:
 ```csharp
 public static partial class Program
 {
-    public static void Main()
-    {
-    }
-
     [JSExport("start")]
     public static async Task Start()
     {

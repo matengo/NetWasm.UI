@@ -10,10 +10,6 @@ namespace Hosted.Client;
 
 public static partial class Program
 {
-    public static void Main()
-    {
-    }
-
     /// <summary>The page passes its origin: the API is served by the same ASP.NET Core app.</summary>
     [JSExport("start")]
     public static void Start(string origin)
