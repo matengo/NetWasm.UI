@@ -47,6 +47,9 @@ public sealed class TemplateRow : Effect
 
     internal object? Item { get; private set; }
 
+    /// <summary>The keys of the list this row belongs to, for <see cref="Selector{TKey}"/>; null for a list without keys.</summary>
+    internal object? Keys => bindings.Keys;
+
     internal RowNode Root => root ??= new RowNode(first, this);
 
     // The list gave this row's key a different item: the bindings run for it now, and later events get it.
@@ -165,6 +168,9 @@ internal abstract class RowBindings
     internal Template Template { get; }
 
     internal int SlotCount { get; }
+
+    /// <summary>The list's <see cref="IRowKeys{TKey}"/>, set by the list that renders these rows.</summary>
+    internal object? Keys { get; set; }
 
     internal abstract bool HasEvents { get; }
 

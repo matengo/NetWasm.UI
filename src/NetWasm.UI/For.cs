@@ -11,9 +11,11 @@ namespace NetWasm.UI;
 /// are moved. A key that stays but has a different item (another object, or for a value type a
 /// value that is not equal) is disposed and built again for that item, in the same place.
 /// </summary>
-public sealed class For<T, TKey> : Fragment
+public sealed class For<T, TKey> : Fragment, IRowKeys<TKey>
     where TKey : notnull
 {
+    private KeyedList? keyed;
+
     private readonly Func<IReadOnlyList<T>> items;
     private readonly Func<T, TKey> key;
     private readonly Func<T, Node> render;
@@ -39,11 +41,18 @@ public sealed class For<T, TKey> : Fragment
         : this(items, key, rows.Render, keyIsItem)
     {
         this.rows = rows;
+        rows.Keys = this;
     }
+
+    TKey IRowKeys<TKey>.KeyOf(TemplateRow row) => key((T)row.Item!);
+
+    void IRowKeys<TKey>.Changed(TKey k) => keyed?.Invalidate(k);
+
+    bool IRowKeys<TKey>.IsAlive => keyed is { IsDisposed: false };
 
     protected override void Apply(Element parent)
     {
-        var keyed = new KeyedList(parent, Scope.Current);
+        var keyed = this.keyed = new KeyedList(parent, Scope.Current);
 
         _ = new Effect(() =>
         {
@@ -158,8 +167,20 @@ internal sealed class KeyedList : IDisposable
         return spare;
     }
 
+    internal bool IsDisposed { get; private set; }
+
+    // The row with this key, if any, binds again (see IRowKeys).
+    internal void Invalidate(object key)
+    {
+        if (entries.TryGetValue(key, out var entry) && entry.Node is RowNode node)
+        {
+            node.Row.MarkDirty();
+        }
+    }
+
     public void Dispose()
     {
+        IsDisposed = true;
         for (var i = count - 1; i >= 0; i--)
         {
             if (entries.TryGetValue(order[i], out var entry))

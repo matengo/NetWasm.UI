@@ -11,6 +11,9 @@ namespace NetWasm.UI.Reactive;
 /// </summary>
 public sealed class Scope : IDisposable
 {
+    // What the scope disposes, in registration order: the first inline (most scopes, such as a list row's, own
+    // one thing), the rest in an array that exists only from the second on.
+    private IDisposable? first;
     private IDisposable[]? owned;
     private int ownedCount;
     private Dictionary<object, object?>? contexts;
@@ -54,16 +57,25 @@ public sealed class Scope : IDisposable
 
     public void Register(IDisposable disposable)
     {
-        if (owned is null)
+        if (ownedCount == 0)
         {
-            owned = new IDisposable[8];
+            first = disposable;
         }
-        else if (ownedCount == owned.Length)
+        else
         {
-            Array.Resize(ref owned, ownedCount * 2);
+            if (owned is null)
+            {
+                owned = new IDisposable[8];
+            }
+            else if (ownedCount - 1 == owned.Length)
+            {
+                Array.Resize(ref owned, owned.Length * 2);
+            }
+
+            owned[ownedCount - 1] = disposable;
         }
 
-        owned[ownedCount++] = disposable;
+        ownedCount++;
     }
 
     internal void SetContext(object key, object? value) => (contexts ??= new Dictionary<object, object?>())[key] = value;
@@ -122,14 +134,17 @@ public sealed class Scope : IDisposable
         disposed = true;
         // Dispose in reverse creation order so children go before parents.
         var list = owned;
-        if (list is not null)
+        for (var i = ownedCount - 1; i >= 1; i--)
         {
-            for (var i = ownedCount - 1; i >= 0; i--)
-            {
-                list[i].Dispose();
-            }
+            list![i - 1].Dispose();
         }
 
+        if (ownedCount > 0)
+        {
+            first!.Dispose();
+        }
+
+        first = null;
         owned = null;
         ownedCount = 0;
         contexts = null;

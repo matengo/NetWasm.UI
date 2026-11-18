@@ -13,6 +13,16 @@ See [Compatibility and versioning](docs/compatibility.md).
   cases of the JavaScript frameworks faster than the official benchmark measures them. The same
   wait keeps the runner from polling the page while NetWasm.UI is still starting, which had added
   about 5 ms to its startup figure.
+- A computation keeps its first two sources inline, and a signal its first two observers. A list
+  row whose bindings read two signals (its label and the selected key, say) no longer allocates
+  two arrays for the second one.
+- A `Scope` keeps its first registration inline. A list row's scope, which owns one thing, no
+  longer allocates an array of eight.
+- A template row whose bindings ask a `Selector` about the row's own `@key`
+  (`class="@(isSelected.Is(row.Id) ? "danger" : null)"` on a row with `@key="row.Id"`) is told
+  about selection changes through its list, instead of the selector keeping a node and a
+  dictionary entry per row. Only a selector with the default comparer does this; others work as
+  before.
 
 ## [0.14.0] - 2026-11-17
 
