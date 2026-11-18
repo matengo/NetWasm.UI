@@ -11,14 +11,16 @@ internal struct Links<T>
 {
     private T? first;
     private int firstSlot;
+    private T? second;
+    private int secondSlot;
     private T[]? rest;
     private int[]? restSlots;
 
     public int Count;
 
-    public T Item(int i) => i == 0 ? first! : rest![i - 1];
+    public T Item(int i) => i == 0 ? first! : i == 1 ? second! : rest![i - 2];
 
-    public int Slot(int i) => i == 0 ? firstSlot : restSlots![i - 1];
+    public int Slot(int i) => i == 0 ? firstSlot : i == 1 ? secondSlot : restSlots![i - 2];
 
     public void SetSlot(int i, int slot)
     {
@@ -26,9 +28,13 @@ internal struct Links<T>
         {
             firstSlot = slot;
         }
+        else if (i == 1)
+        {
+            secondSlot = slot;
+        }
         else
         {
-            restSlots![i - 1] = slot;
+            restSlots![i - 2] = slot;
         }
     }
 
@@ -39,10 +45,15 @@ internal struct Links<T>
             first = item;
             firstSlot = slot;
         }
+        else if (i == 1)
+        {
+            second = item;
+            secondSlot = slot;
+        }
         else
         {
-            rest![i - 1] = item;
-            restSlots![i - 1] = slot;
+            rest![i - 2] = item;
+            restSlots![i - 2] = slot;
         }
     }
 
@@ -50,14 +61,14 @@ internal struct Links<T>
     public int Add(T item, int slot)
     {
         var i = Count;
-        if (i > 0)
+        if (i > 1)
         {
             if (rest is null)
             {
                 rest = new T[4];
                 restSlots = new int[4];
             }
-            else if (i > rest.Length)
+            else if (i - 1 > rest.Length)
             {
                 Array.Resize(ref rest, rest.Length * 2);
                 Array.Resize(ref restSlots, rest.Length);
@@ -76,9 +87,13 @@ internal struct Links<T>
         {
             first = null;
         }
+        else if (i == 1)
+        {
+            second = null;
+        }
         else
         {
-            rest![i - 1] = null!;
+            rest![i - 2] = null!;
         }
     }
 
