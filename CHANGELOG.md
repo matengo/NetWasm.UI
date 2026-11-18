@@ -23,6 +23,9 @@ See [Compatibility and versioning](docs/compatibility.md).
   about selection changes through its list, instead of the selector keeping a node and a
   dictionary entry per row. Only a selector with the default comparer does this; others work as
   before.
+- The renderer no longer keeps a render batch buffer that one large batch grew (a list of thousands
+  of rows) for the small batches after it. It kept two of them, about 1 MB each after 10,000 rows;
+  a later large batch grows its buffer again.
 
 ## [0.14.0] - 2026-11-17
 

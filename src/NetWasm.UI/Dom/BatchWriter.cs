@@ -6,16 +6,26 @@ namespace NetWasm.UI.Dom;
 /// <summary>Growable little-endian byte buffer that encodes render ops.</summary>
 internal sealed class BatchWriter
 {
+    // A buffer above this size is not kept for a batch that uses less than an eighth of it: one large render (a
+    // big list) would otherwise leave two buffers of its size behind for every later batch.
+    internal const int KeepAtMost = 64 * 1024;
+
+    private readonly int initialCapacity;
     private byte[] buffer;
     private byte[]? spare;
     private int length;
+    private int detachedCount;
     // Where the operands of the last ReleaseBlock op start, while that op is still the last one in the batch.
     private int openRelease = -1;
 
     public BatchWriter(int initialCapacity = 1024)
     {
+        this.initialCapacity = initialCapacity;
         buffer = new byte[initialCapacity];
     }
+
+    /// <summary>The capacity of the buffer ops are written into (for tests).</summary>
+    internal int Capacity => buffer.Length;
 
     public int Length => length;
     public bool IsEmpty => length == 0;
@@ -87,7 +97,8 @@ internal sealed class BatchWriter
     {
         var detached = buffer;
         count = length;
-        buffer = spare ?? new byte[detached.Length];
+        detachedCount = length;
+        buffer = spare ?? new byte[Oversized(detached.Length, count) ? SizeFor(count) : detached.Length];
         spare = null;
         Clear();
         return detached;
@@ -96,6 +107,11 @@ internal sealed class BatchWriter
     /// <summary>Returns a buffer obtained from <see cref="Detach"/> for reuse.</summary>
     public void Return(byte[] detached)
     {
+        if (Oversized(detached.Length, detachedCount))
+        {
+            return;
+        }
+
         if (spare is null || spare.Length < detached.Length)
         {
             spare = detached;
@@ -154,6 +170,20 @@ internal sealed class BatchWriter
         Int(byteCount);
         Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, length);
         length += byteCount;
+    }
+
+    private static bool Oversized(int capacity, int used) => capacity > KeepAtMost && used < capacity / 8;
+
+    // Room for twice what the last batch used, at least the initial capacity, in powers of two.
+    private int SizeFor(int used)
+    {
+        var size = initialCapacity;
+        while (size < used * 2)
+        {
+            size *= 2;
+        }
+
+        return size;
     }
 
     private void Ensure(int additional)
