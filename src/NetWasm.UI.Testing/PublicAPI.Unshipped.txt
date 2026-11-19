@@ -1,0 +1,36 @@
+#nullable enable
+NetWasm.UI.Testing.TestElement
+NetWasm.UI.Testing.TestElement.Attributes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+NetWasm.UI.Testing.TestElement.Children.get -> System.Collections.Generic.IReadOnlyList<NetWasm.UI.Testing.TestElement!>!
+NetWasm.UI.Testing.TestElement.Find(string! selector) -> NetWasm.UI.Testing.TestElement!
+NetWasm.UI.Testing.TestElement.FindAll(string! selector) -> System.Collections.Generic.IReadOnlyList<NetWasm.UI.Testing.TestElement!>!
+NetWasm.UI.Testing.TestElement.GetAttribute(string! name) -> string?
+NetWasm.UI.Testing.TestElement.GetProperty(string! name) -> object?
+NetWasm.UI.Testing.TestElement.HasAttribute(string! name) -> bool
+NetWasm.UI.Testing.TestElement.Html.get -> string!
+NetWasm.UI.Testing.TestElement.IsConnected.get -> bool
+NetWasm.UI.Testing.TestElement.Parent.get -> NetWasm.UI.Testing.TestElement?
+NetWasm.UI.Testing.TestElement.Tag.get -> string!
+NetWasm.UI.Testing.TestElement.Text.get -> string!
+NetWasm.UI.Testing.TestElement.Value.get -> string?
+NetWasm.UI.Testing.TestRenderer
+NetWasm.UI.Testing.TestRenderer.Change(NetWasm.UI.Testing.TestElement! element, string! value) -> void
+NetWasm.UI.Testing.TestRenderer.Click(NetWasm.UI.Testing.TestElement! element) -> void
+NetWasm.UI.Testing.TestRenderer.Dispatch(NetWasm.UI.Testing.TestElement! element, NetWasm.UI.DomEvent e) -> void
+NetWasm.UI.Testing.TestRenderer.DispatchDocument(NetWasm.UI.DomEvent e) -> void
+NetWasm.UI.Testing.TestRenderer.DispatchWindow(NetWasm.UI.DomEvent e) -> void
+NetWasm.UI.Testing.TestRenderer.Dispose() -> void
+NetWasm.UI.Testing.TestRenderer.Find(string! selector) -> NetWasm.UI.Testing.TestElement!
+NetWasm.UI.Testing.TestRenderer.FindAll(string! selector) -> System.Collections.Generic.IReadOnlyList<NetWasm.UI.Testing.TestElement!>!
+NetWasm.UI.Testing.TestRenderer.Focus(NetWasm.UI.Testing.TestElement! element) -> void
+NetWasm.UI.Testing.TestRenderer.Focused.get -> NetWasm.UI.Testing.TestElement?
+NetWasm.UI.Testing.TestRenderer.Html.get -> string!
+NetWasm.UI.Testing.TestRenderer.Input(NetWasm.UI.Testing.TestElement! element, string! value) -> void
+NetWasm.UI.Testing.TestRenderer.KeyDown(NetWasm.UI.Testing.TestElement! element, string! key, NetWasm.UI.EventModifiers modifiers = NetWasm.UI.EventModifiers.None) -> void
+NetWasm.UI.Testing.TestRenderer.SetRect(NetWasm.UI.Testing.TestElement! element, NetWasm.UI.Dom.Rect rect) -> void
+NetWasm.UI.Testing.TestRenderer.Viewport.get -> NetWasm.UI.Dom.Rect
+NetWasm.UI.Testing.TestRenderer.Viewport.set -> void
+override NetWasm.UI.Testing.TestElement.Equals(object? obj) -> bool
+override NetWasm.UI.Testing.TestElement.GetHashCode() -> int
+override NetWasm.UI.Testing.TestElement.ToString() -> string!
+static NetWasm.UI.Testing.TestRenderer.Render(NetWasm.UI.Component! root, NetWasm.UI.Services? services = null) -> NetWasm.UI.Testing.TestRenderer!

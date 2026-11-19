@@ -145,6 +145,9 @@ internal sealed class Segment
 internal sealed class TIf : TNode
 {
     public List<Branch> Branches { get; } = new();
+
+    /// <summary><c>@if (…) animate-exit { … }</c>: branches animate out (<c>Show.AnimateExit</c>).</summary>
+    public bool AnimateExit { get; set; }
 }
 
 internal sealed class Branch
@@ -161,4 +164,7 @@ internal sealed class TForeach : TNode
     public string Variable { get; set; } = string.Empty;
     public Directive Collection { get; set; } = null!;
     public List<TNode> Body { get; } = new();
+
+    /// <summary><c>@foreach (…) animate-exit { … }</c>: removed items animate out (<c>For.AnimateExit</c>).</summary>
+    public bool AnimateExit { get; set; }
 }

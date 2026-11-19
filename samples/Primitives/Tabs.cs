@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using NetWasm.UI;
 using NetWasm.UI.Reactive;
+using Primitives.Kit;
 using static NetWasm.UI.Html;
 
 namespace Primitives;
@@ -42,14 +43,7 @@ public sealed class Tabs : Component
 
         void Move(DomEvent e, int from)
         {
-            var to = e.Key switch
-            {
-                "ArrowRight" => (from + 1) % count,
-                "ArrowLeft" => (from + count - 1) % count,
-                "Home" => 0,
-                "End" => count - 1,
-                _ => -1,
-            };
+            var to = RovingFocus.Move(e.Key, from, count);
             if (to >= 0)
             {
                 Selected.Value = to;

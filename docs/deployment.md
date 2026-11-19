@@ -278,10 +278,17 @@ app.Run();
 - `UseNetWasmUIDevServer` watches the client and its project references, republishes on change
   and reloads the browser, keeping signal and form state, like `nwui-dev`. Build errors show in
   the error overlay. It needs `dotnet run` (or `dotnet watch --no-hot-reload`) from source.
-  Rebuilds skip prerendering and keep the pages prerendered at startup (the app replaces them when
-  it starts anyway); a change to an `.html` file or the project prerenders again. Set
-  `<NetWasmUIReusePrerender>false</NetWasmUIReusePrerender>` in the server project to prerender on
-  every rebuild.
+  A client with `NetWasmUIPrerender` prerenders on every rebuild, which adds a few seconds. The
+  server builds the client in its own configuration (`Debug` under `dotnet run` and
+  `dotnet watch`), so to prerender only release builds, condition the property in the client
+  project:
+
+  ```xml
+  <NetWasmUIPrerender Condition="'$(Configuration)' == 'Release'">true</NetWasmUIPrerender>
+  ```
+
+  Debug builds then serve the pages without prerendered content, so check prerendering with a
+  release build before you deploy.
 
 [`samples/Hosted`](../samples/Hosted/) is a complete example: Blazor-template-style pages, a
 weather API, a shared class library and prerendering.

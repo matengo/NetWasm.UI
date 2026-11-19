@@ -7,15 +7,11 @@
        NetWasmUIClientFolder    folder in the output and publish directories (default client; MapNetWasmUI's default).
        NetWasmUIClientOptimization  the client's NetWasmOptimization. Default O0 in Debug, like nwui-dev: wasm-opt is
                                 most of a rebuild, so live reload stays fast. Empty in other configurations (the
-                                client's own setting, Oz by default).
-       NetWasmUIReusePrerender  false makes every UseNetWasmUIDevServer rebuild prerender. Default true: rebuilds keep the
-                                pages prerendered at startup (the app replaces them when it starts) and only prerender
-                                again when an .html file or the project changes. -->
+                                client's own setting, Oz by default). -->
   <PropertyGroup>
     <NetWasmUIClientFolder Condition="'$(NetWasmUIClientFolder)' == ''">client</NetWasmUIClientFolder>
     <NetWasmUIClientOptimization Condition="'$(NetWasmUIClientOptimization)' == '' and '$(Configuration)' == 'Debug'">O0</NetWasmUIClientOptimization>
     <NetWasmUIRestoreClient Condition="'$(NetWasmUIRestoreClient)' == ''">true</NetWasmUIRestoreClient>
-    <NetWasmUIReusePrerender Condition="'$(NetWasmUIReusePrerender)' == ''">true</NetWasmUIReusePrerender>
   </PropertyGroup>
 
   <!-- After Build, not ResolveProjectReferences: `dotnet run` resolves references again after building, which would
@@ -48,7 +44,7 @@
     <Delete Files="@(_NwUiClientArtifact)" />
     <!-- For UseNetWasmUIDevServer, which republishes the client through this target. Not part of the publish output. -->
     <WriteLinesToFile File="$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(OutDir), 'netwasmui.dev.txt'))"
-                      Lines="ServerProject=$(MSBuildProjectFullPath);ClientProject=$(_NwUiClientProject);ClientDir=$(NetWasmUIClientDir);Configuration=$(Configuration);ReusePrerender=$(NetWasmUIReusePrerender)"
+                      Lines="ServerProject=$(MSBuildProjectFullPath);ClientProject=$(_NwUiClientProject);ClientDir=$(NetWasmUIClientDir);Configuration=$(Configuration)"
                       Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 

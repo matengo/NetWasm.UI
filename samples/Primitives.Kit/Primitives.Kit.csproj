@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A small component library in the style of a headless/design-system package: its stylesheet is an NwUiAsset,
+       served to apps at _content/Primitives.Kit/kit.css and linked from their index.html. -->
+  <PropertyGroup>
+    <!-- netstandard2.1: one build serves browser apps (netwasm0.1), prerendering and NwUi.Testing (net10.0). -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>Primitives.Kit</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />
+    <NwUiAsset Include="kit.css" />
+  </ItemGroup>
+  <!-- A package reference to NwUi imports this file from buildTransitive; a project reference does not. -->
+  <Import Project="..\..\src\NetWasm.UI\build\NetWasm.UI.targets" />
+</Project>

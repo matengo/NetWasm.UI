@@ -426,6 +426,8 @@ public partial class TemplateTests : RendererTest
     [InlineData("<Suspense><p></p><template slot=\"Fallback\"><i></i></template></Suspense>", "NWUI002", "wrap it in an element")]
     [InlineData("<div>@if (x) { <a></a><b></b> }</div>", "NWUI002", "exactly one root")]
     [InlineData("<div @onclick:preventDefault></div>", "NWUI002", "without an '@onclick' handler")]
+    [InlineData("<div @ontouchstart=\"F\" @ontouchstart:passive @ontouchstart:preventDefault></div>", "NWUI002", "both :passive and :preventDefault")]
+    [InlineData("<div @onclick=\"F\" @onclick:once></div>", "NWUI003", ":capture, :passive")]
     [InlineData("@if (x) { <a></a> }", "NWUI002", "wrap it in an element")]
     [InlineData("<div>@(a</div>", "NWUI001", "Unbalanced")]
     [InlineData("<div>a &nosuch; b</div>", "NWUI001", "Unknown entity '&nosuch;'")]
@@ -675,6 +677,37 @@ public partial class TemplateTests : RendererTest
         Assert.Contains("global::NetWasm.UI.Html.On(\"focus\", ", source);
         Assert.Contains("new Badge {", source);
         Assert.DoesNotContain("TemplateRuntime.Each(", source);
+    }
+
+    [Fact]
+    public void Capture_and_passive_handlers_in_rows_are_not_template_listeners()
+    {
+        const string template =
+            "<ul>\n  @foreach (var item in Items) {\n    <li @key=\"item\" @onclick=\"Pick\" @onclick:capture @onpointerdown=\"Drag\" @onpointerdown:passive>x</li>\n  }\n</ul>";
+        var result = TemplateCompiler.Compile("C:\\p\\List.nwui", template, "App", "C:\\p\\");
+        Assert.Null(result.Diagnostic?.Message);
+        var source = result.Source!;
+
+        Assert.DoesNotContain(".Listen(", source);
+        Assert.Contains("On(\"click\", ", source);
+        Assert.Contains("(global::NetWasm.UI.Dom.ListenerFlags)8)", source);
+        Assert.Contains("(global::NetWasm.UI.Dom.ListenerFlags)16)", source);
+    }
+
+    [Theory]
+    [InlineData("<div>\n  @if (Open) animate-exit {\n    <p>x</p>\n  }\n</div>", ").AnimateExit()")]
+    [InlineData("<div>\n  @if (A) animate-exit {\n    <p>a</p>\n  } else if (B) {\n    <p>b</p>\n  } else {\n    <p>c</p>\n  }\n</div>", "AnimatedChain(() => ")]
+    [InlineData("<ul>\n  @foreach (var item in Items) animate-exit {\n    <li @key=\"item\">x</li>\n  }\n</ul>", ").AnimateExit()")]
+    [InlineData("<ul>\n  @foreach (var item in Items) animate-exit {\n    <li @key=\"item\"><Card /></li>\n  }\n</ul>", ").AnimateExit()")]
+    public void Animate_exit_after_a_block_header_animates_removed_content(string template, string expected)
+    {
+        var result = TemplateCompiler.Compile("C:\\p\\List.nwui", template, "App", "C:\\p\\");
+        Assert.Null(result.Diagnostic?.Message);
+        Assert.Contains(expected, result.Source!);
+
+        var plain = TemplateCompiler.Compile("C:\\p\\List.nwui", template.Replace(" animate-exit", ""), "App", "C:\\p\\");
+        Assert.DoesNotContain("AnimateExit", plain.Source!);
+        Assert.DoesNotContain("AnimatedChain", plain.Source!);
     }
 
     [Fact]

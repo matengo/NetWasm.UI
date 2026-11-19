@@ -94,7 +94,7 @@
     },
     "if": {
       "begin": "(@)(if)\\s*(\\()",
-      "end": "(\\))\\s*(\\{)?",
+      "end": "(\\))\\s*(?:(animate-exit)\\b\\s*)?(\\{)?",
       "beginCaptures": {
         "1": { "name": "keyword.control.nwui.transition" },
         "2": { "name": "keyword.control.conditional.if.cs" },
@@ -102,7 +102,8 @@
       },
       "endCaptures": {
         "1": { "name": "punctuation.parenthesis.close.cs" },
-        "2": { "name": "punctuation.section.block.begin.nwui" }
+        "2": { "name": "keyword.other.animate-exit.nwui" },
+        "3": { "name": "punctuation.section.block.begin.nwui" }
       },
       "contentName": "meta.embedded.expression.csharp source.cs",
       "patterns": [{ "include": "#csharp-expression" }]
@@ -135,7 +136,7 @@
     },
     "foreach": {
       "begin": "(@)(foreach)\\s*(\\()",
-      "end": "(\\))\\s*(\\{)?",
+      "end": "(\\))\\s*(?:(animate-exit)\\b\\s*)?(\\{)?",
       "beginCaptures": {
         "1": { "name": "keyword.control.nwui.transition" },
         "2": { "name": "keyword.control.loop.foreach.cs" },
@@ -143,7 +144,8 @@
       },
       "endCaptures": {
         "1": { "name": "punctuation.parenthesis.close.cs" },
-        "2": { "name": "punctuation.section.block.begin.nwui" }
+        "2": { "name": "keyword.other.animate-exit.nwui" },
+        "3": { "name": "punctuation.section.block.begin.nwui" }
       },
       "contentName": "meta.embedded.expression.csharp source.cs",
       "patterns": [

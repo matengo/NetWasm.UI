@@ -54,7 +54,7 @@ public static class Renderer
         freeNodeIds.Clear();
         freeNodeBlocks.Clear();
         nextHandlerId = 1;
-        Array.Clear(rows);
+        Array.Clear(rows, 0, rows.Length);
         FlushCount = 0;
         Generation++;
         App.ForgetMounted();
@@ -242,6 +242,12 @@ public static class Renderer
         batch.Int(id);
     }
 
+    internal static void RemoveAnimated(int id)
+    {
+        batch.Op(Op.RemoveAnimated);
+        batch.Int(id);
+    }
+
     internal static void Release(int id)
     {
         batch.Op(Op.Release);
@@ -273,6 +279,13 @@ public static class Renderer
     {
         batch.Op(Op.Focus);
         batch.Int(id);
+    }
+
+    internal static void FocusEdge(int id, bool last)
+    {
+        batch.Op(Op.FocusEdge);
+        batch.Int(id);
+        batch.Byte(last ? (byte)1 : (byte)0);
     }
 
     internal static void Call(int id, string method, string[] args)

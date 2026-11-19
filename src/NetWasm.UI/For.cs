@@ -22,6 +22,7 @@ public sealed class For<T, TKey> : Fragment, IRowKeys<TKey>
     private readonly RowBindings<T>? rows;
     // The items are their own keys (no @key), so an item whose key stays is equal to the one it replaces.
     private readonly bool keyIsItem;
+    private bool animateExit;
 
     public For(Func<IReadOnlyList<T>> items, Func<T, TKey> key, Func<T, Node> render)
     {
@@ -50,9 +51,21 @@ public sealed class For<T, TKey> : Fragment, IRowKeys<TKey>
 
     bool IRowKeys<TKey>.IsAlive => keyed is { IsDisposed: false };
 
+    /// <summary>
+    /// Lets removed items play an exit animation before they leave the DOM, as <see cref="Show.AnimateExit"/> does
+    /// for a branch: an item that goes away gets <c>data-state="closed"</c> and stays until its animations finish;
+    /// new items get <c>data-state="open"</c>. An item rendered again because its key got a different item is
+    /// replaced without animation.
+    /// </summary>
+    public For<T, TKey> AnimateExit()
+    {
+        animateExit = true;
+        return this;
+    }
+
     protected override void Apply(Element parent)
     {
-        var keyed = this.keyed = new KeyedList(parent, Scope.Current);
+        var keyed = this.keyed = new KeyedList(parent, Scope.Current) { AnimateExit = animateExit };
 
         _ = new Effect(() =>
         {
@@ -149,6 +162,9 @@ internal sealed class KeyedList : IDisposable
 
     internal int Count => count;
 
+    /// <summary>Removed items animate out (see <see cref="For{T, TKey}.AnimateExit"/>), so they leave one by one.</summary>
+    internal bool AnimateExit { get; set; }
+
     internal object KeyAt(int index) => order[index];
 
     internal Node NodeAt(int index) => rendered[index].Node;
@@ -231,7 +247,9 @@ internal sealed class KeyedList : IDisposable
         Tracker.CurrentOwner = scope;
         try
         {
-            return new Entry(render(index), scope, item?.Invoke(index));
+            var node = render(index);
+            Show.Enter(node, AnimateExit);
+            return new Entry(node, scope, item?.Invoke(index));
         }
         finally
         {
@@ -255,13 +273,16 @@ internal sealed class KeyedList : IDisposable
         // An empty list: detach every row with one op and dispose them; nothing to diff.
         if (newCount == 0)
         {
-            if (oldCount > 1)
+            if (oldCount > 1 && !AnimateExit)
             {
                 Renderer.RemoveRange(rendered[0].Node.Id, anchor.Id);
             }
-            else if (oldCount == 1)
+            else
             {
-                rendered[0].Node.Remove();
+                for (var i = 0; i < oldCount; i++)
+                {
+                    Show.Leave(rendered[i].Node, AnimateExit);
+                }
             }
 
             for (var i = 0; i < oldCount; i++)
@@ -370,7 +391,7 @@ internal sealed class KeyedList : IDisposable
             // one range op detaches them all.
             if (old > 0)
             {
-                var bulk = !survives && old > 1;
+                var bulk = !survives && old > 1 && !AnimateExit;
                 if (bulk)
                 {
                     var endId = oldEnd < oldCount ? rendered[oldEnd].Node.Id : anchor.Id;
@@ -385,7 +406,7 @@ internal sealed class KeyedList : IDisposable
                         entries.Remove(k, out var entry);
                         if (!bulk)
                         {
-                            entry.Node.Remove();
+                            Show.Leave(entry.Node, AnimateExit);
                         }
 
                         entry.Scope.Dispose();

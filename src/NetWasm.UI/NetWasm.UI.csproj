@@ -1,6 +1,7 @@
 <Project Sdk="NetWasm.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netwasm0.1;net10.0</TargetFrameworks>
+    <!-- netstandard2.1 lets component libraries target one framework that works in apps, prerendering and tests. -->
+    <TargetFrameworks>netwasm0.1;net10.0;netstandard2.1</TargetFrameworks>
     <OutputType>Library</OutputType>
     <RootNamespace>NetWasm.UI</RootNamespace>
     <!-- The NetWasm. prefix on nuget.org is reserved for the NetWasm toolchain. -->
@@ -11,6 +12,8 @@
     <InternalsVisibleTo Include="NetWasm.UI.Tests" />
     <!-- Dev-reload state (DevState). Both packages are always released with the same version. -->
     <InternalsVisibleTo Include="NetWasm.UI.Browser" />
+    <!-- Resets the global renderer and scheduler state between tests. Released with the same version. -->
+    <InternalsVisibleTo Include="NetWasm.UI.Testing" />
   </ItemGroup>
 
   <!-- The .nwui source generator ships in this package (analyzers/dotnet/cs) together with
@@ -23,5 +26,7 @@
           Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <!-- NuGet imports build/<PackageId>.props. -->
     <None Include="build\NetWasm.UI.props" Pack="true" PackagePath="build\NwUi.props;buildTransitive\NwUi.props" />
+    <!-- Library assets (NwUiAsset): packing them and serving them from browser apps. -->
+    <None Include="build\NetWasm.UI.targets" Pack="true" PackagePath="build\NwUi.targets;buildTransitive\NwUi.targets" />
   </ItemGroup>
 </Project>

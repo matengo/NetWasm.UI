@@ -6,8 +6,42 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Removed
+
+- `NetWasmUIReusePrerender` (NwUi.AspNetCore): `UseNetWasmUIDevServer` no longer keeps the pages
+  prerendered at startup across rebuilds. Putting them back did not reliably match what the new
+  build wrote. A client with `NetWasmUIPrerender` now prerenders on every rebuild, which takes a
+  few seconds longer. Remove the property if you set it; to skip prerendering in development, set
+  `NetWasmUIPrerender` only for `Release` in the client project, see
+  [ASP.NET Core](docs/deployment.md#aspnet-core-with-an-api-on-the-same-origin).
+
 ### Added
 
+- Library assets: a component library declares stylesheets, JavaScript modules and fonts with
+  `<NwUiAsset Include="…" />`. Apps serve them at `_content/<PackageId>/`, bundle the modules
+  for `[JSImport]`, and (with NwUi.Browser) link the stylesheets from `index.html` at build time,
+  before the app's own CSS, so prerendered pages are styled on first paint. Opt out with
+  `NetWasmUIInjectAssets=false`. Works for project and package references. See
+  [Stylesheets, scripts and fonts](docs/libraries.md#stylesheets-scripts-and-fonts).
+- `ListenerFlags.Capture` and `ListenerFlags.Passive` (`@onfocus:capture`,
+  `@onwheel:passive`): the listener is added to the element instead of being delegated.
+  `Passive` with `PreventDefault` throws. `OnDocument` and `OnWindow` accept them too.
+- Focus: `element.FocusFirst()` and `FocusLast()` focus the first or last tabbable element
+  inside an element after the pending DOM updates, and `Html.Focus(id)` focuses the element
+  `ActiveElementId()` returned. `samples/Primitives.Kit` builds a `FocusScope` (trap and
+  restore) and roving focus on them.
+- Exit animations: `When(…).AnimateExit()` and `Each(…).AnimateExit()`, `@if (…) animate-exit`
+  and `@foreach (…) animate-exit` in templates. Removed content gets `data-state="closed"` and
+  stays in the DOM until its CSS animations finish; shown content gets `data-state="open"`. See
+  [Exit animations](docs/components.md#exit-animations).
+- `NwUi.Testing` (preview): `TestRenderer.Render(component)` renders components in a .NET test
+  without a browser, with `Find`, `Click`, `Input`, `KeyDown`, `Focused` and more. See
+  [Testing](docs/testing.md).
+- `NwUi` also builds for `netstandard2.1`, so a component library can target `netstandard2.1` and
+  work in browser apps, prerendering and `net10.0` tests alike. See
+  [Your own libraries](docs/libraries.md#your-own-libraries).
+- [Building a headless library](docs/headless-libraries.md): how to layer headless and
+  design-system libraries on these pieces.
 - `EventChannel<T>`: a typed, synchronous event channel for in-app pub/sub. `Publish` runs every handler in
   one batch, and a `Subscribe` made while building a component ends with that component. Handler
   errors go to the subscriber's error boundary. See [Events](docs/reactivity.md#events).
@@ -20,6 +54,9 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ### Changed
 
+- A custom DOM host (`createDomHost` replacement or a host of your own) must handle two new ops:
+  `RemoveAnimated` (28) and `FocusEdge` (29). See the [op table](docs/architecture.md). The
+  hosts in NwUi.Browser and the prerenderer handle them.
 - The templates, samples and docs no longer declare an empty `Main` in `Program.cs`. A
   `JsModule` app only needs its `[JSExport]` methods. Existing apps can delete theirs.
 - The benchmark runner waits until a page has made no request for 500 ms before the setup clicks,

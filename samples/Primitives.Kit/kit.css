@@ -1,0 +1,8 @@
+/* Primitives.Kit: design-system styles shipped by the library (NwUiAsset). The app's own styles come later and win. */
+dialog { border: 1px solid #ccd; border-radius: .5rem; padding: 1rem 1.25rem; min-width: 18rem; }
+dialog::backdrop { background: rgb(0 0 0 / .3); }
+.popover { position: fixed; z-index: 10; background: white; border: 1px solid #ccd; border-radius: .4rem; padding: .5rem .75rem; box-shadow: 0 4px 12px rgb(0 0 0 / .15); }/* Exit animations: the core sets data-state="open" on entry and "closed" on exit, and removes the node when its animations finish. */
+.toast { list-style: none; margin: .25rem 0; padding: .5rem .75rem; border: 1px solid #ccd; border-radius: .4rem; transition: opacity .2s, translate .2s; }
+@starting-style { .toast[data-state=open] { opacity: 0; translate: 0 .5rem; } }
+.toast[data-state=closed] { animation: kit-fade-out .3s ease-in forwards; }
+@keyframes kit-fade-out { to { opacity: 0; translate: 1rem 0; } }

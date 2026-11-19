@@ -115,3 +115,13 @@ NetWasm.UI.Reactive.EventChannel<T>.EventChannel() -> void
 NetWasm.UI.Reactive.EventChannel<T>.HasSubscribers.get -> bool
 NetWasm.UI.Reactive.EventChannel<T>.Subscribe(System.Action<T>! handler) -> System.IDisposable!
 NetWasm.UI.Reactive.EventChannel<T>.Publish(T message) -> void
+NetWasm.UI.Dom.ListenerFlags.Capture = 8 -> NetWasm.UI.Dom.ListenerFlags
+NetWasm.UI.Dom.ListenerFlags.Passive = 16 -> NetWasm.UI.Dom.ListenerFlags
+NetWasm.UI.Dom.Op.FocusEdge = 29 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Element.FocusFirst() -> void
+NetWasm.UI.Element.FocusLast() -> void
+static NetWasm.UI.Html.Focus(int elementId) -> void
+NetWasm.UI.Dom.Op.RemoveAnimated = 28 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Show.AnimateExit() -> NetWasm.UI.Show!
+NetWasm.UI.For<T, TKey>.AnimateExit() -> NetWasm.UI.For<T, TKey>!
+static NetWasm.UI.TemplateRuntime.AnimatedChain(System.Func<int>! selector, params System.Func<NetWasm.UI.Node!>![]! branches) -> NetWasm.UI.Content

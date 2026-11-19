@@ -32,4 +32,40 @@
     <WriteLinesToFile Condition="'$(_NwUiHtml)' != ''" File="$(NetWasmUIPreloadHtml)"
                       Lines="$(_NwUiHtml.TrimEnd())" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
+
+  <!-- Library stylesheets: links every stylesheet NwUiAsset of the app's libraries (NwUi.targets) from index.html,
+       between nwui:assets markers placed before the page's first stylesheet so the app's own CSS wins. The build
+       writes the linked page under obj and serves it in place of index.html, so dotnet run, publish and prerendering
+       (a prerendered page is styled on first paint) all see it.
+       NetWasmUIInjectAssets=false  disables it; the files are served at _content/<PackageId>/ either way.
+       NetWasmUIAssetsHtml          the page (default: index.html in the project directory; skipped if missing). -->
+  <PropertyGroup>
+    <NetWasmCollectSiteFilesDependsOn>$(NetWasmCollectSiteFilesDependsOn);NetWasmUIInjectAssets</NetWasmCollectSiteFilesDependsOn>
+  </PropertyGroup>
+  <Target Name="NetWasmUIInjectAssets" DependsOnTargets="NwUiCollectAssets"
+          Condition="'$(NetWasmUIInjectAssets)' != 'false' and '$(_NwUiAssetsTargetsImported)' == 'true' and '$(TargetFramework)' == 'netwasm0.1' and '$(DesignTimeBuild)' != 'true' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
+    <PropertyGroup>
+      <NetWasmUIAssetsHtml Condition="'$(NetWasmUIAssetsHtml)' == ''">$(MSBuildProjectDirectory)\index.html</NetWasmUIAssetsHtml>
+      <_NwUiAssetsHtmlOut>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)nwui\index.html</_NwUiAssetsHtmlOut>
+    </PropertyGroup>
+    <ItemGroup>
+      <_NwUiStylesheet Include="@(NwUiResolvedAsset)" Condition="'%(Extension)' == '.css' and '%(NwUiResolvedAsset.Module)' == ''" />
+    </ItemGroup>
+    <PropertyGroup Condition="Exists('$(NetWasmUIAssetsHtml)') and '@(_NwUiStylesheet)' != ''">
+      <_NwUiAssetsHtml>$([MSBuild]::Escape($([System.IO.File]::ReadAllText('$(NetWasmUIAssetsHtml)'))))</_NwUiAssetsHtml>
+      <_NwUiAssetsHtml>$([System.Text.RegularExpressions.Regex]::Replace($(_NwUiAssetsHtml), '[ \t]*&lt;!-- nwui:assets --&gt;[\s\S]*?&lt;!-- /nwui:assets --&gt;\r?\n?', ''))</_NwUiAssetsHtml>
+      <_NwUiAssetsHasBase>$([System.Text.RegularExpressions.Regex]::IsMatch($(_NwUiAssetsHtml), '&lt;base\s[^&gt;]*href', RegexOptions.IgnoreCase))</_NwUiAssetsHasBase>
+      <_NwUiAssetsPrefix>$(NetWasmUIPreloadUrlPrefix)</_NwUiAssetsPrefix>
+      <_NwUiAssetsPrefix Condition="'$(_NwUiAssetsPrefix)' == '' and '$(_NwUiAssetsHasBase)' != 'True'">/</_NwUiAssetsPrefix>
+      <_NwUiAssetsBlock>&lt;!-- nwui:assets --&gt;%0A  @(_NwUiStylesheet->'&lt;link rel="stylesheet" href="$(_NwUiAssetsPrefix)%(SitePath)" /&gt;', '%0A  ')%0A  &lt;!-- /nwui:assets --&gt;%0A  </_NwUiAssetsBlock>
+      <_NwUiAssetsAnchor>(?i)&lt;link\b[^&gt;]*\bstylesheet\b|&lt;style\b|&lt;/head&gt;</_NwUiAssetsAnchor>
+      <_NwUiAssetsHtml Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(_NwUiAssetsHtml), $(_NwUiAssetsAnchor)))">$(_NwUiAssetsHtml.Insert($([System.Text.RegularExpressions.Regex]::Match($(_NwUiAssetsHtml), $(_NwUiAssetsAnchor)).Index), $(_NwUiAssetsBlock)))</_NwUiAssetsHtml>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(_NwUiAssetsHtml)' != ''" File="$(_NwUiAssetsHtmlOut)"
+                      Lines="$(_NwUiAssetsHtml.TrimEnd())" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup Condition="'$(_NwUiAssetsHtml)' != ''">
+      <NetWasmSiteFile Include="$(_NwUiAssetsHtmlOut)" SitePath="index.html" />
+      <FileWrites Include="$(_NwUiAssetsHtmlOut)" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -38,11 +38,41 @@ const OP = {
   Portal: 25,
   TemplateListener: 26,
   ReleaseBlock: 27,
+  RemoveAnimated: 28,
+  FocusEdge: 29,
 };
 
 const FLAG_PREVENT_DEFAULT = 1;
 const FLAG_STOP_PROPAGATION = 2;
 const FLAG_PREVENT_DEFAULT_PLAIN_CLICK = 4;
+const FLAG_CAPTURE = 8;
+const FLAG_PASSIVE = 16;
+const TABBABLE = 'a[href],area[href],button,input:not([type=hidden]),select,textarea,iframe,summary,audio[controls],video[controls],[contenteditable]:not([contenteditable=false]),[tabindex]';
+const isTabbable = (el) => el.tabIndex >= 0 && !el.matches(':disabled') && !el.closest('[inert]') &&
+  (el.checkVisibility ? el.checkVisibility({ visibilityProperty: true }) : el.getClientRects().length > 0);
+// Focuses the first (or last) tabbable descendant of n, or n itself when it has none.
+function focusEdge(n, last) {
+  if (!n?.querySelectorAll) return;
+  const all = n.querySelectorAll(TABBABLE);
+  for (let i = last ? all.length - 1 : 0; last ? i >= 0 : i < all.length; i += last ? -1 : 1) {
+    if (isTabbable(all[i])) { all[i].focus(); return; }
+  }
+  n.focus?.();
+}
+// Marks n closed and detaches it once the (finite) animations and transitions that starts have finished. C# has
+// already let go of n, so it is inert meanwhile. Nothing to wait for: it goes at once.
+function removeAnimated(n) {
+  if (!n?.parentNode) return;
+  let running = [];
+  if (n.nodeType === 1 && n.getAnimations) {
+    n.setAttribute("data-state", "closed");
+    n.inert = true;
+    running = n.getAnimations({ subtree: true }).filter(a => a.effect?.getComputedTiming().endTime !== Infinity);
+  }
+  if (running.length === 0) { n.remove(); return; }
+  Promise.all(running.map(a => a.finished.catch(() => {}))).then(() => n.remove());
+}
+const listenOptions = (flags) => (flags & (FLAG_CAPTURE | FLAG_PASSIVE)) ? { capture: !!(flags & FLAG_CAPTURE), passive: !!(flags & FLAG_PASSIVE) } : undefined;
 
 const EV_CTRL = 1, EV_SHIFT = 2, EV_ALT = 4, EV_META = 8, EV_CHECKED = 16, EV_REPEAT = 32, EV_INSIDE = 64, EV_RELATED_INSIDE = 128;
 
@@ -487,8 +517,8 @@ export function createDomHost(options = {}) {
       settleEvent(e);
       send(handlerId, payloadFor(e, idKey, null, within), e);
     };
-    target.addEventListener(event, fn);
-    globals.set(handlerId, { target, event, fn });
+    target.addEventListener(event, fn, listenOptions(flags));
+    globals.set(handlerId, { target, event, fn, capture: !!(flags & FLAG_CAPTURE) });
   }
 
   function observeResize(n, handlerId) {
@@ -506,7 +536,7 @@ export function createDomHost(options = {}) {
   function removeGlobal(handlerId) {
     const g = globals.get(handlerId);
     if (g) {
-      g.target.removeEventListener(g.event, g.fn);
+      g.target.removeEventListener(g.event, g.fn, g.capture);
       globals.delete(handlerId);
       return;
     }
@@ -539,7 +569,7 @@ export function createDomHost(options = {}) {
     for (const id of ids) {
       const l = listeners.get(id);
       if (l && l.node === node) {
-        node.removeEventListener(l.event, l.fn);
+        node.removeEventListener(l.event, l.fn, l.capture);
         listeners.delete(id);
       }
     }
@@ -655,6 +685,12 @@ export function createDomHost(options = {}) {
           mounted.delete(n);
           break;
         }
+        case OP.RemoveAnimated: {
+          const n = node(r.i32());
+          mounted.delete(n);
+          removeAnimated(n);
+          break;
+        }
         case OP.RemoveRange: {
           const first = node(r.i32());
           const end = node(r.i32());
@@ -686,7 +722,7 @@ export function createDomHost(options = {}) {
           const event = r.str();
           const handlerId = r.i32();
           const flags = r.u8();
-          if (DELEGATED.has(event)) {
+          if (DELEGATED.has(event) && !(flags & (FLAG_CAPTURE | FLAG_PASSIVE))) {
             addDelegated(n, event, handlerId, flags);
             break;
           }
@@ -697,8 +733,8 @@ export function createDomHost(options = {}) {
             settleEvent(e);
             send(handlerId, payloadFor(e, idKey, n, null), e);
           };
-          n.addEventListener(event, fn);
-          listeners.set(handlerId, { node: n, event, fn });
+          n.addEventListener(event, fn, listenOptions(flags));
+          listeners.set(handlerId, { node: n, event, fn, capture: !!(flags & FLAG_CAPTURE) });
           const ids = nodeListeners.get(n);
           if (ids) ids.push(handlerId);
           else nodeListeners.set(n, [handlerId]);
@@ -710,7 +746,7 @@ export function createDomHost(options = {}) {
           if (removeDelegated(n, handlerId)) break;
           const l = listeners.get(handlerId);
           if (l) {
-            l.node.removeEventListener(l.event, l.fn);
+            l.node.removeEventListener(l.event, l.fn, l.capture);
             listeners.delete(handlerId);
           }
           break;
@@ -732,6 +768,11 @@ export function createDomHost(options = {}) {
         }
         case OP.Focus: {
           node(r.i32())?.focus?.();
+          break;
+        }
+        case OP.FocusEdge: {
+          const n = node(r.i32());
+          focusEdge(n, r.u8() === 1);
           break;
         }
         case OP.Call: {
@@ -884,9 +925,9 @@ export function createDomHost(options = {}) {
       if (dev && devId !== undefined) delete dev.savers[devId];
       for (const type of delegatedTypes) root.removeEventListener(type, onDelegated);
       delegatedTypes.clear();
-      for (const l of listeners.values()) l.node.removeEventListener(l.event, l.fn);
+      for (const l of listeners.values()) l.node.removeEventListener(l.event, l.fn, l.capture);
       listeners.clear();
-      for (const g of globals.values()) g.target.removeEventListener(g.event, g.fn);
+      for (const g of globals.values()) g.target.removeEventListener(g.event, g.fn, g.capture);
       globals.clear();
       resizeObserver?.disconnect();
       resizeObserver = null;

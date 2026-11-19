@@ -10,6 +10,7 @@
     <Project Path="samples/Fetch/Fetch.csproj" />
     <Project Path="samples/Interop/Interop.csproj" />
     <Project Path="samples/Primitives/Primitives.csproj" />
+    <Project Path="samples/Primitives.Kit/Primitives.Kit.csproj" />
     <Project Path="samples/Widgets/Widgets.csproj" />
   </Folder>
   <Folder Name="/site/">
@@ -19,6 +20,7 @@
     <Project Path="src/NetWasm.UI.AspNetCore/NetWasm.UI.AspNetCore.csproj" />
     <Project Path="src/NetWasm.UI.Browser/NetWasm.UI.Browser.csproj" />
     <Project Path="src/NetWasm.UI.Generator/NetWasm.UI.Generator.csproj" />
+    <Project Path="src/NetWasm.UI.Testing/NetWasm.UI.Testing.csproj" />
     <Project Path="src/NetWasm.UI/NetWasm.UI.csproj" />
   </Folder>
   <Folder Name="/templates/">

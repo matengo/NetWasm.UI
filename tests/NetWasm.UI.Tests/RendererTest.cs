@@ -1,12 +1,14 @@
 using NetWasm.UI.Dom;
 using NetWasm.UI.Reactive;
 
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace NetWasm.UI.Tests;
 
 /// <summary>Resets global renderer/scheduler state and wires a fresh <see cref="FakeDomHost"/> per test.</summary>
 public abstract class RendererTest : IDisposable
 {
-    protected FakeDomHost Dom { get; }
+    private protected FakeDomHost Dom { get; }
 
     protected RendererTest()
     {
@@ -17,10 +19,10 @@ public abstract class RendererTest : IDisposable
     }
 
     /// <summary>Simulates the browser dispatching an event to a handler, going through the binary payload path.</summary>
-    protected void Fire(FakeDomHost.FakeNode node, string eventName, string value = "") =>
+    private protected void Fire(FakeDomHost.FakeNode node, string eventName, string value = "") =>
         Fire(node, new DomEvent(eventName, value));
 
-    protected void Fire(FakeDomHost.FakeNode node, DomEvent e)
+    private protected void Fire(FakeDomHost.FakeNode node, DomEvent e)
     {
         // A listener the node has through its template (a row of an @foreach) goes to handler 0, with the row's
         // first node id and the listener's slot before the payload, as dom.mjs sends it.

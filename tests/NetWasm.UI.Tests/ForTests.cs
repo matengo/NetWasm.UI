@@ -240,6 +240,40 @@ public class ForTests : RendererTest
     }
 
     [Fact]
+    public void Animated_exit_marks_items_open_and_removes_them_one_by_one()
+    {
+        var items = new Signal<IReadOnlyList<int>>(new[] { 1, 2, 3 });
+        App.Mount(new Lambda(() => Ul(Each(items, i => i, i => Li(i.ToString())).AnimateExit())), "#app");
+        Assert.Equal(3, Dom.Html.Split("data-state=\"open\"").Length - 1);
+
+        Dom.Log.Clear();
+        items.Value = new[] { 4, 5 };
+        Assert.Equal(3, Dom.Log.Count(l => l.Op == "RemoveAnimated"));
+        Assert.DoesNotContain(Dom.Log, l => l.Op is "Remove" or "RemoveRange");
+
+        Dom.Log.Clear();
+        items.Value = Array.Empty<int>();
+        Assert.Equal(2, Dom.Log.Count(l => l.Op == "RemoveAnimated"));
+        Assert.DoesNotContain(Dom.Log, l => l.Op is "Remove" or "RemoveRange");
+        Assert.Equal("<ul><!----></ul>", Dom.Html);
+    }
+
+    [Fact]
+    public void Animated_exit_on_a_branch_marks_it_open_and_removes_it_with_the_animated_op()
+    {
+        var visible = new Signal<bool>(true);
+        App.Mount(new Lambda(() => Div(When(() => visible.Value, () => P("x"), () => Span("y")).AnimateExit())), "#app");
+        Assert.Contains("<p data-state=\"open\">x</p>", Dom.Html);
+
+        Dom.Log.Clear();
+        visible.Value = false;
+        Assert.Single(Dom.Log, l => l.Op == "RemoveAnimated");
+        Assert.DoesNotContain(Dom.Log, l => l.Op == "Remove");
+        Assert.Contains("<span data-state=\"open\">y</span>", Dom.Html);
+        Assert.DoesNotContain("<p", Dom.Html);
+    }
+
+    [Fact]
     public void Swapping_two_distant_items_moves_those_two_and_touches_nothing_else()
     {
         var v = new ListView(1, 2, 3, 4, 5, 6);

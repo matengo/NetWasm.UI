@@ -107,6 +107,16 @@ public sealed class Element : Node
     public void Focus() => Renderer.Focus(Id);
 
     /// <summary>
+    /// Moves keyboard focus to the first tabbable descendant of this element, or to the element itself when it has
+    /// none. Disabled, hidden, inert, invisible and <c>tabindex="-1"</c> elements are skipped. Use it from
+    /// <c>OnMount</c> to focus a newly opened panel, or with sentinels to keep focus inside it.
+    /// </summary>
+    public void FocusFirst() => Renderer.FocusEdge(Id, last: false);
+
+    /// <summary>Like <see cref="FocusFirst"/>, for the last tabbable descendant.</summary>
+    public void FocusLast() => Renderer.FocusEdge(Id, last: true);
+
+    /// <summary>
     /// Calls a DOM method on this element with string arguments, in order with the other DOM updates:
     /// <c>Call("requestFullscreen")</c>. Prefer the typed helpers (<see cref="ShowModal"/>, <see cref="ShowPopover"/>…).
     /// <paramref name="method"/> must come from your code, never from user input (see docs/security.md).

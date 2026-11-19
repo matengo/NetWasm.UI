@@ -108,6 +108,11 @@ public sealed class Template
             throw new InvalidOperationException("Template listeners are declared before the first clone, at most 255 of them.");
         }
 
+        if ((flags & (ListenerFlags.Capture | ListenerFlags.Passive)) != 0)
+        {
+            throw new ArgumentException("A template listener is delegated, so it cannot be Capture or Passive.", nameof(flags));
+        }
+
         if (listenerHoles is null || listenerCount == listenerHoles.Length)
         {
             var size = listenerCount == 0 ? 4 : listenerCount * 2;

@@ -9,6 +9,8 @@
 | [Services and DI](services.md) | `Services`, `Inject<T>()`, `@inject`, scoped and lazy services |
 | [Async data and Suspense](async.md) | `Resource<T>`, `Suspense`, `HttpClient` and JSON |
 | [Forms and validation](forms.md) | `Form`, `Field<T>`, validators, `@bind`, accessible errors |
+| [Building a headless library](headless-libraries.md) | Layering headless and design-system libraries, the platform features and APIs they build on |
+| [Testing](testing.md) | Rendering components in unit tests with `NwUi.Testing` (preview) |
 | [Error handling](error-handling.md) | `ErrorBoundary`, `App.OnError`, where exceptions go |
 | [Routing](routing.md) | `Routes`, `Route`, `Link`, `NavLink`, route parameters, nested routes, base path |
 | [JavaScript interop](js-interop.md) | `[JSImport]`, `[JSExport]`, Promises, callbacks, wrapping JS libraries in components |

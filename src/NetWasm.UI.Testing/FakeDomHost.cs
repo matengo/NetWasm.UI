@@ -1,15 +1,14 @@
 using System.Text;
 using NetWasm.UI.Dom;
 
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
-
-namespace NetWasm.UI.Tests;
+namespace NetWasm.UI.Testing;
 
 /// <summary>
 /// Decodes render batches into an in-memory DOM so tests can assert on the resulting tree.
-/// This is the reference decoder; dom.mjs implements the same format for the browser.
+/// This is the reference decoder; dom.mjs implements the same format for the browser. Internal: it mirrors the op
+/// protocol, which changes between releases. <see cref="TestRenderer"/> is the public surface over it.
 /// </summary>
-public sealed class FakeDomHost : IDomHost, IDomQueries
+internal sealed class FakeDomHost : IDomHost, IDomQueries
 {
     public sealed class FakeNode
     {
@@ -265,10 +264,11 @@ public sealed class FakeDomHost : IDomHost, IDomQueries
                     break;
                 }
                 case Op.Remove:
+                case Op.RemoveAnimated:
                 {
                     var id = ReadInt(ops, ref pos);
                     Detach(Nodes[id]);
-                    Log.Add(("Remove", $"{id}"));
+                    Log.Add((op == Op.Remove ? "Remove" : "RemoveAnimated", $"{id}"));
                     break;
                 }
                 case Op.RemoveRange:
@@ -340,7 +340,17 @@ public sealed class FakeDomHost : IDomHost, IDomQueries
                 case Op.Focus:
                 {
                     var id = ReadInt(ops, ref pos);
+                    ActiveId = id;
                     Log.Add(("Focus", $"{id}"));
+                    break;
+                }
+                case Op.FocusEdge:
+                {
+                    var id = ReadInt(ops, ref pos);
+                    var edge = ops[pos++] == 0 ? "first" : "last";
+                    var tabbable = Nodes[id].Descendants().Where(IsTabbable);
+                    ActiveId = (edge == "first" ? tabbable.FirstOrDefault() : tabbable.LastOrDefault())?.Id ?? id;
+                    Log.Add(("FocusEdge", $"{id} {edge}"));
                     break;
                 }
                 case Op.Call:
@@ -451,6 +461,26 @@ public sealed class FakeDomHost : IDomHost, IDomQueries
             }
         }
     }
+
+    // As dom.mjs isTabbable, without layout: a focusable element that is not disabled, inert or tabindex="-1".
+    private static bool IsTabbable(FakeNode n)
+    {
+        if (n.Kind != "element" || n.Id == 0 || IsSet(n, "disabled") || IsSet(n, "inert"))
+        {
+            return false;
+        }
+
+        if (n.Attributes.TryGetValue("tabindex", out var tabIndex))
+        {
+            return !tabIndex.StartsWith('-');
+        }
+
+        return n.Tag is "button" or "input" or "select" or "textarea" or "summary"
+            || (n.Tag is "a" or "area") && n.Attributes.ContainsKey("href");
+    }
+
+    private static bool IsSet(FakeNode n, string name) =>
+        n.Attributes.ContainsKey(name) || n.Properties.TryGetValue(name, out var v) && v is true;
 
     // The renderer reuses released node ids; a reused id must have been released first, as dom.mjs replaces the node
     // an id names.

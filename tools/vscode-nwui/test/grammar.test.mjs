@@ -106,6 +106,14 @@ test('directive attributes are C#', () => {
   expectScope(t, '++', 'keyword.operator.increment.cs');
   expectScope(t, 'preventDefault', 'entity.other.attribute-name.modifier.nwui');
   expectScope(t, 'button', 'source.cs', 'ref');
+  expectScope(tokenize('<div @ontouchstart="Start" @ontouchstart:passive></div>'), 'passive', 'entity.other.attribute-name.modifier.nwui');
+});
+
+test('animate-exit after a block header', () => {
+  const t = tokenize('<ul>\n    @foreach (var t in Toasts) animate-exit {\n        <li>@t</li>\n    }\n    @if (open) animate-exit {\n        <p>x</p>\n    }\n</ul>');
+  expectScope(t, 'animate-exit', 'keyword.other.animate-exit.nwui');
+  expectScope(t, '{', 'punctuation.section.block.begin.nwui');
+  expectScope(t, 'li', 'entity.name.tag.html');
 });
 
 test('control flow', () => {

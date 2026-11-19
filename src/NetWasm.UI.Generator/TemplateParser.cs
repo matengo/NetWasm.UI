@@ -388,6 +388,7 @@ internal sealed class TemplateParser
     {
         var node = new TIf { Start = at };
         var branch = new Branch { Start = at, Condition = ParseParenthesized("@if") };
+        node.AnimateExit = ParseAnimateExit();
         ParseBlock(branch.Body, "@if");
         node.Branches.Add(branch);
 
@@ -442,9 +443,26 @@ internal sealed class TemplateParser
             Type = type == "var" ? null : type,
             Variable = m.Groups["name"].Value,
             Collection = new Directive(expr.Value, header.Start + expr.Index),
+            AnimateExit = ParseAnimateExit(),
         };
         ParseBlock(node.Body, "@foreach");
         return node;
+    }
+
+    // The optional 'animate-exit' between a block's header and its '{'.
+    private bool ParseAnimateExit()
+    {
+        const string Keyword = "animate-exit";
+        var save = pos;
+        SkipWhitespace();
+        if (StartsWith(Keyword) && (pos + Keyword.Length >= s.Length || !CSharpScanner.IsIdentPart(s[pos + Keyword.Length])))
+        {
+            pos += Keyword.Length;
+            return true;
+        }
+
+        pos = save;
+        return false;
     }
 
     private Directive ParseParenthesized(string what)

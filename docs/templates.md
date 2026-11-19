@@ -62,9 +62,11 @@ using static NetWasm.UI.Html;
 | `value="…"` | the `value` property (`Value(...)`) |
 | `@onclick="() => …"`, `@onsubmit="Save"` | `On("click", handler)`; the handler is an `Action` or `Action<DomEvent>` |
 | `@onclick:preventDefault`, `@onclick:stopPropagation`, `@onsubmit:preventDefault="false"` | listener flags (`submit` prevents default unless turned off) |
+| `@onfocus:capture`, `@onwheel:passive` | `ListenerFlags.Capture` / `Passive`: the listener goes on the element itself instead of being delegated |
 | `@bind="signal"` | `Spread(Bind(signal))` for `Signal<string>` / `Signal<bool>`, and for `Field<string>` / `Field<bool>` (with `id`, touched and ARIA state; see [Forms](forms.md)) |
 | `@ref="field"` | assigns the `Element` (or component) to a generated field |
 | `@if (c) { … } else if (c2) { … } else { … }` | `When(...)`; a chain shares one memoized selector |
+| `@if (c) animate-exit { … }`, `@foreach (…) animate-exit { … }` | `.AnimateExit()`: removed content keeps `data-state="closed"` until its CSS animation ends; see [Exit animations](components.md#exit-animations) |
 | `@foreach (var x in items) { <li @key="x.Id">…</li> }` | a keyed list (see [Rows of an `@foreach`](#rows-of-an-foreach)); `items` may be a list expression or an `IReadOnlySignal<IReadOnlyList<T>>`; without `@key` the item itself is the key |
 | `<Badge Label="hi" Count="@n" />` | `new Badge { Label = "hi", Count = n }` (an uppercase tag is a component; constructor parameters are filled with `Inject<T>()`, see [constructor injection](services.md#constructor-injection)) |
 | `<Button Variant="ghost" class="w-4" aria-label="Save" @onclick="Save" />` | lowercase or dashed names and `@on…` handlers on a component tag go to `Attributes`; see [Attribute splatting](#attribute-splatting) |

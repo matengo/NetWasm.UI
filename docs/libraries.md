@@ -81,14 +81,18 @@ See [Async data and Suspense](async.md#httpclient-and-json) and `samples/Fetch`.
 Reference a class library with `ProjectReference`:
 
 - **Plain C# code** can target `netstandard2.0`, `netstandard2.1` or `netwasm0.1`.
-- **Components and `.nwui` templates** need a `netwasm0.1` library that references `NwUi`. The
+- **Components and `.nwui` templates** need a library that references `NwUi`. Target
+  `netstandard2.1`: `NwUi` ships a `netstandard2.1` build, so the same library works in browser apps
+  (`netwasm0.1`), in [prerendering](deployment.md) and in [tests](testing.md) (`net10.0`). The
   `.nwui` files are compiled in the library, and the app uses the components like its own:
 
 ```xml
-<Project Sdk="NetWasm.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
-    <OutputType>Library</OutputType>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <!-- .nwui templates and [Reactive] need C# 13 or later; netstandard2.1 defaults to C# 8. -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
     <RootNamespace>MyComponents</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
@@ -99,9 +103,45 @@ Reference a class library with `ProjectReference`:
 
 A `.nwui` file in the app then needs `@using MyComponents` to use `<Greeting Name="..." />`.
 
+On `netstandard2.1`, `record` types and `init` accessors in your own code need a polyfill:
+`namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }`. An app that
+references the library with `ProjectReference` warns with `NU1702`, which only notes the
+framework fallback; add `<NoWarn>$(NoWarn);NU1702</NoWarn>` to the app. Target `netwasm0.1` instead
+(`<Project Sdk="NetWasm.Sdk">`, `<OutputType>Library</OutputType>`) only if the library has its own
+`[JSImport]` interop; it then can't be used from `net10.0` tests or servers.
+
+### Stylesheets, scripts and fonts
+
+A library declares the files its components need with `NwUiAsset`:
+
+```xml
+<ItemGroup>
+  <NwUiAsset Include="styles\button.css" />                   <!-- linked from the page -->
+  <NwUiAsset Include="js\position.mjs" Module="mylib.position" />  <!-- a module for [JSImport] -->
+  <NwUiAsset Include="fonts\icons.woff2" />                   <!-- served only -->
+</ItemGroup>
+```
+
+An app that references the library, as a project or as a package, serves each file at
+`_content/<PackageId>/<path>` (`_content/MyComponents/styles/button.css`; the assembly name when
+the library has no `PackageId`). Packing the library includes the files. Modules are bundled
+like the app's own `NetWasmJavaScriptModule`s, so `[JSImport("f", "mylib.position")]` works.
+Refer to fonts and images with paths relative to the stylesheet.
+
+An app with `NwUi.Browser` links the stylesheets from its `index.html` at build time: the links
+go before the page's first stylesheet, in reference order, so the app's own CSS can override a
+library's. The prerendered pages and `dotnet run` get the same links, so the page is styled on
+first paint. Set `<NetWasmUIInjectAssets>false</NetWasmUIInjectAssets>` to write the `<link>`s
+yourself.
+
+A library that references `NwUi` with `ProjectReference` instead of a package (as in this
+repository) also needs `<Import Project="…\src\NetWasm.UI\build\NetWasm.UI.targets" />`; see
+`samples/Primitives.Kit`.
+
 For dialogs, popovers, menus and other interactive components, see
-[Building component libraries](components.md#building-component-libraries) and
-`samples/Primitives`.
+[Building component libraries](components.md#building-component-libraries),
+[Building a headless library](headless-libraries.md) and `samples/Primitives`. To unit test
+them, see [Testing](testing.md).
 
 ## JavaScript libraries
 
