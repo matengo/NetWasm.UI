@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="NetWasmLib/NetWasmLib.csproj" />
+  <Project Path="NetWasmLib.Tests/NetWasmLib.Tests.csproj" />
+</Solution>

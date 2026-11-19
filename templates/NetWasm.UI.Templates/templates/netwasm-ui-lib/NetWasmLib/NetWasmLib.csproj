@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- One build for browser apps (netwasm0.1), prerendering on a server and tests (net10.0). -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <!-- netstandard2.1 defaults to C# 8; components and .nwui templates need C# 13 or later. -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>NetWasmLib</RootNamespace>
+
+    <!-- NuGet: dotnet pack -c Release. -->
+    <PackageId>NetWasmLib</PackageId>
+    <Version>0.1.0</Version>
+    <Description>Headless NetWasm.UI components.</Description>
+    <PackageTags>netwasm;netwasm-ui;components;headless</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NwUi" Version="0.14.0" />
+  </ItemGroup>
+  <!-- Stylesheets, fonts and JavaScript modules the components need go here; apps serve them from
+       _content/NetWasmLib/. A headless library usually has none.
+  <ItemGroup>
+    <NwUiAsset Include="styles\base.css" />
+  </ItemGroup>
+  -->
+</Project>

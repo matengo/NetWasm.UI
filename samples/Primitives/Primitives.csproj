@@ -7,14 +7,15 @@
          download (Brotli). Remove this line to keep Compact. -->
     <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
     <RootNamespace>Primitives</RootNamespace>
-    <!-- Primitives.Kit targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
+    <!-- Primitives.Kit and Primitives.Theme target .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
     <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />
     <ProjectReference Include="..\..\src\NetWasm.UI.Browser\NetWasm.UI.Browser.csproj" />
-    <!-- A component library with a stylesheet asset (NwUiAsset), linked from index.html by the build. -->
-    <ProjectReference Include="..\Primitives.Kit\Primitives.Kit.csproj" />
+    <!-- A design system (Primitives.Theme) on a headless library (Primitives.Kit). The theme's stylesheet is an
+         NwUiAsset, linked from index.html by the build. -->
+    <ProjectReference Include="..\Primitives.Theme\Primitives.Theme.csproj" />
     <!-- Compiles *.nwui templates into components at build time. -->
     <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false"

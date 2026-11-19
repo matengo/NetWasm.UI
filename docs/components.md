@@ -179,8 +179,13 @@ at once. The animation is plain CSS:
 The C# side is done with the content at once: its scope is disposed and a new branch or row can
 render beside it while it fades. A row that is rebuilt for a new item (see above) does not
 animate. `data-state` goes on the root element of the branch or row. A `<dialog>` or `popover` element needs no `AnimateExit`: it stays in the DOM, so
-animate it with `transition-behavior: allow-discrete` on `display` and `overlay` (see
-`samples/Primitives.Kit/kit.css`).
+animate it with `transition-behavior: allow-discrete` on `display` and `overlay`:
+
+```css
+dialog { opacity: 0; transition: opacity .2s, display .2s allow-discrete, overlay .2s allow-discrete; }
+dialog[open] { opacity: 1; }
+@starting-style { dialog[open] { opacity: 0; } }
+```
 
 ## Static templates (fast rows)
 

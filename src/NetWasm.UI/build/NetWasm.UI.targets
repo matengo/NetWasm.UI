@@ -13,6 +13,11 @@
   <PropertyGroup>
     <_NwUiAssetsTargetsImported>true</_NwUiAssetsTargetsImported>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_NwUiPackAssets</TargetsForTfmSpecificContentInPackage>
+    <!-- The assets are packed once, by one target framework: netwasm0.1 when the library targets it, else the first
+         (a netstandard2.1 library, or one that targets netstandard2.1 and net10.0). -->
+    <_NwUiAssetPackTfm Condition="'$(TargetFrameworks)' == ''">$(TargetFramework)</_NwUiAssetPackTfm>
+    <_NwUiAssetPackTfm Condition="'$(_NwUiAssetPackTfm)' == '' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFrameworks)', '(^|;)\s*netwasm0\.1\s*(;|$)'))">netwasm0.1</_NwUiAssetPackTfm>
+    <_NwUiAssetPackTfm Condition="'$(_NwUiAssetPackTfm)' == ''">$([System.Text.RegularExpressions.Regex]::Match('$(TargetFrameworks)', '[^;\s]+').Value)</_NwUiAssetPackTfm>
   </PropertyGroup>
 
   <!-- The project's own assets with their package, kind and served path; the referencing app calls it. -->
@@ -32,7 +37,7 @@
   </Target>
 
   <Target Name="_NwUiPackAssets" DependsOnTargets="GetNwUiAssets"
-          Condition="'$(TargetFramework)' == 'netwasm0.1' and '@(NwUiAsset)' != ''">
+          Condition="'$(TargetFramework)' == '$(_NwUiAssetPackTfm)' and '@(NwUiAsset)' != ''">
     <PropertyGroup>
       <_NwUiAssetTargetsFile>$(IntermediateOutputPath)nwui\$(_NwUiAssetPackage).targets</_NwUiAssetTargetsFile>
     </PropertyGroup>

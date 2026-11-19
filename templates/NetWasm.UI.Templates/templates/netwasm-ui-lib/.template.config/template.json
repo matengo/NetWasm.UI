@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "NetWasm.UI contributors",
+  "classifications": [ "Web", "WebAssembly", "NetWasm", "Library", "Test" ],
+  "identity": "NetWasm.UI.Library",
+  "name": "NetWasm.UI component library",
+  "description": "A headless NetWasm.UI component library (netstandard2.1) with an example Disclosure component and an xUnit project that tests it with NwUi.Testing.",
+  "shortName": "netwasm-ui-lib",
+  "sourceName": "NetWasmLib",
+  "preferNameDirectory": true,
+  "tags": { "language": "C#", "type": "solution" },
+  "symbols": {
+    "skipRestore": {
+      "type": "parameter",
+      "datatype": "bool",
+      "description": "Skip the automatic restore after creating the projects.",
+      "defaultValue": "false"
+    }
+  },
+  "primaryOutputs": [
+    { "path": "NetWasmLib/NetWasmLib.csproj" },
+    { "path": "NetWasmLib.Tests/NetWasmLib.Tests.csproj" }
+  ],
+  "postActions": [
+    {
+      "condition": "(!skipRestore)",
+      "description": "Restore NuGet packages.",
+      "manualInstructions": [ { "text": "Run 'dotnet restore'" } ],
+      "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
+      "continueOnError": true
+    }
+  ]
+}

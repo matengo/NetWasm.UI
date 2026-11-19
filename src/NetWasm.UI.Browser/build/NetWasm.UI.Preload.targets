@@ -38,14 +38,16 @@
        writes the linked page under obj and serves it in place of index.html, so dotnet run, publish and prerendering
        (a prerendered page is styled on first paint) all see it.
        NetWasmUIInjectAssets=false  disables it; the files are served at _content/<PackageId>/ either way.
-       NetWasmUIAssetsHtml          the page (default: index.html in the project directory; skipped if missing). -->
+       NetWasmUIAssetsHtml          the page (default: index.html in the project directory, else wwwroot\index.html;
+                                    skipped if missing). -->
   <PropertyGroup>
     <NetWasmCollectSiteFilesDependsOn>$(NetWasmCollectSiteFilesDependsOn);NetWasmUIInjectAssets</NetWasmCollectSiteFilesDependsOn>
   </PropertyGroup>
   <Target Name="NetWasmUIInjectAssets" DependsOnTargets="NwUiCollectAssets"
           Condition="'$(NetWasmUIInjectAssets)' != 'false' and '$(_NwUiAssetsTargetsImported)' == 'true' and '$(TargetFramework)' == 'netwasm0.1' and '$(DesignTimeBuild)' != 'true' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
     <PropertyGroup>
-      <NetWasmUIAssetsHtml Condition="'$(NetWasmUIAssetsHtml)' == ''">$(MSBuildProjectDirectory)\index.html</NetWasmUIAssetsHtml>
+      <NetWasmUIAssetsHtml Condition="'$(NetWasmUIAssetsHtml)' == '' and Exists('$(MSBuildProjectDirectory)\index.html')">$(MSBuildProjectDirectory)\index.html</NetWasmUIAssetsHtml>
+      <NetWasmUIAssetsHtml Condition="'$(NetWasmUIAssetsHtml)' == ''">$(MSBuildProjectDirectory)\wwwroot\index.html</NetWasmUIAssetsHtml>
       <_NwUiAssetsHtmlOut>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)nwui\index.html</_NwUiAssetsHtmlOut>
     </PropertyGroup>
     <ItemGroup>
@@ -61,8 +63,10 @@
       <_NwUiAssetsAnchor>(?i)&lt;link\b[^&gt;]*\bstylesheet\b|&lt;style\b|&lt;/head&gt;</_NwUiAssetsAnchor>
       <_NwUiAssetsHtml Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(_NwUiAssetsHtml), $(_NwUiAssetsAnchor)))">$(_NwUiAssetsHtml.Insert($([System.Text.RegularExpressions.Regex]::Match($(_NwUiAssetsHtml), $(_NwUiAssetsAnchor)).Index), $(_NwUiAssetsBlock)))</_NwUiAssetsHtml>
     </PropertyGroup>
+    <!-- Written on every build, not only when it changes: publish copies a file only when it is newer than the one
+         in the publish folder, and a page copied there earlier (wwwroot\index.html, or an older build) must lose. -->
     <WriteLinesToFile Condition="'$(_NwUiAssetsHtml)' != ''" File="$(_NwUiAssetsHtmlOut)"
-                      Lines="$(_NwUiAssetsHtml.TrimEnd())" Overwrite="true" WriteOnlyWhenDifferent="true" />
+                      Lines="$(_NwUiAssetsHtml.TrimEnd())" Overwrite="true" />
     <ItemGroup Condition="'$(_NwUiAssetsHtml)' != ''">
       <NetWasmSiteFile Include="$(_NwUiAssetsHtmlOut)" SitePath="index.html" />
       <FileWrites Include="$(_NwUiAssetsHtmlOut)" />

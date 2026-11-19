@@ -48,6 +48,11 @@ jobs:
             || { echo "::error::NetWasmApp.Client.csproj does not reference NwUi.Browser $VERSION"; exit 1; }
           grep -q "Include=\"NwUi.AspNetCore\" Version=\"$VERSION\"" $HOSTED/NetWasmApp.Server/NetWasmApp.Server.csproj \
             || { echo "::error::NetWasmApp.Server.csproj does not reference NwUi.AspNetCore $VERSION"; exit 1; }
+          LIB=templates/NetWasm.UI.Templates/templates/netwasm-ui-lib
+          grep -q "Include=\"NwUi\" Version=\"$VERSION\"" $LIB/NetWasmLib/NetWasmLib.csproj \
+            || { echo "::error::NetWasmLib.csproj does not reference NwUi $VERSION"; exit 1; }
+          grep -q "Include=\"NwUi.Testing\" Version=\"$VERSION\"" $LIB/NetWasmLib.Tests/NetWasmLib.Tests.csproj \
+            || { echo "::error::NetWasmLib.Tests.csproj does not reference NwUi.Testing $VERSION"; exit 1; }
           grep -q "## \[$VERSION\]" CHANGELOG.md \
             || { echo "::error::CHANGELOG.md has no '## [$VERSION]' section"; exit 1; }
 
@@ -81,6 +86,12 @@ jobs:
           dotnet nuget add source "$RUNNER_TEMP/feed" -n local --configfile nuget.config
           dotnet publish SmokeHosted.Server -c Release -o out
           test -f out/client/counter.html
+          cd "$RUNNER_TEMP"
+          dotnet new netwasm-ui-lib -o SmokeLib --skipRestore
+          cd SmokeLib
+          dotnet new nugetconfig
+          dotnet nuget add source "$RUNNER_TEMP/feed" -n local --configfile nuget.config
+          dotnet test
 
       - name: VS Code extension
         working-directory: tools/vscode-nwui

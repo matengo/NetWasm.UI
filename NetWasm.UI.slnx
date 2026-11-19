@@ -11,6 +11,7 @@
     <Project Path="samples/Interop/Interop.csproj" />
     <Project Path="samples/Primitives/Primitives.csproj" />
     <Project Path="samples/Primitives.Kit/Primitives.Kit.csproj" />
+    <Project Path="samples/Primitives.Theme/Primitives.Theme.csproj" />
     <Project Path="samples/Widgets/Widgets.csproj" />
   </Folder>
   <Folder Name="/site/">
