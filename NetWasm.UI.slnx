@@ -12,6 +12,9 @@
     <Project Path="samples/Primitives/Primitives.csproj" />
     <Project Path="samples/Primitives.Kit/Primitives.Kit.csproj" />
     <Project Path="samples/Primitives.Theme/Primitives.Theme.csproj" />
+    <Project Path="samples/Tsp/Tsp.csproj" />
+    <Project Path="samples/Tsp.Contracts/Tsp.Contracts.csproj" />
+    <Project Path="samples/Tsp.Solver/Tsp.Solver.csproj" />
     <Project Path="samples/Widgets/Widgets.csproj" />
     <Project Path="samples/Workers/Workers.csproj" />
     <Project Path="samples/Workers.Primes/Workers.Primes.csproj" />

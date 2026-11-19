@@ -35,6 +35,10 @@ public sealed class ExamplesPage : Component
             ["SplatDemo", "AppButton", "IconButton", "TextField"], () => new SplatDemo().Render()),
     ];
 
+    // samples/Tsp, published next to the site (/tsp/) by .github/workflows/pages.yml. A plain <a>, not Link: it is
+    // another app, so the browser loads it.
+    private const string RouteOptimizer = "tsp/";
+
     protected override Node Build()
     {
         var routes = new Route[Demos.Length + 1];
@@ -54,7 +58,8 @@ public sealed class ExamplesPage : Component
                 Nav(
                     Attr("aria-label", "Examples"),
                     Link("/examples", Class(() => Router.Current!.IsActive("/examples", exact: true) ? "active" : null), "Overview"),
-                    Spread(NavItems()))),
+                    Spread(NavItems()),
+                    A(Href(RouteOptimizer), "Route optimizer ↗"))),
             Div(Class("examples-main"), Routes(NotFound, routes)));
     }
 
@@ -72,13 +77,19 @@ public sealed class ExamplesPage : Component
     private static Node Index()
     {
         AppRoot.SetTitle("Examples");
-        var cards = new Content[Demos.Length];
+        var cards = new Content[Demos.Length + 1];
         for (var i = 0; i < Demos.Length; i++)
         {
             var demo = Demos[i];
             cards[i] = Link("/examples/" + demo.Slug, Class("example-card"), H3(demo.Title), P(demo.Blurb), Span(Class("feature-more"), "Try it →"));
         }
 
+                    cards[^1] = A(
+                        Href(RouteOptimizer),
+                        Class("example-card"),
+                        H3("Route optimizer"),
+                        P("A traveling-salesman solver in C# Web Workers (NwUi.Workers): a pool of workers streams shorter and shorter tours of up to 10,000 points while the page stays responsive. A separate app."),
+                        Span(Class("feature-more"), "Open it ↗"));
         return Div(
             HomePage.SectionHead(
                 "Live examples",

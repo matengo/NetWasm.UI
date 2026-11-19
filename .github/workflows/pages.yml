@@ -1,6 +1,7 @@
 name: Site
 
-# Publishes site/ (the NetWasm.UI showcase, built with NetWasm.UI) to GitHub Pages.
+# Publishes site/ (the NetWasm.UI showcase, built with NetWasm.UI) to GitHub Pages, and samples/Tsp (a route
+# optimizer in Web Workers) under /tsp/.
 # One-time setup: Settings → Pages → Source = "GitHub Actions".
 
 on:
@@ -47,6 +48,9 @@ jobs:
         # The prerendered links need the path Pages serves the site under.
         run: dotnet publish site -c Release -p:NetWasmOptimization=Oz -p:NetWasmUIPrerenderBasePath=/${{ github.event.repository.name }}/
 
+      - name: Publish the route optimizer sample (Oz)
+        run: dotnet publish samples/Tsp -c Release -p:NetWasmOptimization=Oz
+
       - name: Prepare for Pages (base path)
         env:
           BASE: /${{ github.event.repository.name }}/
@@ -60,6 +64,11 @@ jobs:
             grep -q "<base href=\"$BASE\" />" "_site/$page.html"
             grep -q 'data-nwui-prerender' "_site/$page.html" || [ "$page" = 404 ]
           done
+          # samples/Tsp is its own app; its index.html uses relative URLs, so only the base path changes.
+          rsync -a --exclude '*.dll' --exclude '*.pdb' samples/Tsp/bin/Release/netwasm0.1/publish/ _site/tsp/
+          sed -i "s|<base href=\"/\" />|<base href=\"${BASE}tsp/\" />|" _site/tsp/index.html
+          grep -q "<base href=\"${BASE}tsp/\" />" _site/tsp/index.html
+          test -f _site/tsp/browser/workers/Tsp.Solver/Tsp.Solver.worker-client.mjs
           touch _site/.nojekyll
           ls -lR _site
 

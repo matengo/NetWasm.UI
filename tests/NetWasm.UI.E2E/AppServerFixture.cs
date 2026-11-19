@@ -208,8 +208,17 @@ public sealed class WorkersServerFixture : AppServerFixture
     }
 }
 
+/// <summary>Serves <c>samples/Tsp</c>: a route optimizer streaming tours from a pool of workers.</summary>
+public sealed class TspServerFixture : AppServerFixture
+{
+    public TspServerFixture()
+        : base("Tsp")
+    {
+    }
+}
+
 [CollectionDefinition(Name)]
-public sealed class AppCollection : ICollectionFixture<AppServerFixture>, ICollectionFixture<WidgetsServerFixture>, ICollectionFixture<FetchServerFixture>, ICollectionFixture<InteropServerFixture>, ICollectionFixture<PrimitivesServerFixture>, ICollectionFixture<WorkersServerFixture>
+public sealed class AppCollection : ICollectionFixture<AppServerFixture>, ICollectionFixture<WidgetsServerFixture>, ICollectionFixture<FetchServerFixture>, ICollectionFixture<InteropServerFixture>, ICollectionFixture<PrimitivesServerFixture>, ICollectionFixture<WorkersServerFixture>, ICollectionFixture<TspServerFixture>
 {
     public const string Name = "app";
 }

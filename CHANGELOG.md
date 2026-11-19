@@ -6,6 +6,12 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `samples/Tsp`: a route optimizer (traveling salesman) in a pool of Web Workers that stream
+  shorter tours while the page stays responsive. It is published on GitHub Pages under `/tsp/` and
+  linked from the examples page. See [Web Workers](docs/workers.md).
+
 ## [0.15.1] - 2026-11-19
 
 ### Added

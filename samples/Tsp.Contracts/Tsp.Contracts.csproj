@@ -1,0 +1,13 @@
+<Project Sdk="NetWasm.Sdk">
+  <!-- The interface shared by the app (samples/Tsp) and the worker (samples/Tsp.Solver). -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Tsp.Contracts</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NetWasm.UI.Workers\NetWasm.UI.Workers.csproj" />
+    <!-- JsonSerializerContext; netwasm0.1 has System.Text.Json in the box. -->
+    <PackageReference Include="System.Text.Json" Version="10.0.0" />
+  </ItemGroup>
+</Project>

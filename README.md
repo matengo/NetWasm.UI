@@ -175,6 +175,7 @@ dotnet run --project tools/DevServer -- samples/Fetch     # HttpClient + System.
 dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one page
 dotnet run --project tools/DevServer -- samples/Interop   # a JS library wrapped in a component
 dotnet run --project tools/DevServer -- samples/Primitives # dialog, popover, tabs, disclosure, generic select and table
+dotnet run --project tools/DevServer -- samples/Tsp       # route optimizer in a pool of Web Workers
 dotnet run --project tools/DevServer -- site              # the project website
 dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Core with an API
 ```
@@ -221,6 +222,7 @@ dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Co
 | `samples/Primitives`         | Reference components for a component library: dialog, popover, tabs, disclosure, generic select and data table. |
 | `samples/Primitives.Kit`     | A headless component library (`netstandard2.1`): disclosure, compound tabs, focus scope. |
 | `samples/Primitives.Theme`   | A design system on top of `Primitives.Kit`: wrapper components and a stylesheet asset. |
+| `samples/Tsp`                | Route optimizer (traveling salesman) in a pool of Web Workers; also on GitHub Pages at `/tsp/`. |
 | `samples/Hosted`             | ASP.NET Core server with a weather API hosting a prerendered client; uses only the NuGet packages. |
 | `site/`                      | The project website, built with NetWasm.UI and published to GitHub Pages. |
 | `templates/`                 | The `dotnet new netwasm-ui`, `netwasm-ui-hosted` and `netwasm-ui-lib` template package. |

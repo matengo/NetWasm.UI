@@ -40,6 +40,11 @@ The sample is [`samples/Workers`](../samples/Workers), with its worker in
 [`samples/Workers.Primes`](../samples/Workers.Primes) and the interfaces in
 [`samples/Workers.Contracts`](../samples/Workers.Contracts).
 
+[`samples/Tsp`](../samples/Tsp) is a larger example: a route optimizer (traveling salesman, up to
+10,000 points) where a pool of workers streams shorter tours as an `IAsyncEnumerable` and the page
+stays responsive. It runs on GitHub Pages:
+[matengo.github.io/NetWasm.UI/tsp/](https://matengo.github.io/NetWasm.UI/tsp/).
+
 ## Projects
 
 Three projects, each with `dotnet add package NwUi.Workers`. The package brings the source generator

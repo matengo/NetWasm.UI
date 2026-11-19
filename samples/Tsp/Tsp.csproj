@@ -1,0 +1,39 @@
+<Project Sdk="NetWasm.Sdk">
+  <!-- A route optimizer in C# Web Workers. Published to GitHub Pages under /tsp/ by .github/workflows/pages.yml. -->
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <OutputType>JsModule</OutputType>
+    <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
+    <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
+    <RootNamespace>Tsp</RootNamespace>
+    <!-- Tsp.Contracts targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Browser\NetWasm.UI.Browser.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                      UndefineProperties="TargetFramework" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\Tsp.Contracts\Tsp.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Workers\NetWasm.UI.Workers.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Workers.Generator\NetWasm.UI.Workers.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                      UndefineProperties="TargetFramework" SkipGetTargetFrameworkProperties="true" />
+    <!-- Publishes the solver into browser/workers/Tsp.Solver/, where AddWorkerPool loads it from. -->
+    <ProjectReference Include="..\Tsp.Solver\Tsp.Solver.csproj" NetWasmWorker="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="**\*.nwui" Exclude="bin\**;obj\**" />
+    <CompilerVisibleProperty Include="RootNamespace;ProjectDir" />
+  </ItemGroup>
+  <ItemGroup>
+    <NetWasmJavaScriptModule Include="..\..\src\NetWasm.UI.Browser\dom.mjs" Module="nwui.dom" />
+    <Content Include="index.html;app.mjs;tsp.css" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Publish-time preload tags, as the NwUi.Browser package adds them for consumers. -->
+  <Import Project="..\..\src\NetWasm.UI.Browser\build\NetWasm.UI.Preload.targets" />
+  <!-- Adds the nwui.workers module, as the NwUi.Workers package does for consumers. -->
+  <Import Project="..\..\src\NetWasm.UI.Workers\build\NetWasm.UI.Workers.targets" />
+</Project>

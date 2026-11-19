@@ -1,0 +1,22 @@
+<Project Sdk="NetWasm.Sdk">
+  <!-- The route optimizer: a C# Web Worker. samples/Tsp references it with NetWasmWorker="true" and publishes it
+       into browser/workers/Tsp.Solver/. -->
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <OutputType>JsModule</OutputType>
+    <NetWasmJavaScriptHosts>worker</NetWasmJavaScriptHosts>
+    <RootNamespace>Tsp.Solver</RootNamespace>
+    <!-- Tsp.Contracts targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tsp.Contracts\Tsp.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Workers\NetWasm.UI.Workers.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Workers.Generator\NetWasm.UI.Workers.Generator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false"
+                      UndefineProperties="TargetFramework" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
+  <!-- Adds the nwui.workers.worker module, as the NwUi.Workers package does for consumers. -->
+  <Import Project="..\..\src\NetWasm.UI.Workers\build\NetWasm.UI.Workers.targets" />
+</Project>

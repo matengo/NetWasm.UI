@@ -1,0 +1,420 @@
+@* A route optimizer (traveling salesman) in C# Web Workers: each worker searches from its own start, streams
+   better tours as it finds them, and the page draws the best one. The page stays responsive throughout. *@
+<main>
+    <h1>Route optimizer</h1>
+    <p class="lead">
+        Imagine a delivery van that must visit every dot on the map once and return home. Which order gives the
+        shortest drive? This page searches for that route, in C# compiled to WebAssembly and run in Web Workers:
+        background threads that do the heavy computing while the page stays responsive.
+    </p>
+    <ol class="steps">
+        <li>Pick how many points, how they are spread out and how many workers should search.</li>
+        <li>Press <b>Solve</b>. Each worker starts from a different city and sends a better route whenever it finds one.</li>
+        <li>The purple line is the shortest route found so far, and the table shows what each worker is doing.</li>
+    </ol>
+
+    <form class="controls" @onsubmit="Solve">
+        <label>Points
+            <select id="count" disabled="@(solving.Value)" @onchange="(DomEvent e) => SetCount(e.Value)">
+                <option value="200" selected="@(count.Value == 200)">200</option>
+                <option value="1000" selected="@(count.Value == 1000)">1,000</option>
+                <option value="2000" selected="@(count.Value == 2000)">2,000</option>
+                <option value="5000" selected="@(count.Value == 5000)">5,000</option>
+                <option value="10000" selected="@(count.Value == 10000)">10,000</option>
+            </select>
+        </label>
+        <label>Layout
+            <select id="layout" disabled="@(solving.Value)" @onchange="(DomEvent e) => SetLayout(e.Value)">
+                <option value="uniform">Uniform</option>
+                <option value="clusters">Clusters</option>
+            </select>
+        </label>
+        <label>Workers
+            <select id="workers" disabled="@(solving.Value)" @onchange="(DomEvent e) => workers.Value = ParseInt(e.Value)">
+                @foreach (var n in workerChoices)
+                {
+                    <option value="@n" selected="@(n == workers.Value)">@n</option>
+                }
+            </select>
+        </label>
+        <label>Time
+            <select id="time" disabled="@(solving.Value)" @onchange="(DomEvent e) => seconds.Value = ParseInt(e.Value)">
+                <option value="5">5 s</option>
+                <option value="15" selected="true">15 s</option>
+                <option value="60">60 s</option>
+                <option value="0">Until stopped</option>
+            </select>
+        </label>
+        <div class="buttons">
+            <button id="new" type="button" disabled="@(solving.Value)" @onclick="NewPoints">New points</button>
+            <button id="solve" type="submit" disabled="@(solving.Value)">Solve</button>
+            <button id="stop" type="button" disabled="@(!solving.Value)" @onclick="Stop">Stop</button>
+        </div>
+    </form>
+
+    <div class="board">
+        <svg viewBox="0 0 10000 10000" role="img" aria-label="Points and the best tour">
+            <polyline class="tour" points="@tourPoints" stroke-width="@(count.Value > 2000 ? 12 : 24)" />
+            <path class="cities" d="@citiesPath" stroke-width="@(count.Value > 2000 ? 40 : 90)" />
+        </svg>
+    </div>
+
+    <dl id="stats" class="stats" data-first="@((long)firstLength.Value)" data-best="@((long)bestLength.Value)" data-done="@done">
+        <div><dt>Status</dt><dd id="status">@status</dd></div>
+        <div><dt>First tour</dt><dd id="first">@Distance(firstLength.Value)</dd></div>
+        <div><dt>Best tour</dt><dd id="best">@Distance(bestLength.Value)</dd></div>
+        <div><dt>Improvement</dt><dd id="improvement">@Improvement()</dd></div>
+    </dl>
+
+    <table class="runs">
+        <thead><tr><th>Worker</th><th>Phase</th><th>Length</th><th>Moves</th><th>Kicks</th><th>Time</th></tr></thead>
+        <tbody>
+            @foreach (var run in runs)
+            {
+                <tr @key="run.Index" class="@(run.Best.Value ? "best" : null)">
+                    <td>@(run.Index + 1)</td>
+                    <td>@run.Phase</td>
+                    <td>@run.Length</td>
+                    <td>@run.Moves</td>
+                    <td>@run.Kicks</td>
+                    <td>@run.Time</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p class="responsive">
+        The workers keep the main thread free: <button id="clicks" type="button" @onclick="() => clicks.Value++">Clicked @clicks times</button>
+    </p>
+    <section class="explain">
+        <h2>What is being computed?</h2>
+        <p>
+            This is the <i>traveling salesman problem</i>: find the shortest closed route that visits every point
+            exactly once. It sounds simple, but the number of possible routes explodes. With 20 points there are
+            already about 60 million billion of them, and with 1,000 points there are more than atoms in the universe,
+            so no computer can try them all. Real route planners, chip drills and warehouse robots instead use
+            heuristics that find a route within a few percent of the best one in seconds. That is what happens here.
+        </p>
+        <p>
+            Lengths are straight-line distances in a 10,000 × 10,000 square. <b>First tour</b> is the first complete
+            route any worker reported, <b>Best tour</b> the shortest so far, and <b>Improvement</b> how much shorter
+            the best is than the first.
+        </p>
+
+        <h2>How each worker searches</h2>
+        <dl class="phases">
+            <div>
+                <dt>1. Nearest neighbour</dt>
+                <dd>Start at a city and always drive to the closest city not yet visited. Fast, but the route ends with long jumps back across the map.</dd>
+            </div>
+            <div>
+                <dt>2. 2-opt + Or-opt</dt>
+                <dd>Remove crossings by reversing a stretch of the route (2-opt), and move a run of one to three cities to a better place (Or-opt). Only each city's 10 nearest neighbours are tried, so a move is cheap. Every improvement is one of the <b>Moves</b> in the table. The phase ends when no move helps.</dd>
+            </div>
+            <div>
+                <dt>3. Perturbation</dt>
+                <dd>Now the route is stuck in a local optimum. A small random "double bridge" cuts it in four places and reconnects the pieces, the moves above repair it, and the result is kept only if it is shorter. Each such try is a <b>Kick</b>. This repeats until the time runs out.</dd>
+            </div>
+        </dl>
+        <p>
+            The workers use different start cities and random numbers, so they end up in different places. The page
+            simply draws the shortest route any of them has found; the highlighted row is that worker.
+        </p>
+
+        <h2>Why Web Workers?</h2>
+        <p>
+            A browser page has one main thread that both runs code and paints the screen. If the search ran there,
+            the page would freeze for seconds. Here each search runs in its own worker with its own WebAssembly
+            instance, and the page only receives small updates, at most about seven per second per worker. Try the
+            click counter above while it solves: it answers right away. More workers use more CPU cores and explore
+            more routes at the same time; the list stops at the number of cores your device has.
+        </p>
+        <p>
+            In code, the solver is an ordinary C# interface whose method returns <code>IAsyncEnumerable&lt;TourUpdate&gt;</code>.
+            NwUi.Workers generates the plumbing: the page calls the method and runs <code>await foreach</code> over
+            the updates, and pressing <b>Stop</b> cancels the <code>CancellationToken</code> inside the worker.
+            The source is in <a href="https://github.com/matengo/NetWasm.UI/tree/main/samples/Tsp">samples/Tsp</a>, and the
+            worker API is described in <a href="https://github.com/matengo/NetWasm.UI/blob/main/docs/workers.md">docs/workers.md</a>.
+        </p>
+    </section>
+</main>
+
+@using System
+@using System.Text
+@using System.Threading
+@using NetWasm.UI.Workers
+@using Tsp.Contracts
+@inject ITspSolver Solver
+
+@code {
+    private const int Size = 10000;
+
+    private readonly Signal<int> count = new(1000);
+    private readonly Signal<int> workers = new(1);
+    private readonly Signal<int> seconds = new(15);
+    private readonly Signal<bool> solving = new(false);
+    private readonly Signal<bool> done = new(false);
+    private readonly Signal<string> citiesPath = new("");
+    private readonly Signal<string> tourPoints = new("");
+    private readonly Signal<string> status = new("");
+    private readonly Signal<double> firstLength = new(0);
+    private readonly Signal<double> bestLength = new(0);
+    private readonly Signal<int> clicks = new(0);
+    private readonly Signal<IReadOnlyList<Run>> runs = new(new List<Run>());
+    private readonly List<int> workerChoices = new();
+    private bool clustered;
+    private uint seed = 2024;
+    private double[] points = new double[0];
+    private CancellationTokenSource? cancel;
+
+    partial void OnInit()
+    {
+        // One solver per worker of the pool (navigator.hardwareConcurrency - 1): more would wait for a free worker.
+        var max = Worker.DefaultPoolSize;
+        foreach (var n in new[] { 1, 2, 3, 4, 6, 8, 12, 16 })
+        {
+            if (n <= max)
+            {
+                workerChoices.Add(n);
+            }
+        }
+
+        workers.Value = workerChoices[workerChoices.Count - 1] < 4 ? workerChoices[workerChoices.Count - 1] : 4;
+        Generate();
+        OnCleanup(() => cancel?.Cancel());
+    }
+
+    private sealed class Run
+    {
+        public int Index { get; init; }
+        public Signal<string> Phase { get; } = new("starting");
+        public Signal<string> Length { get; } = new("");
+        public Signal<string> Moves { get; } = new("");
+        public Signal<string> Kicks { get; } = new("");
+        public Signal<string> Time { get; } = new("");
+        public Signal<bool> Best { get; } = new(false);
+    }
+
+    private void SetCount(string value)
+    {
+        count.Value = ParseInt(value);
+        Generate();
+    }
+
+    private void SetLayout(string value)
+    {
+        clustered = value == "clusters";
+        Generate();
+    }
+
+    private void NewPoints()
+    {
+        seed = seed * 1103515245u + 12345u;
+        Generate();
+    }
+
+    // Integer coordinates from a seeded generator, so a layout can be found again.
+    private void Generate()
+    {
+        var n = count.Value;
+        var rng = new Rng(seed);
+        points = new double[2 * n];
+        var centres = new int[16];
+        for (var i = 0; i < centres.Length; i++)
+        {
+            centres[i] = 800 + rng.Next(Size - 1600);
+        }
+
+        for (var i = 0; i < n; i++)
+        {
+            if (clustered)
+            {
+                var c = 2 * rng.Next(8);
+                points[2 * i] = Clamp(centres[c] + rng.Spread(1400));
+                points[2 * i + 1] = Clamp(centres[c + 1] + rng.Spread(1400));
+            }
+            else
+            {
+                points[2 * i] = rng.Next(Size + 1);
+                points[2 * i + 1] = rng.Next(Size + 1);
+            }
+        }
+
+        // One "move and draw nothing" per city; round line caps make each a dot.
+        var d = new StringBuilder(n * 14);
+        for (var i = 0; i < n; i++)
+        {
+            d.Append('M').Append((int)points[2 * i]).Append(' ').Append((int)points[2 * i + 1]).Append("h0");
+        }
+
+        citiesPath.Value = d.ToString();
+        tourPoints.Value = "";
+        firstLength.Value = 0;
+        bestLength.Value = 0;
+        done.Value = false;
+        runs.Value = new List<Run>();
+        status.Value = Distance(n) + " points. Press Solve.";
+    }
+
+    private void Solve() => _ = SolveAsync();
+
+    private async Task SolveAsync()
+    {
+        cancel = new CancellationTokenSource();
+        var token = cancel.Token;
+        var list = new List<Run>();
+        for (var i = 0; i < workers.Value; i++)
+        {
+            list.Add(new Run { Index = i });
+        }
+
+        runs.Value = list;
+        tourPoints.Value = "";
+        firstLength.Value = 0;
+        bestLength.Value = 0;
+        done.Value = false;
+        solving.Value = true;
+        status.Value = "Solving with " + list.Count.ToString() + (list.Count == 1 ? " worker…" : " workers…");
+
+        var tasks = new Task[list.Count];
+        for (var i = 0; i < list.Count; i++)
+        {
+            tasks[i] = RunAsync(list[i], points, (int)seed + 7919 * i, seconds.Value, token);
+        }
+
+        try
+        {
+            await Task.WhenAll(tasks);
+            status.Value = token.IsCancellationRequested ? "Stopped." : "Done.";
+        }
+        catch (Exception e)
+        {
+            status.Value = "Failed: " + e.Message;
+        }
+
+        solving.Value = false;
+        done.Value = true;
+    }
+
+    private async Task RunAsync(Run run, double[] cities, int runSeed, int time, CancellationToken token)
+    {
+        try
+        {
+            await foreach (var update in Solver.SolveAsync(cities, runSeed, time, token))
+            {
+                Show(run, update, cities);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            run.Phase.Value = "stopped";
+        }
+    }
+
+    private void Show(Run run, TourUpdate update, double[] cities)
+    {
+        run.Phase.Value = update.Done ? "done" : update.Phase;
+        run.Length.Value = Distance(update.Length);
+        run.Moves.Value = update.Moves.ToString();
+        run.Kicks.Value = update.Kicks.ToString();
+        run.Time.Value = Seconds(update.ElapsedMs);
+        if (firstLength.Value == 0)
+        {
+            firstLength.Value = update.Length;
+        }
+
+        if (bestLength.Value != 0 && update.Length >= bestLength.Value)
+        {
+            return;
+        }
+
+        bestLength.Value = update.Length;
+        foreach (var r in runs.Value)
+        {
+            r.Best.Value = r == run;
+        }
+
+        var order = update.Order;
+        var p = new StringBuilder(order.Length * 10 + 10);
+        for (var i = 0; i <= order.Length; i++)
+        {
+            var c = order[i == order.Length ? 0 : i];
+            p.Append((int)cities[2 * c]).Append(',').Append((int)cities[2 * c + 1]).Append(' ');
+        }
+
+        tourPoints.Value = p.ToString();
+    }
+
+    private void Stop() => cancel?.Cancel();
+
+    private string Improvement()
+    {
+        if (firstLength.Value == 0)
+        {
+            return "–";
+        }
+
+        var tenths = (int)((firstLength.Value - bestLength.Value) * 1000 / firstLength.Value);
+        return (tenths / 10).ToString() + "." + (tenths % 10).ToString() + " %";
+    }
+
+    // Lengths in the 10,000 × 10,000 square, as whole units with thousands separators.
+    private static string Distance(double length)
+    {
+        if (length == 0)
+        {
+            return "–";
+        }
+
+        var s = ((long)(length + 0.5)).ToString();
+        var b = new StringBuilder();
+        for (var i = 0; i < s.Length; i++)
+        {
+            if (i > 0 && (s.Length - i) % 3 == 0)
+            {
+                b.Append(',');
+            }
+
+            b.Append(s[i]);
+        }
+
+        return b.ToString();
+    }
+
+    private static string Seconds(int ms) => (ms / 1000).ToString() + "." + (ms / 100 % 10).ToString() + " s";
+
+    private static int Clamp(int v) => v < 0 ? 0 : v > Size ? Size : v;
+
+    // Avoids int.Parse, which brings in culture data.
+    private static int ParseInt(string s)
+    {
+        var v = 0;
+        foreach (var ch in s)
+        {
+            if (ch >= '0' && ch <= '9')
+            {
+                v = v * 10 + (ch - '0');
+            }
+        }
+
+        return v;
+    }
+
+    private struct Rng
+    {
+        private uint state;
+
+        public Rng(uint seed) => state = seed == 0 ? 1 : seed;
+
+        public int Next(int max)
+        {
+            state ^= state << 13;
+            state ^= state >> 17;
+            state ^= state << 5;
+            return (int)(state % (uint)max);
+        }
+
+        // A bell-ish offset in -range..range: the sum of three uniform values.
+        public int Spread(int range) => (Next(range) + Next(range) + Next(range)) * 2 / 3 - range;
+    }
+}
