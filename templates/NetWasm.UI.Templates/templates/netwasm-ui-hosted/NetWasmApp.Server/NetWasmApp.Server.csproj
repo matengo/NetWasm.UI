@@ -11,7 +11,7 @@
     <NetWasmUIClientProject>..\NetWasmApp.Client\NetWasmApp.Client.csproj</NetWasmUIClientProject>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi.AspNetCore" Version="0.15.0" />
+    <PackageReference Include="NwUi.AspNetCore" Version="0.15.1" />
     <ProjectReference Include="..\NetWasmApp.Shared\NetWasmApp.Shared.csproj" />
   </ItemGroup>
 </Project>

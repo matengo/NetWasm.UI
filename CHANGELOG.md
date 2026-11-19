@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-11-19
+
 ### Added
 
 - `NwUi.Workers` also targets `netstandard2.1`, with only the attributes and `WorkerException`, so a
