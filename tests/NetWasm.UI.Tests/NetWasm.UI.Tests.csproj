@@ -21,6 +21,8 @@
     <Using Include="NetWasm.UI.Testing" />
     <!-- Runs the .nwui generator on Templates/ and also exposes TemplateCompiler to the tests. -->
     <ProjectReference Include="..\..\src\NetWasm.UI.Generator\NetWasm.UI.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+    <!-- Referenced only to drive WorkerGenerator from WorkerGeneratorTests; it does not run on this project. -->
+    <ProjectReference Include="..\..\src\NetWasm.UI.Workers.Generator\NetWasm.UI.Workers.Generator.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- The browser host's script, for the test that compares its delegated events with the C# side. -->

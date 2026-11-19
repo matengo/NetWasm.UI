@@ -14,6 +14,7 @@
 | [Testing](testing.md) | Rendering components in unit tests with `NwUi.Testing` (preview) |
 | [Error handling](error-handling.md) | `ErrorBoundary`, `App.OnError`, where exceptions go |
 | [Routing](routing.md) | `Routes`, `Route`, `Link`, `NavLink`, route parameters, nested routes, base path |
+| [Web Workers](workers.md) | `NwUi.Workers` (preview): C# services in Web Workers, pools, cancellation, progress and streams |
 | [JavaScript interop](js-interop.md) | `[JSImport]`, `[JSExport]`, Promises, callbacks, wrapping JS libraries in components |
 | [Libraries and packages](libraries.md) | NuGet and .NET Standard packages, what fails at run time, your own component libraries, size |
 | [Embedding](embedding.md) | Several apps on one page, `createDomHost` options |

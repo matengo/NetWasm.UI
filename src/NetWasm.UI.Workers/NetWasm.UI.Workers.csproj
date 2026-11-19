@@ -1,0 +1,24 @@
+<Project Sdk="NetWasm.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>NetWasm.UI.Workers</RootNamespace>
+    <PackageId>NwUi.Workers</PackageId>
+    <Description>Typed C# Web Workers for NetWasm.UI: share an interface, implement it in a worker project, inject it in the app. Includes the source generator and the nwui.workers JavaScript modules.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NetWasm.UI\NetWasm.UI.csproj" />
+  </ItemGroup>
+
+  <!-- The worker source generator ships in this package (analyzers/dotnet/cs). -->
+  <ItemGroup>
+    <ProjectReference Include="..\NetWasm.UI.Workers.Generator\NetWasm.UI.Workers.Generator.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all"
+                      UndefineProperties="TargetFramework" SkipGetTargetFrameworkProperties="true" />
+    <None Include="..\NetWasm.UI.Workers.Generator\bin\$(Configuration)\netstandard2.0\NetWasm.UI.Workers.Generator.dll"
+          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="build\workers.mjs;build\worker.mjs" Pack="true" PackagePath="build;buildTransitive" />
+    <None Include="build\NetWasm.UI.Workers.props" Pack="true" PackagePath="build\NwUi.Workers.props;buildTransitive\NwUi.Workers.props" />
+    <None Include="build\NetWasm.UI.Workers.targets" Pack="true" PackagePath="build\NwUi.Workers.targets;buildTransitive\NwUi.Workers.targets" />
+  </ItemGroup>
+</Project>

@@ -13,6 +13,9 @@
     <Project Path="samples/Primitives.Kit/Primitives.Kit.csproj" />
     <Project Path="samples/Primitives.Theme/Primitives.Theme.csproj" />
     <Project Path="samples/Widgets/Widgets.csproj" />
+    <Project Path="samples/Workers/Workers.csproj" />
+    <Project Path="samples/Workers.Primes/Workers.Primes.csproj" />
+    <Project Path="samples/Workers.Contracts/Workers.Contracts.csproj" />
   </Folder>
   <Folder Name="/site/">
     <Project Path="site/Site.csproj" />
@@ -22,6 +25,8 @@
     <Project Path="src/NetWasm.UI.Browser/NetWasm.UI.Browser.csproj" />
     <Project Path="src/NetWasm.UI.Generator/NetWasm.UI.Generator.csproj" />
     <Project Path="src/NetWasm.UI.Testing/NetWasm.UI.Testing.csproj" />
+    <Project Path="src/NetWasm.UI.Workers/NetWasm.UI.Workers.csproj" />
+    <Project Path="src/NetWasm.UI.Workers.Generator/NetWasm.UI.Workers.Generator.csproj" />
     <Project Path="src/NetWasm.UI/NetWasm.UI.csproj" />
   </Folder>
   <Folder Name="/templates/">

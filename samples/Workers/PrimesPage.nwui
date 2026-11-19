@@ -1,0 +1,102 @@
+@* CPU-bound C# in Web Workers: the page stays responsive while they run. *@
+<main>
+    <h1>Web Workers</h1>
+    <p>Counts primes in a C# Web Worker. Keep clicking while it runs: the page is not blocked.</p>
+    <p>
+        <button id="small" @onclick="() => Count(1_000_000)">Count to 1,000,000</button>
+        <button id="large" @onclick="() => Count(500_000_000)">Count to 500,000,000</button>
+        <button id="cancel" @onclick="() => limit.Value = 0">Cancel</button>
+    </p>
+    <progress id="progress" max="100" value="@progress"></progress>
+    <p id="status">@Status()</p>
+    <p><button id="clicks" @onclick="() => clicks.Value++">Clicked @clicks times</button></p>
+
+    <h2>State, JSON and streams</h2>
+    <p>
+        <button id="runs" @onclick="() => _ = RunsAsync()">Counts started</button>
+        <button id="stats" @onclick="() => _ = StatsAsync()">Stats for 1–100</button>
+        <button id="stream" @onclick="() => _ = StreamAsync()">First 10 primes from 1,000</button>
+    </p>
+    <p id="result">@result</p>
+
+    <h2>A pool of workers</h2>
+    <p><button id="parallel" @onclick="() => _ = ParallelAsync()">Count to 4,000,000 in 8 parallel parts</button></p>
+    <p id="pool">@pool</p>
+</main>
+
+@using Workers.Contracts
+@inject IPrimeWorker Primes
+@inject IPrimeMath Math
+
+@code {
+    private readonly Signal<int> limit = new(0);
+    private readonly Signal<int> progress = new(0);
+    private readonly Signal<int> clicks = new(0);
+    private readonly Signal<string> result = new("");
+    private readonly Signal<string> pool = new("");
+    private Resource<int> primes = null!;
+
+    partial void OnInit()
+    {
+        // Changing the limit cancels a running count; 0 means "not counting". The worker stops at its next
+        // Worker.YieldAsync and keeps its state.
+        var report = NetWasm.UI.Workers.Worker.Progress<int>(p => progress.Value = p);
+        primes = Resource.Create(() => limit.Value == 0 ? (int?)null : limit.Value, (n, ct) => Primes.CountAsync(n, report, ct));
+    }
+
+    private void Count(int n)
+    {
+        progress.Value = 0;
+        limit.Value = n;
+    }
+
+    private string Status() =>
+        limit.Value == 0 ? "Idle."
+        : primes.Loading ? "Counting to " + limit.Value.ToString() + "…"
+        : primes.Error is { } e ? "Failed: " + e.Message
+        : primes.Latest.ToString() + " primes up to " + limit.Value.ToString() + ".";
+
+    private async Task RunsAsync() =>
+        result.Value = (await Primes.RunsAsync()).ToString() + " counts started.";
+
+    private async Task StatsAsync()
+    {
+        var stats = await Primes.StatsAsync(new PrimeRange { From = 1, To = 100 });
+        result.Value = stats.Count.ToString() + " primes, largest " + stats.Largest.ToString() + ", " + stats.TwinPairs.ToString() + " twin pairs.";
+    }
+
+    private async Task StreamAsync()
+    {
+        var found = new List<int>();
+        await foreach (var p in Primes.PrimesAsync(1000))
+        {
+            found.Add(p);
+            if (found.Count == 10)
+            {
+                break;
+            }
+        }
+
+        result.Value = string.Join(", ", found);
+    }
+
+    private async Task ParallelAsync()
+    {
+        const int Limit = 4_000_000, Parts = 8;
+        pool.Value = "Counting…";
+        var parts = new Task<int>[Parts];
+        for (var i = 0; i < Parts; i++)
+        {
+            parts[i] = Math.CountRangeAsync(i * (Limit / Parts), (i + 1) * (Limit / Parts) + (i == Parts - 1 ? 1 : 0));
+        }
+
+        var counts = await Task.WhenAll(parts);
+        var total = 0;
+        foreach (var c in counts)
+        {
+            total += c;
+        }
+
+        pool.Value = total.ToString() + " primes up to " + Limit.ToString() + ".";
+    }
+}

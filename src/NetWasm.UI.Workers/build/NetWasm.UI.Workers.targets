@@ -1,0 +1,15 @@
+<Project>
+  <!-- Registers the nwui.workers modules: the page bridge in apps (NetWasm.Sdk records OutputType=JsModule in
+       _NetWasmWorkerKind) and the notification/yield imports in worker projects (NetWasmJavaScriptHosts=worker).
+       Set NetWasmUIAddWorkerModules=false to register them yourself. -->
+  <PropertyGroup>
+    <NetWasmUIWorkersPageModulePath>$(MSBuildThisFileDirectory)workers.mjs</NetWasmUIWorkersPageModulePath>
+    <NetWasmUIWorkersWorkerModulePath>$(MSBuildThisFileDirectory)worker.mjs</NetWasmUIWorkersWorkerModulePath>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NetWasmUIAddWorkerModules)' != 'false' and '$(NetWasmJavaScriptHosts)' == 'worker'">
+    <NetWasmJavaScriptModule Include="$(NetWasmUIWorkersWorkerModulePath)" Module="nwui.workers.worker" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(NetWasmUIAddWorkerModules)' != 'false' and '$(NetWasmJavaScriptHosts)' != 'worker' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
+    <NetWasmJavaScriptModule Include="$(NetWasmUIWorkersPageModulePath)" Module="nwui.workers" />
+  </ItemGroup>
+</Project>

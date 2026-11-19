@@ -17,6 +17,14 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ### Added
 
+- `NwUi.Workers` (preview): C# services in Web Workers. Mark an interface `[WorkerContract]`,
+  implement it in a worker project with `[WorkerService]` and register it in the app with
+  `AddWorker<T>()` (one stateful worker) or `AddWorkerPool<T>()` (parallel, stateless calls).
+  A source generator writes both sides. Supports `CancellationToken` (cooperative, or
+  `terminateOnCancel`), `IProgress<T>`, `IAsyncEnumerable<T>` with back pressure, and JSON
+  arguments through a `JsonSerializerContext`. See [Web Workers](docs/workers.md) and
+  `samples/Workers`.
+- The page no longer preloads `netwasm.runtime.worker.*.mjs`, which only runs inside workers.
 - Library assets: a component library declares stylesheets, JavaScript modules and fonts with
   `<NwUiAsset Include="…" />`. Apps serve them at `_content/<PackageId>/`, bundle the modules
   for `[JSImport]`, and (with NwUi.Browser) link the stylesheets from `index.html` (in the project

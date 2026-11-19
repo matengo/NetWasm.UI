@@ -1,0 +1,77 @@
+#nullable enable
+NetWasm.UI.Workers.Worker
+NetWasm.UI.Workers.WorkerCall
+NetWasm.UI.Workers.WorkerCall.ArgBool(bool value) -> void
+NetWasm.UI.Workers.WorkerCall.ArgBytes(byte[]? value) -> void
+NetWasm.UI.Workers.WorkerCall.ArgF32(float value) -> void
+NetWasm.UI.Workers.WorkerCall.ArgF32Array(float[]? value) -> void
+NetWasm.UI.Workers.WorkerCall.ArgF64(double value) -> void
+NetWasm.UI.Workers.WorkerCall.ArgF64Array(double[]? value) -> void
+NetWasm.UI.Workers.WorkerCall.ArgI32(int value) -> void
+NetWasm.UI.Workers.WorkerCall.ArgI32Array(int[]? value) -> void
+NetWasm.UI.Workers.WorkerCall.ArgStr(string? value) -> void
+NetWasm.UI.Workers.WorkerCall.Complete(System.Threading.Tasks.Task! task, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+NetWasm.UI.Workers.WorkerCall.Complete<T>(System.Threading.Tasks.Task<T>! task, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<T>!
+NetWasm.UI.Workers.WorkerCall.Id.get -> int
+NetWasm.UI.Workers.WorkerCall.InvokeBool(string! op) -> System.Threading.Tasks.Task<bool>!
+NetWasm.UI.Workers.WorkerCall.InvokeBytes(string! op) -> System.Threading.Tasks.Task<byte[]?>!
+NetWasm.UI.Workers.WorkerCall.InvokeF32(string! op) -> System.Threading.Tasks.Task<float>!
+NetWasm.UI.Workers.WorkerCall.InvokeF32Array(string! op) -> System.Threading.Tasks.Task<float[]?>!
+NetWasm.UI.Workers.WorkerCall.InvokeF64(string! op) -> System.Threading.Tasks.Task<double>!
+NetWasm.UI.Workers.WorkerCall.InvokeF64Array(string! op) -> System.Threading.Tasks.Task<double[]?>!
+NetWasm.UI.Workers.WorkerCall.InvokeI32(string! op) -> System.Threading.Tasks.Task<int>!
+NetWasm.UI.Workers.WorkerCall.InvokeI32Array(string! op) -> System.Threading.Tasks.Task<int[]?>!
+NetWasm.UI.Workers.WorkerCall.InvokeStr(string! op) -> System.Threading.Tasks.Task<string?>!
+NetWasm.UI.Workers.WorkerCall.InvokeVoid(string! op) -> System.Threading.Tasks.Task!
+NetWasm.UI.Workers.WorkerCall.OnProgress<T>(System.IProgress<T>? progress, System.Func<T>! take) -> void
+NetWasm.UI.Workers.WorkerCalls
+NetWasm.UI.Workers.WorkerChannel
+NetWasm.UI.Workers.WorkerChannel.BeginAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<NetWasm.UI.Workers.WorkerCall!>
+NetWasm.UI.Workers.WorkerChannel.Dispose() -> void
+NetWasm.UI.Workers.WorkerChannel.Stream<T>(System.Func<NetWasm.UI.Workers.WorkerCall!, System.Threading.Tasks.Task!>! start, System.Func<T>! take, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<T>!
+NetWasm.UI.Workers.WorkerContractAttribute
+NetWasm.UI.Workers.WorkerContractAttribute.JsonContext.get -> System.Type?
+NetWasm.UI.Workers.WorkerContractAttribute.JsonContext.set -> void
+NetWasm.UI.Workers.WorkerContractAttribute.Worker.get -> string?
+NetWasm.UI.Workers.WorkerContractAttribute.Worker.set -> void
+NetWasm.UI.Workers.WorkerContractAttribute.WorkerContractAttribute() -> void
+NetWasm.UI.Workers.WorkerException
+NetWasm.UI.Workers.WorkerException.WorkerException(string! message, System.Exception? innerException = null) -> void
+NetWasm.UI.Workers.WorkerJson
+NetWasm.UI.Workers.WorkerServiceAttribute
+NetWasm.UI.Workers.WorkerServiceAttribute.WorkerServiceAttribute() -> void
+NetWasm.UI.Workers.WorkerServices
+static NetWasm.UI.Workers.Worker.DefaultPoolSize.get -> int
+static NetWasm.UI.Workers.Worker.YieldAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static NetWasm.UI.Workers.WorkerCall.TakeBool() -> bool
+static NetWasm.UI.Workers.WorkerCall.TakeBytes() -> byte[]?
+static NetWasm.UI.Workers.WorkerCall.TakeF32() -> float
+static NetWasm.UI.Workers.WorkerCall.TakeF32Array() -> float[]?
+static NetWasm.UI.Workers.WorkerCall.TakeF64() -> double
+static NetWasm.UI.Workers.WorkerCall.TakeF64Array() -> double[]?
+static NetWasm.UI.Workers.WorkerCall.TakeI32() -> int
+static NetWasm.UI.Workers.WorkerCall.TakeI32Array() -> int[]?
+static NetWasm.UI.Workers.WorkerCall.TakeStr() -> string?
+static NetWasm.UI.Workers.WorkerCalls.Begin(int callId) -> System.Threading.CancellationToken
+static NetWasm.UI.Workers.WorkerCalls.Cancel(int callId) -> void
+static NetWasm.UI.Workers.WorkerCalls.Credit(int callId, int count) -> void
+static NetWasm.UI.Workers.WorkerCalls.End(int callId) -> void
+static NetWasm.UI.Workers.WorkerCalls.NotifyBool(int callId, int channel, bool value) -> void
+static NetWasm.UI.Workers.WorkerCalls.NotifyBytes(int callId, int channel, byte[]? value) -> void
+static NetWasm.UI.Workers.WorkerCalls.NotifyF32(int callId, int channel, float value) -> void
+static NetWasm.UI.Workers.WorkerCalls.NotifyF32Array(int callId, int channel, float[]? value) -> void
+static NetWasm.UI.Workers.WorkerCalls.NotifyF64(int callId, int channel, double value) -> void
+static NetWasm.UI.Workers.WorkerCalls.NotifyF64Array(int callId, int channel, double[]? value) -> void
+static NetWasm.UI.Workers.WorkerCalls.NotifyI32(int callId, int channel, int value) -> void
+static NetWasm.UI.Workers.WorkerCalls.NotifyI32Array(int callId, int channel, int[]? value) -> void
+static NetWasm.UI.Workers.WorkerCalls.NotifyStr(int callId, int channel, string? value) -> void
+static NetWasm.UI.Workers.WorkerCalls.Progress<T>(int callId, bool enabled, System.Action<int, int, T>! notify) -> System.IProgress<T>?
+static NetWasm.UI.Workers.WorkerCalls.Stream<T>(int callId, System.Collections.Generic.IAsyncEnumerable<T>! items, System.Action<int, int, T>! notify) -> System.Threading.Tasks.Task!
+static NetWasm.UI.Workers.WorkerChannel.Dedicated(string? worker, bool terminateOnCancel) -> NetWasm.UI.Workers.WorkerChannel!
+static NetWasm.UI.Workers.WorkerChannel.Pool(string? worker, int size, bool terminateOnCancel) -> NetWasm.UI.Workers.WorkerChannel!
+static NetWasm.UI.Workers.WorkerJson.Deserialize<T>(string? json, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! info) -> T
+static NetWasm.UI.Workers.WorkerJson.Info<T>(System.Text.Json.Serialization.JsonSerializerContext! context) -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>!
+static NetWasm.UI.Workers.WorkerJson.Serialize<T>(T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! info) -> string!
+static NetWasm.UI.Workers.WorkerServices.AddWorker<T>(this NetWasm.UI.Services! services, string? worker = null, bool terminateOnCancel = false) -> NetWasm.UI.Services!
+static NetWasm.UI.Workers.WorkerServices.AddWorkerPool<T>(this NetWasm.UI.Services! services, int size = 0, string? worker = null, bool terminateOnCancel = false) -> NetWasm.UI.Services!
+static NetWasm.UI.Workers.Worker.Progress<T>(System.Action<T>! report) -> System.IProgress<T>!

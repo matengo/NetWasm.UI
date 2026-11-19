@@ -59,6 +59,7 @@ trusted-types nwui
 | `require-trusted-types-for 'script'` | Optional. It makes the browser reject any other `innerHTML`. |
 | `style-src 'unsafe-inline'` | `Style(...)` and `style="@…"` set inline `style` attributes. Without dynamic styles you can use `style-src 'self'`, or relax only `style-src-attr`. |
 | `connect-src` | Covered by `default-src 'self'`. Add your API origins if `HttpClient` calls other hosts. |
+| `worker-src` | Not needed: without it, [Web Workers](workers.md) fall back to `script-src`. If you set it, give it the same sources. |
 
 Send the policy as an HTTP header (`Content-Security-Policy`) from your host. A `<meta>` tag
 works too, but it cannot set `frame-ancestors`.

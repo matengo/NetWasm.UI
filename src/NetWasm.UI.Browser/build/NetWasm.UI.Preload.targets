@@ -22,7 +22,8 @@
       <_NwUiFetchPreload Include="$(PublishDir)browser\deployment.json" />
       <_NwUiFetchPreload Include="$(PublishDir)browser\*.wasm;$(PublishDir)browser\*.raw-adapter.mjs" />
       <_NwUiFetchPreload Include="$(PublishDir)browser\*.json" Exclude="$(PublishDir)browser\deployment.json" />
-      <_NwUiModulePreload Include="$(PublishDir)browser\*.mjs" Exclude="$(PublishDir)browser\*.raw-adapter.mjs" />
+      <!-- netwasm.runtime.worker.*.mjs only runs inside Web Workers, so the page never loads it. -->
+      <_NwUiModulePreload Include="$(PublishDir)browser\*.mjs" Exclude="$(PublishDir)browser\*.raw-adapter.mjs;$(PublishDir)browser\netwasm.runtime.worker.*.mjs" />
     </ItemGroup>
     <PropertyGroup Condition="'$(_NwUiHtml)' != ''">
       <_NwUiLinks>@(_NwUiFetchPreload->'&lt;link rel="preload" as="fetch" crossorigin href="$(NetWasmUIPreloadUrlPrefix)browser/%(Filename)%(Extension)" /&gt;', '%0A  ')</_NwUiLinks>

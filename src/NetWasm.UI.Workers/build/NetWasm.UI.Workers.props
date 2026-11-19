@@ -1,0 +1,6 @@
+<Project>
+  <!-- AddWorker<T>()/AddWorkerPool<T>() are rewritten by generated interceptors in this namespace. -->
+  <PropertyGroup>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);NetWasm.UI.Generated</InterceptorsNamespaces>
+  </PropertyGroup>
+</Project>

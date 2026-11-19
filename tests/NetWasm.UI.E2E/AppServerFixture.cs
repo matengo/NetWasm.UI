@@ -199,8 +199,17 @@ public sealed class PrimitivesServerFixture : AppServerFixture
     }
 }
 
+/// <summary>Serves <c>samples/Workers</c>: CPU work in NwUi.Workers web workers and a worker pool.</summary>
+public sealed class WorkersServerFixture : AppServerFixture
+{
+    public WorkersServerFixture()
+        : base("Workers")
+    {
+    }
+}
+
 [CollectionDefinition(Name)]
-public sealed class AppCollection : ICollectionFixture<AppServerFixture>, ICollectionFixture<WidgetsServerFixture>, ICollectionFixture<FetchServerFixture>, ICollectionFixture<InteropServerFixture>, ICollectionFixture<PrimitivesServerFixture>
+public sealed class AppCollection : ICollectionFixture<AppServerFixture>, ICollectionFixture<WidgetsServerFixture>, ICollectionFixture<FetchServerFixture>, ICollectionFixture<InteropServerFixture>, ICollectionFixture<PrimitivesServerFixture>, ICollectionFixture<WorkersServerFixture>
 {
     public const string Name = "app";
 }

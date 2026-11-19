@@ -1,0 +1,11 @@
+<Project Sdk="NetWasm.Sdk">
+  <!-- The interfaces shared by the app (samples/Workers) and the worker (samples/Workers.Primes). -->
+  <PropertyGroup>
+    <TargetFramework>netwasm0.1</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Workers.Contracts</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NetWasm.UI.Workers\NetWasm.UI.Workers.csproj" />
+  </ItemGroup>
+</Project>

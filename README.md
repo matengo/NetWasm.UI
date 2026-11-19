@@ -59,6 +59,7 @@ namespaces are `NetWasm.UI`.
 | [`NwUi.Templates`](https://www.nuget.org/packages/NwUi.Templates) | `dotnet new netwasm-ui`, `dotnet new netwasm-ui-hosted` (ASP.NET Core) and `dotnet new netwasm-ui-lib` (component library). | `dotnet new install NwUi.Templates` |
 | [`NwUi.DevServer`](https://www.nuget.org/packages/NwUi.DevServer) | `dotnet nwui-dev`: publishes, serves (Brotli, SPA fallback) and live-reloads. | In the template. Otherwise `dotnet tool install --local NwUi.DevServer`. |
 | [`NwUi.AspNetCore`](https://www.nuget.org/packages/NwUi.AspNetCore) | Hosts the app in ASP.NET Core next to your API: `MapNetWasmUI()`, live reload and client publishing. See [ASP.NET Core](docs/deployment.md#aspnet-core-with-an-api-on-the-same-origin). | `dotnet add package NwUi.AspNetCore` (in the server). |
+| [`NwUi.Workers`](https://www.nuget.org/packages/NwUi.Workers) (preview) | Typed C# Web Workers: a shared interface, `AddWorker<T>()` / `AddWorkerPool<T>()` and a source generator. See [Web Workers](docs/workers.md). | `dotnet add package NwUi.Workers` in the app, the worker and the contracts project. |
 | VS Code: *NetWasm.UI templates (.nwui)* | Syntax highlighting for `.nwui`. | See below. |
 
 ### VS Code extension
@@ -194,6 +195,7 @@ dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Co
 - [Routing](docs/routing.md): parameters, nested routes, base path
 - [Testing](docs/testing.md): rendering components in unit tests (preview)
 - [Error handling](docs/error-handling.md): `ErrorBoundary` and `App.OnError`
+- [Web Workers](docs/workers.md): C# services in Web Workers, one per service or a pool (preview)
 - [JavaScript interop](docs/js-interop.md): `[JSImport]`, callbacks, wrapping JS libraries
 - [Libraries and packages](docs/libraries.md): NuGet, .NET Standard and component libraries
 - [Embedding and several apps on one page](docs/embedding.md)
