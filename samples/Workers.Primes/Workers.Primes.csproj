@@ -6,6 +6,8 @@
     <OutputType>JsModule</OutputType>
     <NetWasmJavaScriptHosts>worker</NetWasmJavaScriptHosts>
     <RootNamespace>Workers.Primes</RootNamespace>
+    <!-- Workers.Contracts targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Workers.Contracts\Workers.Contracts.csproj" />

@@ -6,6 +6,12 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `NwUi.Workers` also targets `netstandard2.1`, with only the attributes and `WorkerException`, so a
+  contracts project can target .NET Standard and be shared with servers and unit tests.
+  `samples/Workers.Contracts` now does. See [Web Workers](docs/workers.md#projects).
+
 ## [0.15.0] - 2026-11-19
 
 ### Removed

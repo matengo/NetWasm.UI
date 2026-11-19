@@ -5,6 +5,8 @@
     <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
     <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
     <RootNamespace>Workers</RootNamespace>
+    <!-- Workers.Contracts targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />

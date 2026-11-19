@@ -1,11 +1,14 @@
 <Project Sdk="NetWasm.Sdk">
-  <!-- The interfaces shared by the app (samples/Workers) and the worker (samples/Workers.Primes). -->
+  <!-- The interfaces shared by the app (samples/Workers) and the worker (samples/Workers.Primes). netstandard2.1, so
+       servers and tests can use them too. -->
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>Workers.Contracts</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI.Workers\NetWasm.UI.Workers.csproj" />
+    <!-- JsonSerializerContext; netwasm0.1 has System.Text.Json in the box. -->
+    <PackageReference Include="System.Text.Json" Version="10.0.0" />
   </ItemGroup>
 </Project>
