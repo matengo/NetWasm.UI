@@ -78,7 +78,18 @@ See [Async data and Suspense](async.md#httpclient-and-json) and `samples/Fetch`.
 
 ## Your own libraries
 
-Reference a class library with `ProjectReference`:
+A component library is a class library that references `NwUi`. The quickest start is the
+template, which creates the library, a test project and a solution:
+
+```shell
+dotnet new netwasm-ui-lib -o MyUi
+```
+
+[Build a component library](component-library-tutorial.md) walks from there to a published
+package, with a headless library and a themed one on top; [Building a headless library](headless-libraries.md)
+is the reference for the components themselves. This section covers the project files.
+
+### Choosing a target framework
 
 - **Plain C# code** can target `netstandard2.0`, `netstandard2.1` or `netwasm0.1`.
 - **Components and `.nwui` templates** need a library that references `NwUi`. Target
@@ -106,9 +117,11 @@ A `.nwui` file in the app then needs `@using MyComponents` to use `<Greeting Nam
 On `netstandard2.1`, `record` types and `init` accessors in your own code need a polyfill:
 `namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }`. An app that
 references the library with `ProjectReference` warns with `NU1702`, which only notes the
-framework fallback; add `<NoWarn>$(NoWarn);NU1702</NoWarn>` to the app. Target `netwasm0.1` instead
-(`<Project Sdk="NetWasm.Sdk">`, `<OutputType>Library</OutputType>`) only if the library has its own
-`[JSImport]` interop; it then can't be used from `net10.0` tests or servers.
+framework fallback; add `<NoWarn>$(NoWarn);NU1702</NoWarn>` to the app. `dotnet add reference`
+refuses this combination, so write the `<ProjectReference>` in the app's project file yourself.
+Target `netwasm0.1` instead (`<Project Sdk="NetWasm.Sdk">`, `<OutputType>Library</OutputType>`)
+only if the library has its own `[JSImport]` interop; it then can't be used from `net10.0` tests or
+servers.
 
 ### Stylesheets, scripts and fonts
 
@@ -128,15 +141,60 @@ the library has no `PackageId`). Packing the library includes the files. Modules
 like the app's own `NetWasmJavaScriptModule`s, so `[JSImport("f", "mylib.position")]` works.
 Refer to fonts and images with paths relative to the stylesheet.
 
-An app with `NwUi.Browser` links the stylesheets from its `index.html` at build time: the links
-go before the page's first stylesheet, in reference order, so the app's own CSS can override a
-library's. The prerendered pages and `dotnet run` get the same links, so the page is styled on
-first paint. Set `<NetWasmUIInjectAssets>false</NetWasmUIInjectAssets>` to write the `<link>`s
-yourself.
+An app with `NwUi.Browser` links the stylesheets from its `index.html` (in the project folder or
+in `wwwroot`) at build time: the links go before the page's first stylesheet, in reference order,
+so the app's own CSS can override a library's. The prerendered pages and `dotnet run` get the same
+links, so the page is styled on first paint. Set
+`<NetWasmUIInjectAssets>false</NetWasmUIInjectAssets>` to write the `<link>`s yourself, or
+`<NetWasmUIAssetsHtml>` to point at another page.
 
 A library that references `NwUi` with `ProjectReference` instead of a package (as in this
 repository) also needs `<Import Project="…\src\NetWasm.UI\build\NetWasm.UI.targets" />`; see
-`samples/Primitives.Kit`.
+`samples/Primitives.Theme`.
+
+### Packaging and versioning
+
+`dotnet pack -c Release` makes the package. Set at least these in the project file:
+
+```xml
+<PropertyGroup>
+  <PackageId>MyUi</PackageId>
+  <Version>0.1.0</Version>
+  <Description>Headless components for NetWasm.UI.</Description>
+  <PackageTags>netwasm-ui;components</PackageTags>
+</PropertyGroup>
+```
+
+The package contains `lib/netstandard2.1/MyUi.dll` and, if the library has `NwUiAsset`s, the files
+under `nwui-assets/` and a generated `build/` and `buildTransitive/MyUi.targets` that declare
+them. `NwUi` becomes a dependency of the package. An app that uses the library still references
+`NwUi.Browser` itself, which brings the template compiler and the browser renderer.
+
+**Versions.** NetWasm.UI is 0.x, so a minor release (0.14 to 0.15) may change APIs. A
+`PackageReference` with `Version="0.14.0"` means "0.14.0 or later", so an app that moves to a newer
+`NwUi` gets your library built against the older one. Either:
+
+- release a version of your library for each `NwUi` minor version and say in its README which one
+  it needs, or
+- cap the range, `Version="[0.14.0, 0.15.0)"`, so NuGet reports a conflict instead of a build or
+  runtime error when the versions do not match.
+
+Change your own major version when you rename or remove a public prop, a slot, a `data-*` or
+`aria-*` attribute a design system selects on, or a CSS custom property a theme sets: all of them
+are public API to the layer above.
+
+**Try it before you publish.** Pack into a folder and add it as a package source for a test app:
+
+```shell
+dotnet pack MyUi -c Release -o packages
+cd MyApp
+dotnet new nugetconfig
+dotnet nuget add source ../packages -n local --configfile nuget.config
+```
+
+NuGet caches a package by id and version, so bump `<Version>` (or delete the package's folder
+under `~/.nuget/packages`) each time you repack. [The tutorial](component-library-tutorial.md#6-pack-and-publish)
+does this step by step.
 
 For dialogs, popovers, menus and other interactive components, see
 [Building component libraries](components.md#building-component-libraries),

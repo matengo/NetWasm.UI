@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A design-system library on top of the headless Primitives.Kit: wrapper components that set classes, and a
+       stylesheet (NwUiAsset) that apps serve at _content/Primitives.Theme/theme.css and link from index.html. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Primitives.Theme</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Primitives.Kit\Primitives.Kit.csproj" />
+    <NwUiAsset Include="theme.css" />
+  </ItemGroup>
+  <!-- A package reference to NwUi imports this file from buildTransitive; a project reference does not. -->
+  <Import Project="..\..\src\NetWasm.UI\build\NetWasm.UI.targets" />
+</Project>

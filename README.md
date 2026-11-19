@@ -41,6 +41,9 @@ cd MyApp
 dotnet watch --project MyApp.Server --no-hot-reload
 ```
 
+Building a component library? `dotnet new netwasm-ui-lib -o MyUi` creates a headless library and its
+tests; see the [component library tutorial](docs/component-library-tutorial.md).
+
 Read [Getting started](docs/getting-started.md) next.
 
 ## Packages
@@ -53,7 +56,7 @@ namespaces are `NetWasm.UI`.
 |---|---|---|
 | [`NwUi.Browser`](https://www.nuget.org/packages/NwUi.Browser) | The package an app references: the browser host and the `nwui.dom` module. It brings in `NwUi`. | `dotnet add package NwUi.Browser` |
 | [`NwUi`](https://www.nuget.org/packages/NwUi) | The core: signals, components, router, forms and the `.nwui` template compiler. | Comes with `NwUi.Browser`. |
-| [`NwUi.Templates`](https://www.nuget.org/packages/NwUi.Templates) | `dotnet new netwasm-ui` and `dotnet new netwasm-ui-hosted` (ASP.NET Core). | `dotnet new install NwUi.Templates` |
+| [`NwUi.Templates`](https://www.nuget.org/packages/NwUi.Templates) | `dotnet new netwasm-ui`, `dotnet new netwasm-ui-hosted` (ASP.NET Core) and `dotnet new netwasm-ui-lib` (component library). | `dotnet new install NwUi.Templates` |
 | [`NwUi.DevServer`](https://www.nuget.org/packages/NwUi.DevServer) | `dotnet nwui-dev`: publishes, serves (Brotli, SPA fallback) and live-reloads. | In the template. Otherwise `dotnet tool install --local NwUi.DevServer`. |
 | [`NwUi.AspNetCore`](https://www.nuget.org/packages/NwUi.AspNetCore) | Hosts the app in ASP.NET Core next to your API: `MapNetWasmUI()`, live reload and client publishing. See [ASP.NET Core](docs/deployment.md#aspnet-core-with-an-api-on-the-same-origin). | `dotnet add package NwUi.AspNetCore` (in the server). |
 | VS Code: *NetWasm.UI templates (.nwui)* | Syntax highlighting for `.nwui`. | See below. |
@@ -170,7 +173,7 @@ dotnet run --project tools/DevServer -- samples/Counter   # counter, todos, rout
 dotnet run --project tools/DevServer -- samples/Fetch     # HttpClient + System.Text.Json with Suspense
 dotnet run --project tools/DevServer -- samples/Widgets   # several apps on one page
 dotnet run --project tools/DevServer -- samples/Interop   # a JS library wrapped in a component
-dotnet run --project tools/DevServer -- samples/Primitives # dialog, popover, tabs, generic select and table
+dotnet run --project tools/DevServer -- samples/Primitives # dialog, popover, tabs, disclosure, generic select and table
 dotnet run --project tools/DevServer -- site              # the project website
 dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Core with an API
 ```
@@ -182,7 +185,8 @@ dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Co
   [building component libraries](docs/components.md#building-component-libraries): element calls,
   outside-click listeners, DOM reads, portals and ids
 - [Templates (`.nwui`)](docs/templates.md)
-- [Building a headless library](docs/headless-libraries.md): platform first, focus, exit animations, assets
+- [Tutorial: a component library](docs/component-library-tutorial.md): headless library, tests, design system, NuGet
+- [Building a headless library](docs/headless-libraries.md): conventions, compound components, patterns, accessibility
 - [Reactivity](docs/reactivity.md): signals, batching, context, events, lifecycle
 - [Services and DI](docs/services.md): `Services`, `Inject<T>()`, `@inject`
 - [Async data and Suspense](docs/async.md): `Resource<T>`, `Suspense`, `HttpClient`
@@ -212,10 +216,12 @@ dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Co
 | `samples/Fetch`              | `HttpClient` + `System.Text.Json` with `Resource` and `Suspense`.    |
 | `samples/Widgets`            | Several independent apps (Wasm instances) on one page.              |
 | `samples/Interop`            | `[JSImport]`, `JSObject`, callbacks and Promises: a JS library in a component. |
-| `samples/Primitives`         | Reference components for a component library: dialog, popover, tabs, generic select and data table. |
+| `samples/Primitives`         | Reference components for a component library: dialog, popover, tabs, disclosure, generic select and data table. |
+| `samples/Primitives.Kit`     | A headless component library (`netstandard2.1`): disclosure, compound tabs, focus scope. |
+| `samples/Primitives.Theme`   | A design system on top of `Primitives.Kit`: wrapper components and a stylesheet asset. |
 | `samples/Hosted`             | ASP.NET Core server with a weather API hosting a prerendered client; uses only the NuGet packages. |
 | `site/`                      | The project website, built with NetWasm.UI and published to GitHub Pages. |
-| `templates/`                 | The `dotnet new netwasm-ui` and `netwasm-ui-hosted` template package. |
+| `templates/`                 | The `dotnet new netwasm-ui`, `netwasm-ui-hosted` and `netwasm-ui-lib` template package. |
 | `tests/NetWasm.UI.Tests`     | xunit tests against an in-memory `FakeDomHost`.                      |
 | `tests/NetWasm.UI.E2E`       | Playwright browser tests against the samples (Chromium, Firefox, WebKit). |
 | `tools/DevServer`            | `nwui-dev`: Kestrel dev server with Brotli, live reload and an error overlay. |

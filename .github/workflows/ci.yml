@@ -105,7 +105,7 @@ jobs:
 
       - name: Pack
         run: |
-          for p in src/NetWasm.UI src/NetWasm.UI.Browser src/NetWasm.UI.AspNetCore tools/DevServer templates/NetWasm.UI.Templates; do
+          for p in src/NetWasm.UI src/NetWasm.UI.Browser src/NetWasm.UI.AspNetCore src/NetWasm.UI.Testing tools/DevServer templates/NetWasm.UI.Templates; do
             dotnet pack "$p" -c Release -o "$RUNNER_TEMP/feed"
           done
           ls -l "$RUNNER_TEMP/feed"
@@ -118,8 +118,20 @@ jobs:
           cd "$RUNNER_TEMP"
           dotnet new netwasm-ui -o SmokeApp --skipRestore
           cd SmokeApp
-          dotnet new nugetconfig
-          dotnet nuget add source "$RUNNER_TEMP/feed" -n local --configfile nuget.config
+          # NwUi* only from the fresh feed: nuget.org has a released NwUi with the same version.
+          cat > nuget.config <<EOF
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+              <add key="local" value="$RUNNER_TEMP/feed" />
+            </packageSources>
+            <packageSourceMapping>
+              <packageSource key="local"><package pattern="NwUi*" /></packageSource>
+              <packageSource key="nuget.org"><package pattern="*" /></packageSource>
+            </packageSourceMapping>
+          </configuration>
+          EOF
           dotnet tool restore
           dotnet publish -c Release -p:NetWasmOptimization=O1
           test -f bin/Release/netwasm0.1/publish/index.html
@@ -139,6 +151,41 @@ jobs:
           test -f out/client/index.html
           test -f out/client/counter.html
           test -f out/client/browser/SmokeHosted.Client.wasm
+
+      - name: Library template smoke test (new → test → pack → use from an app)
+        env:
+          NUGET_PACKAGES: ${{ runner.temp }}/nuget-template
+        run: |
+          cd "$RUNNER_TEMP"
+          dotnet new netwasm-ui-lib -o SmokeLib --skipRestore
+          cd SmokeLib
+          # NwUi* only from the fresh feed: nuget.org has a released NwUi with the same version.
+          cat > nuget.config <<EOF
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+              <add key="local" value="$RUNNER_TEMP/feed" />
+            </packageSources>
+            <packageSourceMapping>
+              <packageSource key="local"><package pattern="NwUi*" /></packageSource>
+              <packageSource key="nuget.org"><package pattern="*" /></packageSource>
+            </packageSourceMapping>
+          </configuration>
+          EOF
+          dotnet test
+          # A stylesheet asset, so the app below checks that its <link> reaches a wwwroot\index.html page.
+          echo '.smoke { color: red; }' > SmokeLib/smoke.css
+          sed -i 's|</Project>|  <ItemGroup><NwUiAsset Include="smoke.css" /></ItemGroup>\n</Project>|' SmokeLib/SmokeLib.csproj
+          dotnet pack SmokeLib -c Release -o "$RUNNER_TEMP/libfeed"
+          test -f "$RUNNER_TEMP/libfeed/SmokeLib.0.1.0.nupkg"
+          # Republishes the SmokeApp from the template smoke test: its publish folder already has a plain index.html.
+          cd "$RUNNER_TEMP/SmokeApp"
+          sed -i 's|<package pattern="NwUi\*" />|<package pattern="NwUi*" /></packageSource><packageSource key="libfeed"><package pattern="SmokeLib" />|; s|</packageSources>|  <add key="libfeed" value="'"$RUNNER_TEMP"'/libfeed" />\n</packageSources>|' nuget.config
+          sed -i 's|</Project>|  <ItemGroup><PackageReference Include="SmokeLib" Version="0.1.0" /></ItemGroup>\n</Project>|' SmokeApp.csproj
+          dotnet publish -c Release -p:NetWasmOptimization=O1
+          test -f bin/Release/netwasm0.1/publish/_content/SmokeLib/smoke.css
+          grep -q '<link rel="stylesheet" href="/_content/SmokeLib/smoke.css" />' bin/Release/netwasm0.1/publish/index.html
 
       - uses: actions/upload-artifact@v4
         with:

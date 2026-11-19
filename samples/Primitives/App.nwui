@@ -1,6 +1,7 @@
 @* Reference components built only on core primitives. None of them is part of NetWasm.UI itself. *@
 @using System.Linq
 @using Primitives.Kit
+@using Primitives.Theme
 <main>
     <h1>Primitives</h1>
 
@@ -24,9 +25,29 @@
 
     <section id="tabs-demo">
         <h2>Tabs</h2>
-        <Tabs Labels="@TabLabels">
-            <template slot="Panel" context="index"><p>Panel @(index + 1)</p></template>
+        <Tabs DefaultValue="one">
+            <TabList aria-label="Example tabs">
+                <Tab Value="one">One</Tab>
+                <Tab Value="two">Two</Tab>
+                <Tab Value="three">Three</Tab>
+            </TabList>
+            <TabPanel Value="one"><p>Panel 1</p></TabPanel>
+            <TabPanel Value="two"><p>Panel 2</p></TabPanel>
+            <TabPanel Value="three"><p>Panel 3</p></TabPanel>
         </Tabs>
+    </section>
+
+    <section id="disclosure-demo">
+        <h2>Disclosure</h2>
+        <Disclosure id="headless-disclosure" OnOpenChange="@(open => DisclosureLog.Value = open ? "opened" : "closed")">
+            <template slot="Trigger">Headless</template>
+            <p>No styles: the app decides how it looks.</p>
+        </Disclosure>
+        <p id="disclosure-log">@DisclosureLog.Value</p>
+        <Expander id="themed-expander" Title="Themed" @bind-Open="ExpanderOpen">
+            <p>The same component, wrapped and styled by Primitives.Theme.</p>
+        </Expander>
+        <span id="expander-state">@(ExpanderOpen.Value ? "open" : "closed")</span>
     </section>
 
     <section id="select-demo">
@@ -84,7 +105,8 @@
 @code {
     public Signal<bool> DialogOpen { get; } = new(false);
     public Signal<bool> PopoverOpen { get; } = new(false);
-    public IReadOnlyList<string> TabLabels { get; } = new[] { "One", "Two", "Three" };
+    public Signal<string> DisclosureLog { get; } = new("");
+    public Signal<bool> ExpanderOpen { get; } = new(false);
     public Signal<IReadOnlyList<Fruit>> Fruits { get; } = new(new[]
     {
         new Fruit("Apple", "🍎"),

@@ -19,9 +19,10 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 - Library assets: a component library declares stylesheets, JavaScript modules and fonts with
   `<NwUiAsset Include="…" />`. Apps serve them at `_content/<PackageId>/`, bundle the modules
-  for `[JSImport]`, and (with NwUi.Browser) link the stylesheets from `index.html` at build time,
-  before the app's own CSS, so prerendered pages are styled on first paint. Opt out with
-  `NetWasmUIInjectAssets=false`. Works for project and package references. See
+  for `[JSImport]`, and (with NwUi.Browser) link the stylesheets from `index.html` (in the project
+  folder or in `wwwroot`) at build time, before the app's own CSS, so prerendered pages are styled
+  on first paint. Opt out with `NetWasmUIInjectAssets=false`. Works for project and package
+  references, and a `netstandard2.1` library packs its assets too. See
   [Stylesheets, scripts and fonts](docs/libraries.md#stylesheets-scripts-and-fonts).
 - `ListenerFlags.Capture` and `ListenerFlags.Passive` (`@onfocus:capture`,
   `@onwheel:passive`): the listener is added to the element instead of being delegated.
@@ -41,7 +42,14 @@ See [Compatibility and versioning](docs/compatibility.md).
   work in browser apps, prerendering and `net10.0` tests alike. See
   [Your own libraries](docs/libraries.md#your-own-libraries).
 - [Building a headless library](docs/headless-libraries.md): how to layer headless and
-  design-system libraries on these pieces.
+  design-system libraries on these pieces, with API conventions, compound components, dialog and
+  menu patterns, an accessibility checklist and pitfalls.
+- `dotnet new netwasm-ui-lib` (NwUi.Templates): a `netstandard2.1` headless component library with
+  a `Disclosure` and a test project on `NwUi.Testing`.
+- [Build a component library](docs/component-library-tutorial.md): a tutorial from the template
+  to a themed library and packages. `samples/Primitives.Kit` gains a `Disclosure` and compound
+  `Tabs` (`Tabs`, `TabList`, `Tab`, `TabPanel`), and `samples/Primitives.Theme` is a design-system
+  library on top of it, with its stylesheet as an `NwUiAsset`.
 - `EventChannel<T>`: a typed, synchronous event channel for in-app pub/sub. `Publish` runs every handler in
   one batch, and a `Subscribe` made while building a component ends with that component. Handler
   errors go to the subscriber's error boundary. See [Events](docs/reactivity.md#events).

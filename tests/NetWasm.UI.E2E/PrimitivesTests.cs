@@ -23,7 +23,7 @@ public sealed class PrimitivesTests : PageTest
         await OpenPrimitivesAsync();
         var order = await Page.EvaluateAsync<string[]>(
             "() => [...document.head.querySelectorAll('link[rel=stylesheet], style')].map(e => e.tagName === 'LINK' ? e.getAttribute('href') : 'style')");
-        Assert.Equal(["/_content/Primitives.Kit/kit.css", "style"], order);
+        Assert.Equal(["/_content/Primitives.Theme/theme.css", "style"], order);
 
         await Page.ClickAsync("#popover-trigger");
         var shadow = await Page.Locator(".popover").EvaluateAsync<string>("e => getComputedStyle(e).boxShadow");
@@ -112,6 +112,28 @@ public sealed class PrimitivesTests : PageTest
         await Page.Keyboard.PressAsync("ArrowLeft");
         await Expect(tabs.Nth(2)).ToBeFocusedAsync();
         await Expect(Page.Locator("[role=tabpanel]:visible")).ToHaveTextAsync("Panel 3");
+    }
+
+    [Fact]
+    public async Task Headless_disclosure_and_themed_expander_share_behaviour()
+    {
+        await OpenPrimitivesAsync();
+        var headless = Page.Locator("#headless-disclosure");
+        var trigger = headless.Locator("button");
+        await Expect(headless.Locator("[role=region]")).ToBeHiddenAsync();
+
+        await trigger.ClickAsync();
+        await Expect(trigger).ToHaveAttributeAsync("aria-expanded", "true");
+        await Expect(headless).ToHaveAttributeAsync("data-state", "open");
+        await Expect(headless.Locator("[role=region]")).ToBeVisibleAsync();
+        await Expect(Page.Locator("#disclosure-log")).ToHaveTextAsync("opened");
+
+        var expander = Page.Locator("#themed-expander");
+        await Expect(expander).ToHaveClassAsync("ui-expander");
+        Assert.NotEqual("0px", await expander.EvaluateAsync<string>("e => getComputedStyle(e).borderTopWidth"));
+        await expander.Locator("button").PressAsync("Enter");
+        await Expect(Page.Locator("#expander-state")).ToHaveTextAsync("open");
+        await Expect(expander).ToHaveAttributeAsync("data-state", "open");
     }
 
     [Fact]
