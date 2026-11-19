@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-19
+
 ### Removed
 
 - `NetWasmUIReusePrerender` (NwUi.AspNetCore): `UseNetWasmUIDevServer` no longer keeps the pages

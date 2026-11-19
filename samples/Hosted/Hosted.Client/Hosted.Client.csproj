@@ -11,7 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- NetWasm.UI, its browser host and the .nwui source generator (through the NwUi package it depends on). -->
-    <PackageReference Include="NwUi.Browser" Version="0.14.0" />
+    <PackageReference Include="NwUi.Browser" Version="0.15.0" />
     <ProjectReference Include="..\Hosted.Shared\Hosted.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>

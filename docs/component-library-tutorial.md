@@ -49,7 +49,7 @@ The library is a plain .NET project, not a NetWasm one:
     <Description>Headless NetWasm.UI components.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi" Version="0.14.0" />
+    <PackageReference Include="NwUi" Version="0.15.0" />
   </ItemGroup>
 </Project>
 ```
@@ -170,7 +170,7 @@ value use the same shape: `Value`, `DefaultValue` and `OnValueChange`. More conv
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi.Testing" Version="0.14.0" />
+    <PackageReference Include="NwUi.Testing" Version="0.15.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.1" />
@@ -291,7 +291,7 @@ Delete `MyUi.Theme/Class1.cs` and replace `MyUi.Theme/MyUi.Theme.csproj` with:
     <Description>The MyUi design system.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi" Version="0.14.0" />
+    <PackageReference Include="NwUi" Version="0.15.0" />
     <ProjectReference Include="..\MyUi\MyUi\MyUi.csproj" />
     <!-- Served at _content/MyUi.Theme/theme.css and linked from the app's index.html. -->
     <NwUiAsset Include="theme.css" />
