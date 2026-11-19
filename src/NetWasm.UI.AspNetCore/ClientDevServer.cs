@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using NetWasm.UI.DevServer;
@@ -10,7 +9,7 @@ using NetWasm.UI.DevServer;
 namespace NetWasm.UI.AspNetCore;
 
 /// <summary>Where the build put the client and how to rebuild it; written by NwUi.AspNetCore.targets.</summary>
-internal sealed record ClientDevSettings(string ServerProject, string ClientProject, string ClientDir, string Configuration, bool ReusePrerender)
+internal sealed record ClientDevSettings(string ServerProject, string ClientProject, string ClientDir, string Configuration)
 {
     public static ClientDevSettings? Load(string baseDirectory)
     {
@@ -34,8 +33,7 @@ internal sealed record ClientDevSettings(string ServerProject, string ClientProj
             && values.TryGetValue("ClientProject", out var client)
             && values.TryGetValue("ClientDir", out var dir)
             && values.TryGetValue("Configuration", out var configuration)
-            ? new ClientDevSettings(server, client, dir, configuration,
-                !values.TryGetValue("ReusePrerender", out var reuse) || !string.Equals(reuse, "false", StringComparison.OrdinalIgnoreCase))
+            ? new ClientDevSettings(server, client, dir, configuration)
             : null;
     }
 }
@@ -59,12 +57,6 @@ internal sealed class ClientDevServer(ClientDevSettings settings, ILogger logger
     private readonly CancellationTokenSource stopping = new();
     private readonly List<SourceWatcher> watchers = [];
     private bool restoreNext;
-    private bool prerenderNext;
-
-    // The pages from the last build that prerendered, by path relative to the client folder. Live reload rebuilds skip
-    // prerendering (a few seconds per build) and put these back: the app replaces prerendered HTML when it starts, so
-    // only their preload links, whose runtime chunk names are content-hashed, need to be current.
-    private Dictionary<string, string>? pages;
 
     public static string InjectReloadClient(string html)
     {
@@ -91,7 +83,6 @@ internal sealed class ClientDevServer(ClientDevSettings settings, ILogger logger
     {
         try
         {
-            pages = settings.ReusePrerender ? ReadPages() : null;
             var roots = await WatchRootsAsync();
             lock (watchers)
             {
@@ -173,20 +164,12 @@ internal sealed class ClientDevServer(ClientDevSettings settings, ILogger logger
             restoreNext = true;
         }
 
-        // A changed page template (or project) gives different pages: prerender them again.
-        if (changed.Any(c => string.Equals(Path.GetExtension(c), ".html", StringComparison.OrdinalIgnoreCase)))
-        {
-            prerenderNext = true;
-        }
-
         await gate.WaitAsync(stopping.Token);
         try
         {
             await hub.BroadcastAsync("""{"type":"building"}""");
             var restore = restoreNext;
-            var prerender = prerenderNext || restore || pages is not { Count: > 0 };
             restoreNext = false;
-            prerenderNext = false;
             var sw = Stopwatch.StartNew();
             List<string> arguments =
             [
@@ -195,31 +178,15 @@ internal sealed class ClientDevServer(ClientDevSettings settings, ILogger logger
                 $"-p:NetWasmUIClientDir={settings.ClientDir}",
                 $"-p:NetWasmUIRestoreClient={(restore ? "true" : "false")}",
             ];
-            if (!prerender)
-            {
-                arguments.Add("-p:NetWasmUIPrerender=false");
-            }
-
             var (code, output) = await RunDotnetAsync(arguments);
             if (code == 0)
             {
-                if (prerender)
-                {
-                    pages = settings.ReusePrerender ? ReadPages() : null;
-                }
-                else
-                {
-                    RestorePages(pages!);
-                }
-
-                logger.LogInformation("NetWasm.UI client rebuilt in {Seconds:0.0} s{Pages}; reloading.",
-                    sw.Elapsed.TotalSeconds, prerender ? "" : " (prerendered pages reused)");
+                logger.LogInformation("NetWasm.UI client rebuilt in {Seconds:0.0} s; reloading.", sw.Elapsed.TotalSeconds);
                 await hub.BroadcastAsync("""{"type":"reload"}""");
             }
             else
             {
                 restoreNext |= restore;
-                prerenderNext |= prerender;
                 logger.LogError("NetWasm.UI client build failed:\n{Output}", output);
                 await hub.BroadcastAsync(ReloadHub.ErrorMessage(output));
             }
@@ -227,54 +194,6 @@ internal sealed class ClientDevServer(ClientDevSettings settings, ILogger logger
         finally
         {
             gate.Release();
-        }
-    }
-
-    private const string PrerenderMarker = "<!--nwui:prerender-->";
-
-    private static readonly Regex PreloadBlock = new(@"[ \t]*<!-- nwui:preload -->[\s\S]*?<!-- /nwui:preload -->\r?\n?", RegexOptions.Compiled);
-
-    /// <summary>The client's pages if the build prerendered any, else empty (nothing to keep).</summary>
-    private Dictionary<string, string> ReadPages()
-    {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (!Directory.Exists(settings.ClientDir))
-        {
-            return result;
-        }
-
-        foreach (var file in Directory.EnumerateFiles(settings.ClientDir, "*.html", SearchOption.AllDirectories))
-        {
-            result[Path.GetRelativePath(settings.ClientDir, file)] = File.ReadAllText(file);
-        }
-
-        return result.Values.Any(html => html.Contains(PrerenderMarker, StringComparison.Ordinal)) ? result : [];
-    }
-
-    /// <summary>
-    /// Puts back the prerendered pages, and those only prerendering writes (such as the shell), with the preload links
-    /// of the page the build just wrote.
-    /// </summary>
-    private void RestorePages(Dictionary<string, string> saved)
-    {
-        if (saved.Count == 0)
-        {
-            return;
-        }
-
-        var index = Path.Combine(settings.ClientDir, "index.html");
-        var preload = File.Exists(index) ? PreloadBlock.Match(File.ReadAllText(index)) : Match.Empty;
-        foreach (var (relative, html) in saved)
-        {
-            var path = Path.Combine(settings.ClientDir, relative);
-            if (!html.Contains(PrerenderMarker, StringComparison.Ordinal) && File.Exists(path))
-            {
-                continue;
-            }
-
-            var page = preload.Success ? PreloadBlock.Replace(html, _ => preload.Value, 1) : html;
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, page);
         }
     }
 

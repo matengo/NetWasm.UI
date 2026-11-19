@@ -46,14 +46,20 @@ public static class TemplateRuntime
     public static Content Render<T>(Slot<T>? slot, T arg) => slot is null ? Html.Spread() : slot.With(arg);
 
     /// <summary><c>@if / else if / else</c>: <paramref name="selector"/> returns the index of the branch to show (or -1 for none).</summary>
-    public static Content Chain(Func<int> selector, params Func<Node>[] branches)
+    public static Content Chain(Func<int> selector, params Func<Node>[] branches) => Chain(selector, branches, false);
+
+    /// <summary><c>@if (…) animate-exit { … } else if …</c>: <see cref="Chain(Func{int}, Func{Node}[])"/> whose branches animate out.</summary>
+    public static Content AnimatedChain(Func<int> selector, params Func<Node>[] branches) => Chain(selector, branches, true);
+
+    private static Content Chain(Func<int> selector, Func<Node>[] branches, bool animateExit)
     {
         var selected = new Computed<int>(selector);
         var parts = new Content[branches.Length];
         for (var i = 0; i < branches.Length; i++)
         {
             var index = i;
-            parts[i] = Html.When(() => selected.Value == index, branches[i]);
+            var show = Html.When(() => selected.Value == index, branches[i]);
+            parts[i] = animateExit ? show.AnimateExit() : show;
         }
 
         return Html.Spread(parts);

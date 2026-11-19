@@ -275,6 +275,11 @@ internal sealed class TemplateEmitter
                 }
 
                 EmitForeach(f);
+                if (f.AnimateExit)
+                {
+                    sb.Append(".AnimateExit()");
+                }
+
                 break;
         }
     }
@@ -524,7 +529,8 @@ internal sealed class TemplateEmitter
             var listened = new HashSet<string>(System.StringComparer.Ordinal);
             foreach (var (evt, handler, flags) in ResolveHandlers(handlers))
             {
-                if (!DelegatedEvents.Contains(evt) || row.Events.Count == 255)
+                // Capture (8) and passive (16) listeners are added on the element itself, not delegated.
+                if (!DelegatedEvents.Contains(evt) || (flags & (8 | 16)) != 0 || row.Events.Count == 255)
                 {
                     continue;
                 }
@@ -746,7 +752,7 @@ internal sealed class TemplateEmitter
                 }
                 else
                 {
-                    throw Unsupported($"Unknown directive attribute '{a.Name}' (supported: @attributes, @bind, @ref, @key, @on<event>[:preventDefault|:stopPropagation]).", a.Start, a.Name.Length);
+                    throw Unsupported($"Unknown directive attribute '{a.Name}' (supported: @attributes, @bind, @ref, @key, @on<event>[:preventDefault|:stopPropagation|:capture|:passive]).", a.Start, a.Name.Length);
                 }
 
                 continue;
@@ -956,9 +962,17 @@ internal sealed class TemplateEmitter
             {
                 bit = 2;
             }
+            else if (modifier == "capture")
+            {
+                bit = 8;
+            }
+            else if (modifier == "passive")
+            {
+                bit = 16;
+            }
             else
             {
-                throw Unsupported($"Unknown event modifier ':{modifier}' (supported: :preventDefault, :stopPropagation).", a.Start, a.Name.Length);
+                throw Unsupported($"Unknown event modifier ':{modifier}' (supported: :preventDefault, :stopPropagation, :capture, :passive).", a.Start, a.Name.Length);
             }
 
             var on = true;
@@ -983,6 +997,12 @@ internal sealed class TemplateEmitter
             {
                 var f = first[evt];
                 throw Structure($"Modifier '{f.Name}' without an '@on{evt}' handler.", f.Start, f.Name.Length);
+            }
+
+            if ((flags[evt] & 16) != 0 && (flags[evt] & 1) != 0)
+            {
+                var f = first[evt];
+                throw Structure($"'@on{evt}' cannot be both :passive and :preventDefault.", f.Start, f.Name.Length);
             }
 
             resolved.Add((evt, a, flags[evt]));
@@ -1565,12 +1585,12 @@ internal sealed class TemplateEmitter
                 EmitNode(bodies[1], nodePosition: true);
             }
 
-            sb.Append(')');
+            sb.Append(node.AnimateExit ? ").AnimateExit()" : ")");
             return;
         }
 
         // else-if chain: one selector (each condition evaluated once per change), one Show per branch.
-        sb.Append(R).Append("Chain(() => ");
+        sb.Append(R).Append(node.AnimateExit ? "AnimatedChain(() => " : "Chain(() => ");
         for (var i = 0; i < node.Branches.Count; i++)
         {
             var c = node.Branches[i].Condition;

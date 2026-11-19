@@ -348,6 +348,8 @@ public class TemplateRowTests : RendererTest
         var template = new Template("<li><a $><!--$--></a></li>");
 
         Assert.Throws<ArgumentOutOfRangeException>(() => template.Listen(2, "click"));
+        Assert.Throws<ArgumentException>(() => template.Listen(1, "click", ListenerFlags.Capture));
+        Assert.Throws<ArgumentException>(() => template.Listen(1, "click", ListenerFlags.Passive));
         Assert.True(Template.CanListen("input"));
         Assert.False(Template.CanListen("mouseenter"));
 

@@ -234,6 +234,55 @@ public class LifecycleTests : RendererTest
     }
 
     [Fact]
+    public void OnMount_can_focus_the_first_or_last_tabbable_descendant()
+    {
+        App.Mount(new Lambda(() =>
+        {
+            var panel = Div(Button("a"), Button("b"));
+            OnMount(() => { panel.FocusFirst(); panel.FocusLast(); });
+            return panel;
+        }), "#app");
+
+        var id = Dom.Query("div")!.Id;
+        Assert.Contains(("FocusEdge", $"{id} first"), Dom.Log);
+        Assert.Contains(("FocusEdge", $"{id} last"), Dom.Log);
+    }
+
+    [Fact]
+    public void Focus_by_id_moves_focus_and_ignores_zero()
+    {
+        App.Mount(new Lambda(() =>
+        {
+            var button = Button("a");
+            OnMount(() => { Html.Focus(0); Html.Focus(button.Id); });
+            return Div(button);
+        }), "#app");
+
+        var focus = Assert.Single(Dom.Log, l => l.Item1 == "Focus");
+        Assert.Equal(Dom.Query("button")!.Id.ToString(), focus.Item2);
+    }
+
+    [Fact]
+    public void OnMount_in_an_effect_runs_after_each_run_has_been_applied()
+    {
+        var count = new Signal<int>(0);
+        var seen = new List<string>();
+        App.Mount(new Lambda(() =>
+        {
+            var p = P(Text(() => count.Value.ToString()));
+            _ = new Effect(() =>
+            {
+                var n = count.Value;
+                OnMount(() => seen.Add($"{n}:{Dom.Html}"));
+            });
+            return p;
+        }), "#app");
+
+        count.Value = 1;
+        Assert.Equal(["0:<p>0</p>", "1:<p>1</p>"], seen);
+    }
+
+    [Fact]
     public void OnMount_is_skipped_when_scope_disposed_before_flush()
     {
         var called = false;

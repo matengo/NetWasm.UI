@@ -37,6 +37,9 @@ public enum Op : byte
                            // the event payload; see Template.Listen)
     ReleaseBlock = 27,    // firstId, count     (Release for the ids firstId .. firstId + count - 1: the nodes of
                           // a template clone, or of several clones whose ids follow each other)
+    RemoveAnimated = 28,  // id                 (sets data-state="closed", detaches once its animations finish)
+    FocusEdge = 29,       // id, edge(u8: 0 first, 1 last)  (focus the first/last tabbable descendant; the element
+                          // itself when it has none)
 }
 
 /// <summary>The target of <see cref="Op.AddGlobalListener"/>.</summary>
@@ -55,4 +58,8 @@ public enum ListenerFlags : byte
     StopPropagation = 2,
     /// <summary>Calls preventDefault only for an unmodified primary-button click (lets ctrl/middle-click open new tabs).</summary>
     PreventDefaultPlainClick = 4,
+    /// <summary>Listens in the capture phase (<c>addEventListener</c>'s <c>capture</c> option). The listener is added on the element itself instead of being delegated.</summary>
+    Capture = 8,
+    /// <summary>A passive listener (<c>addEventListener</c>'s <c>passive</c> option), e.g. for touch or wheel. It cannot be combined with <see cref="PreventDefault"/>; the listener is added on the element itself instead of being delegated.</summary>
+    Passive = 16,
 }

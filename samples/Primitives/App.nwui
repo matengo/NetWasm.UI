@@ -1,4 +1,6 @@
 @* Reference components built only on core primitives. None of them is part of NetWasm.UI itself. *@
+@using System.Linq
+@using Primitives.Kit
 <main>
     <h1>Primitives</h1>
 
@@ -42,6 +44,41 @@
             <template slot="Row" context="fruit"><td>@fruit.Name</td><td>@fruit.Emoji</td></template>
         </DataTable>
     </section>
+
+    <section id="capture-demo">
+        <h2>Capture</h2>
+        <div @onclick='() => Log("outer")' @onclick:capture>
+            <button id="capture-inner" type="button" @onclick='() => Log("inner")' @onclick:stopPropagation>Click</button>
+        </div>
+        <p id="capture-log">@CaptureLog.Value</p>
+    </section>
+
+    <section id="focus-demo">
+        <h2>FocusScope</h2>
+        <button id="open-panel" type="button" @onclick="() => PanelOpen.Value = true">Open panel</button>
+        @if (PanelOpen.Value)
+        {
+            <FocusScope Trap="@true" id="focus-panel" @onkeydown="CloseOnEscape">
+                <button id="panel-first" type="button">First</button>
+                <button id="panel-middle" type="button" disabled>Disabled</button>
+                <button id="panel-last" type="button" @onclick="() => PanelOpen.Value = false">Close</button>
+            </FocusScope>
+        }
+    </section>
+
+    <section id="exit-demo">
+        <h2>Exit animations</h2>
+        <button id="add-toast" type="button" @onclick="AddToast">Add toast</button>
+        <ul id="toasts">
+            @foreach (var toast in Toasts.Value) animate-exit
+            {
+                <li class="toast" @key="toast">
+                    Toast @toast
+                    <button class="dismiss" type="button" @onclick="() => Dismiss(toast)">Dismiss</button>
+                </li>
+            }
+        </ul>
+    </section>
 </main>
 
 @code {
@@ -55,4 +92,21 @@
         new Fruit("Cherry", "🍒"),
     });
     public Signal<Fruit?> Fruit { get; } = new(null);
+    public Signal<string> CaptureLog { get; } = new("");
+
+    public Signal<bool> PanelOpen { get; } = new(false);
+
+    public Signal<IReadOnlyList<int>> Toasts { get; } = new(System.Array.Empty<int>());
+    private int nextToast;
+
+    private void AddToast() => Toasts.Value = Toasts.Value.Append(++nextToast).ToArray();
+
+    private void Dismiss(int toast) => Toasts.Value = Toasts.Value.Where(t => t != toast).ToArray();
+
+    private void Log(string who) => CaptureLog.Value += who + " ";
+
+    private void CloseOnEscape(DomEvent e)
+    {
+        if (e.Key == "Escape") PanelOpen.Value = false;
+    }
 }

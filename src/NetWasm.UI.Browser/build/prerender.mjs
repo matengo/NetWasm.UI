@@ -297,7 +297,9 @@ function createPrerenderHost({ path, base }) {
           break;
         }
         case 10: { const ref = nodes.get(r.i32()); insertBefore(ref, nodes.get(r.i32())); break; }
-        case 11: {
+        // RemoveAnimated (28) has nothing to animate here: remove at once.
+        case 11:
+        case 28: {
           const n = nodes.get(r.i32());
           if (n) {
             detach(n);
@@ -324,6 +326,7 @@ function createPrerenderHost({ path, base }) {
           break;
         }
         case 16: r.i32(); break;
+        case 29: r.i32(); r.u8(); break;
         case 17: { const id = r.i32(); templates.set(id, defineTemplate(r.str())); break; }
         case 18: {
           const t = templates.get(r.i32());

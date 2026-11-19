@@ -110,7 +110,10 @@ Div(On("pointerdown", e => Start(e.ClientX, e.ClientY), ListenerFlags.StopPropag
 
 Helpers: `OnClick`, `OnInput`, `OnChange`, `OnKeyDown`, `OnSubmit`, `OnDblClick`, `OnBlur`, and
 `On(name, handler, flags)` for any event. `ListenerFlags` (in `NetWasm.UI.Dom`): `PreventDefault`, `StopPropagation`,
-`PreventDefaultPlainClick` (prevent only an unmodified primary click; used by `Link`).
+`PreventDefaultPlainClick` (prevent only an unmodified primary click; used by `Link`), `Capture` (run in
+the capture phase, before listeners below) and `Passive` (promise not to call `preventDefault`, for
+`touchmove`, `wheel` and `scroll`). `Capture` and `Passive` listeners are added to the element
+itself instead of being delegated; `Passive` with `PreventDefault` throws.
 
 `DomEvent` carries `Value`, `Checked`, `Key`, `Repeat`, `Ctrl`/`Shift`/`Alt`/`Meta`, `Button`,
 `ClientX`/`ClientY` and `IsPlainClick`. For overlays it also has `TargetId` and `RelatedTargetId`
@@ -156,6 +159,28 @@ Ul(Each(items, i => i.Id, item =>
   keep the row.
 - To change a list, assign a new list to the signal (`items.Value = newList`) or mutate and call
   `items.Touch()`.
+
+### Exit animations
+
+`When(…).AnimateExit()` and `Each(…).AnimateExit()` (`@if (…) animate-exit` and
+`@foreach (…) animate-exit` in templates) let removed content animate out before it leaves the
+DOM. Shown content and new rows get `data-state="open"`. When a branch is hidden or a row
+removed, the element gets `data-state="closed"` and `inert`, and is removed once its CSS
+animations and transitions, and those of its descendants, have finished. With none, it is removed
+at once. The animation is plain CSS:
+
+```css
+.toast { transition: opacity .2s, translate .2s; }
+@starting-style { .toast { opacity: 0; translate: 0 8px; } }      /* entering */
+.toast[data-state=closed] { animation: fade-out .2s forwards; }   /* leaving */
+@keyframes fade-out { to { opacity: 0; } }
+```
+
+The C# side is done with the content at once: its scope is disposed and a new branch or row can
+render beside it while it fades. A row that is rebuilt for a new item (see above) does not
+animate. `data-state` goes on the root element of the branch or row. A `<dialog>` or `popover` element needs no `AnimateExit`: it stays in the DOM, so
+animate it with `transition-behavior: allow-discrete` on `display` and `overlay` (see
+`samples/Primitives.Kit/kit.css`).
 
 ## Static templates (fast rows)
 
@@ -342,6 +367,15 @@ updates first. Call them from event handlers or `OnMount`, not while building or
 (they throw there, because a read would make the effect depend on layout). Under a host without
 reads (for example the prerenderer's) they throw `NotSupportedException`; prerendering returns
 zeros.
+
+**Focus.** `element.FocusFirst()` and `FocusLast()` focus the first or last tabbable element
+inside `element` (the element itself when there is none), skipping disabled, hidden, `inert`,
+invisible and `tabindex="-1"` elements. They run after the pending DOM updates, so call them
+from `OnMount` to focus a panel that was just rendered. `Html.Focus(id)` focuses an element by
+the id `ActiveElementId()` returned, to give focus back when a panel closes. For a modal, use
+`<dialog>.showModal()`, which traps and restores focus natively. A focus scope with a trap and
+roving tabindex are library components built on these; see `samples/Primitives.Kit`
+(`FocusScope`, `RovingFocus`) and [Building a headless library](headless-libraries.md).
 
 **Portal.** `Portal(target, content…)` (or `<Portal Target="body">…</Portal>` in a template)
 renders content at the end of the element matching the CSS selector `target`, inside a

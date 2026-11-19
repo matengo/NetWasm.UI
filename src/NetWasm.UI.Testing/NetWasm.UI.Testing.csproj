@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>NetWasm.UI.Testing</RootNamespace>
+    <PackageId>NwUi.Testing</PackageId>
+    <Description>Preview: renders NetWasm.UI components into an in-memory DOM for fast unit tests on .NET, with no browser. Find elements with CSS-like selectors, dispatch events and assert on the HTML.</Description>
+    <PackageTags>$(PackageTags);testing</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NetWasm.UI\NetWasm.UI.csproj" SetTargetFramework="TargetFramework=net10.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The repo's tests use the in-memory host (FakeDomHost) directly; it stays internal because it mirrors the op protocol. -->
+    <InternalsVisibleTo Include="NetWasm.UI.Tests" />
+  </ItemGroup>
+</Project>

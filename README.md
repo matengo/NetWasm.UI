@@ -182,11 +182,13 @@ dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Co
   [building component libraries](docs/components.md#building-component-libraries): element calls,
   outside-click listeners, DOM reads, portals and ids
 - [Templates (`.nwui`)](docs/templates.md)
+- [Building a headless library](docs/headless-libraries.md): platform first, focus, exit animations, assets
 - [Reactivity](docs/reactivity.md): signals, batching, context, events, lifecycle
 - [Services and DI](docs/services.md): `Services`, `Inject<T>()`, `@inject`
 - [Async data and Suspense](docs/async.md): `Resource<T>`, `Suspense`, `HttpClient`
 - [Forms and validation](docs/forms.md)
 - [Routing](docs/routing.md): parameters, nested routes, base path
+- [Testing](docs/testing.md): rendering components in unit tests (preview)
 - [Error handling](docs/error-handling.md): `ErrorBoundary` and `App.OnError`
 - [JavaScript interop](docs/js-interop.md): `[JSImport]`, callbacks, wrapping JS libraries
 - [Libraries and packages](docs/libraries.md): NuGet, .NET Standard and component libraries

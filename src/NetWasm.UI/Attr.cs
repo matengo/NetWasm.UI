@@ -88,7 +88,7 @@ public sealed class Listener : IContent, IDisposable
     {
         EventName = eventName;
         this.handler = handler;
-        this.flags = flags;
+        this.flags = Check(flags);
     }
 
     /// <summary>A listener that doesn't need the event data (no wrapper delegate).</summary>
@@ -96,7 +96,7 @@ public sealed class Listener : IContent, IDisposable
     {
         EventName = eventName;
         simple = handler;
-        this.flags = flags;
+        this.flags = Check(flags);
     }
 
     private Listener(Listener source)
@@ -108,6 +108,11 @@ public sealed class Listener : IContent, IDisposable
     }
 
     public int HandlerId => handlerId;
+
+    private static ListenerFlags Check(ListenerFlags flags) =>
+        (flags & ListenerFlags.Passive) != 0 && (flags & (ListenerFlags.PreventDefault | ListenerFlags.PreventDefaultPlainClick)) != 0
+            ? throw new ArgumentException("A passive listener cannot prevent the default action.", nameof(flags))
+            : flags;
 
     /// <summary>A not-yet-attached listener with the same handler and flags.</summary>
     internal Listener Copy() => new(this);

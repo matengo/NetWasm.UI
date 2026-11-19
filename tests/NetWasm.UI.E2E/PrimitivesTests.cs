@@ -18,6 +18,27 @@ public sealed class PrimitivesTests : PageTest
     }
 
     [Fact]
+    public async Task Library_stylesheet_asset_is_linked_before_the_app_styles_and_applied()
+    {
+        await OpenPrimitivesAsync();
+        var order = await Page.EvaluateAsync<string[]>(
+            "() => [...document.head.querySelectorAll('link[rel=stylesheet], style')].map(e => e.tagName === 'LINK' ? e.getAttribute('href') : 'style')");
+        Assert.Equal(["/_content/Primitives.Kit/kit.css", "style"], order);
+
+        await Page.ClickAsync("#popover-trigger");
+        var shadow = await Page.Locator(".popover").EvaluateAsync<string>("e => getComputedStyle(e).boxShadow");
+        Assert.NotEqual("none", shadow);
+    }
+
+    [Fact]
+    public async Task Capture_listener_runs_before_a_target_that_stops_propagation()
+    {
+        await OpenPrimitivesAsync();
+        await Page.ClickAsync("#capture-inner");
+        await Expect(Page.Locator("#capture-log")).ToHaveTextAsync("outer inner");
+    }
+
+    [Fact]
     public async Task Dialog_opens_modally_and_closes_on_escape()
     {
         await OpenPrimitivesAsync();
@@ -109,5 +130,56 @@ public sealed class PrimitivesTests : PageTest
         await Page.Locator("tbody tr", new() { HasText = "Cherry" }).ClickAsync();
         await Expect(Page.Locator("#select-state")).ToHaveTextAsync("Selected: Cherry");
         await Expect(Page.Locator(".select-trigger")).ToContainTextAsync("Cherry");
+    }
+
+    [Fact]
+    public async Task Focus_scope_moves_traps_and_restores_focus()
+    {
+        await OpenPrimitivesAsync();
+        var trigger = Page.Locator("#open-panel");
+        await trigger.ClickAsync();
+        await Expect(Page.Locator("#panel-first")).ToBeFocusedAsync();
+
+        // The disabled button is skipped and Tab wraps round in both directions.
+        await Page.Keyboard.PressAsync("Tab");
+        await Expect(Page.Locator("#panel-last")).ToBeFocusedAsync();
+        await Page.Keyboard.PressAsync("Tab");
+        await Expect(Page.Locator("#panel-first")).ToBeFocusedAsync();
+        await Page.Keyboard.PressAsync("Shift+Tab");
+        await Expect(Page.Locator("#panel-last")).ToBeFocusedAsync();
+
+        await Page.Keyboard.PressAsync("Escape");
+        await Expect(Page.Locator("#focus-panel")).ToHaveCountAsync(0);
+        await Expect(trigger).ToBeFocusedAsync();
+
+        await trigger.ClickAsync();
+        await Page.ClickAsync("#panel-last");
+        await Expect(Page.Locator("#focus-panel")).ToHaveCountAsync(0);
+        await Expect(trigger).ToBeFocusedAsync();
+    }
+
+    [Fact]
+    public async Task Animated_exit_keeps_the_node_until_its_animation_ends()
+    {
+        await OpenPrimitivesAsync();
+        await Page.ClickAsync("#add-toast");
+        await Page.ClickAsync("#add-toast");
+        var toasts = Page.Locator("#toasts > li");
+        await Expect(toasts).ToHaveCountAsync(2);
+        await Expect(toasts.First).ToHaveAttributeAsync("data-state", "open");
+
+        // The dismissed toast stays as closed (inert) while it fades, then leaves; the other is untouched.
+        await toasts.First.Locator(".dismiss").ClickAsync();
+        var closed = Page.Locator("#toasts > li[data-state=closed]");
+        await Expect(closed).ToHaveCountAsync(1);
+        Assert.True(await closed.EvaluateAsync<bool>("e => e.inert"));
+        await Expect(closed).ToHaveCountAsync(0);
+        await Expect(toasts).ToHaveCountAsync(1);
+        await Expect(toasts.First).ToContainTextAsync("Toast 2");
+
+        // Without a running animation (a style override turns it off) removal is immediate.
+        await Page.AddStyleTagAsync(new() { Content = ".toast[data-state=closed] { animation: none !important; }" });
+        await toasts.First.Locator(".dismiss").ClickAsync();
+        await Expect(toasts).ToHaveCountAsync(0);
     }
 }

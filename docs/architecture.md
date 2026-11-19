@@ -37,7 +37,7 @@ flowchart LR
 
 | Project | Role |
 |---|---|
-| `src/NetWasm.UI` | Reactivity, renderer, components, `Html` API, router. Targets `netwasm0.1` and `net10.0` (for tests). Has no browser dependency. |
+| `src/NetWasm.UI` | Reactivity, renderer, components, `Html` API, router. Targets `netwasm0.1`, `net10.0` (tests, servers) and `netstandard2.1` (component libraries). Has no browser dependency. |
 | `src/NetWasm.UI.Browser` | `[JSImport]`/`[JSExport]` bindings, `BrowserApp`, browser history and `dom.mjs`. `netwasm0.1` only. |
 | `src/NetWasm.UI.Generator` | Roslyn incremental source generator for `.nwui` templates (`netstandard2.0`). |
 
@@ -74,14 +74,16 @@ Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs`, `build/prerend
 | AppendChild, InsertBefore | parent/reference, child | `InsertBefore` uses `reference.parentNode`; appending to a comment inserts before it (template insertion points) |
 | Remove / Release | id | `Remove` detaches but keeps the handle; `Release` drops it and its listeners |
 | ReleaseBlock | firstId, count | `Release` for the ids `firstId` to `firstId + count - 1`: the nodes of a template clone, or of several clones whose ids follow each other (a cleared list sends one) |
-| AddListener / RemoveListener | id, event, handlerId, flags | flags: 1 = preventDefault, 2 = stopPropagation, 4 = preventDefault only for a plain primary click |
+| AddListener / RemoveListener | id, event, handlerId, flags | flags: 1 = preventDefault, 2 = stopPropagation, 4 = preventDefault only for a plain primary click, 8 = capture, 16 = passive (8 and 16 are never delegated) |
 | Mount | id, selector | `document.querySelector(selector).appendChild`; `replaceChildren` if the target has `data-nwui-prerender` |
 | Focus | id | |
+| FocusEdge | id, edge (u8: 0 = first, 1 = last) | focuses the first or last tabbable descendant (not disabled, not inert, visible), or the element itself if there is none |
 | DefineTemplate | templateId, html | parses the HTML into a `<template>` once and records the paths to its holes |
 | CloneTemplate | templateId, firstId | clones it; the root gets `firstId`, hole *i* gets `firstId + i` |
 | TemplateListener | templateId, hole, event, slot (u8), flags | the element at that hole of every clone listens for the event, with no op per clone. The event is dispatched to handler 0, with the clone's `firstId` (i32) and the slot before the event payload. See [Rows](#rows) |
 | SetTextInt | id, value (i32) | sets a text node to the decimal number, so C# builds no string |
 | RemoveRange | firstId, endId | detaches `firstId` and its next siblings up to, not including, `endId` (a keyed list dropping a run of items) |
+| RemoveAnimated | id | `Remove` that lets an element animate out: sets `data-state="closed"` and `inert`, waits for its finite CSS animations and transitions (including descendants), then detaches it. Comes from `Show`/`For` with `.AnimateExit()`; the handle can be released at once because the host keeps its own reference. `build/prerender.mjs` removes at once |
 
 Node ids are allocated in C#; `dom.mjs` keeps an id → node table and a per-node list of handlers
 so releasing a node also drops its listeners.

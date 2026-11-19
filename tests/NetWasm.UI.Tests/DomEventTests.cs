@@ -77,6 +77,16 @@ public class DomEventTests : RendererTest
         Assert.Equal(4, listener.Value.Flags);
     }
 
+    [Fact]
+    public void A_passive_listener_cannot_prevent_default()
+    {
+        Assert.Throws<ArgumentException>(() => On("touchstart", _ => { }, ListenerFlags.Passive | ListenerFlags.PreventDefault));
+        Assert.Throws<ArgumentException>(() => Html.OnWindow("wheel", _ => { }, ListenerFlags.Passive | ListenerFlags.PreventDefault));
+
+        App.Mount(new Lambda(() => Div(On("touchstart", _ => { }, ListenerFlags.Passive | ListenerFlags.Capture))), "#app");
+        Assert.Equal(24, Assert.Single(Dom.Query("div")!.Listeners).Value.Flags);
+    }
+
     private sealed class Lambda : Component
     {
         private readonly Func<Node> build;

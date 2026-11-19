@@ -1,7 +1,7 @@
 using System.Net;
-using static NetWasm.UI.Tests.FakeDomHost;
+using static NetWasm.UI.Testing.FakeDomHost;
 
-namespace NetWasm.UI.Tests;
+namespace NetWasm.UI.Testing;
 
 /// <summary>
 /// The fake host's version of dom.mjs <c>defineTemplate</c>/<c>cloneTemplate</c>: a tiny HTML parser that

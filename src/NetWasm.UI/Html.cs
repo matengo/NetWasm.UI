@@ -288,6 +288,19 @@ public static class Html
     /// </summary>
     public static int ActiveElementId() => Renderer.Queries().ActiveElementId();
 
+    /// <summary>
+    /// Moves keyboard focus to the element with node id <paramref name="elementId"/>, typically one saved earlier
+    /// with <see cref="ActiveElementId"/> (e.g. to restore focus when a panel closes). Does nothing for 0 or an
+    /// element that is gone.
+    /// </summary>
+    public static void Focus(int elementId)
+    {
+        if (elementId != 0)
+        {
+            Renderer.Focus(elementId);
+        }
+    }
+
     /// <summary>The viewport size (<c>innerWidth</c>, <c>innerHeight</c>). Same rules as <see cref="Element.GetRect"/>.</summary>
     public static Rect Viewport() => Renderer.Queries().Viewport();
 
