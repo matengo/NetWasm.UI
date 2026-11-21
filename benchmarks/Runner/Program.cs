@@ -193,13 +193,13 @@ var table = new List<(string Case, string Unit, double[] Values)>();
 
 foreach (var (name, prep, click, check) in ops.Where(o => Selected(o.Name)))
 {
-    var values = new double[apps.Count];
-    var layouts = new double[apps.Count];
-    for (var a = 0; a < apps.Count; a++)
+    var script = apps.Select(_ => new List<double>()).ToArray();
+    var total = apps.Select(_ => new List<double>()).ToArray();
+    // The apps take turns run by run, in alternating order (A B, B A, ...), so whatever drifts during a case, the
+    // machine warming up or the browser slowing down, falls on every app alike instead of on whichever goes last.
+    for (var r = 0; r < runs; r++)
     {
-        var script = new List<double>();
-        var total = new List<double>();
-        for (var r = 0; r < runs; r++)
+        foreach (var a in Turns(apps.Count, r))
         {
             await using var context = await browser.NewContextAsync();
             var page = await OpenAsync(context, apps[a].Path);
@@ -232,81 +232,102 @@ foreach (var (name, prep, click, check) in ops.Where(o => Selected(o.Name)))
                   return [t1 - t0, t2 - t0];
                 }
                 """, click);
-            script.Add(result[0]);
-            total.Add(result[1]);
-        }
-
-        values[a] = Median(script);
-        layouts[a] = Median(total);
-        Console.Write('.');
-    }
-
-    table.Add((name, "script", values));
-    table.Add((name, "script + layout", layouts));
-}
-
-Console.WriteLine();
-
-// DOM-free workloads, run back to back in one page per app after a warm-up.
-var workloads = new[] { "deep", "broad", "diamond", "create", "sort", "sieve" }.Where(Selected).ToArray();
-var withStartup = Selected("startup");
-var startup = new double[apps.Count];
-var reactive = new double[workloads.Length, apps.Count];
-for (var a = 0; a < apps.Count; a++)
-{
-    var ready = new List<double>();
-    for (var r = 0; r < (withStartup ? runs : 0); r++)
-    {
-        await using var context = await browser.NewContextAsync();
-        var page = await OpenAsync(context, apps[a].Path);
-        ready.Add(await page.EvaluateAsync<double>("window.__ready"));
-    }
-
-    startup[a] = withStartup ? Median(ready) : double.NaN;
-
-    await using var ctx = await browser.NewContextAsync();
-    var p = await OpenAsync(ctx, apps[a].Path);
-    for (var w = 0; w < workloads.Length; w++)
-    {
-        var times = new List<double>();
-        int? checksum = null;
-        for (var r = 0; r < runs + 3; r++)
-        {
-            var result = await p.EvaluateAsync<double[]?>("""
-                name => {
-                  window.gc();
-                  const t0 = performance.now();
-                  const c = window.bench.reactive(name);
-                  return c === null ? null : [performance.now() - t0, c];
-                }
-                """, workloads[w]);
-            if (result is null)
-            {
-                // Not applicable to this framework (e.g. no signals in React or Blazor).
-                times.Add(double.NaN);
-                break;
-            }
-
-            checksum ??= (int)result[1];
-            if (checksum != (int)result[1])
-            {
-                throw new InvalidOperationException($"{apps[a].Name} {workloads[w]}: unstable checksum");
-            }
-
-            if (r >= 3)
-            {
-                times.Add(result[0]);
-            }
-        }
-
-        reactive[w, a] = Median(times);
-        if (checksum is int c)
-        {
-            Checksums.Record(workloads[w], apps[a].Name, c);
+            script[a].Add(result[0]);
+            total[a].Add(result[1]);
         }
     }
 
     Console.Write('.');
+    table.Add((name, "script", [.. script.Select(TrimmedMedian)]));
+    table.Add((name, "script + layout", [.. total.Select(TrimmedMedian)]));
+}
+
+Console.WriteLine();
+
+// Startup, each run in a fresh page, the apps taking turns as the DOM cases do.
+var withStartup = Selected("startup");
+var ready = apps.Select(_ => new List<double>()).ToArray();
+for (var r = 0; r < (withStartup ? runs : 0); r++)
+{
+    foreach (var a in Turns(apps.Count, r))
+    {
+        await using var context = await browser.NewContextAsync();
+        var page = await OpenAsync(context, apps[a].Path);
+        ready[a].Add(await page.EvaluateAsync<double>("window.__ready"));
+    }
+}
+
+var startup = ready.Select(times => withStartup ? TrimmedMedian(times) : double.NaN).ToArray();
+
+// DOM-free workloads, run back to back in one page per app after a warm-up. Every app's page stays open, so the apps
+// take turns run by run here too.
+var workloads = new[] { "deep", "broad", "diamond", "create", "sort", "sieve" }.Where(Selected).ToArray();
+var reactive = new double[workloads.Length, apps.Count];
+var contexts = new List<IBrowserContext>();
+try
+{
+    var pages = new IPage[apps.Count];
+    for (var a = 0; a < apps.Count && workloads.Length > 0; a++)
+    {
+        contexts.Add(await browser.NewContextAsync());
+        pages[a] = await OpenAsync(contexts[^1], apps[a].Path);
+    }
+
+    for (var w = 0; w < workloads.Length; w++)
+    {
+        var times = apps.Select(_ => new List<double>()).ToArray();
+        var checksums = new int?[apps.Count];
+        var applicable = apps.Select(_ => true).ToArray();
+        for (var r = 0; r < runs + 3; r++)
+        {
+            foreach (var a in Turns(apps.Count, r).Where(a => applicable[a]))
+            {
+                var result = await pages[a].EvaluateAsync<double[]?>("""
+                    name => {
+                      window.gc();
+                      const t0 = performance.now();
+                      const c = window.bench.reactive(name);
+                      return c === null ? null : [performance.now() - t0, c];
+                    }
+                    """, workloads[w]);
+                if (result is null)
+                {
+                    // Not applicable to this framework (e.g. no signals in React or Blazor).
+                    applicable[a] = false;
+                    continue;
+                }
+
+                checksums[a] ??= (int)result[1];
+                if (checksums[a] != (int)result[1])
+                {
+                    throw new InvalidOperationException($"{apps[a].Name} {workloads[w]}: unstable checksum");
+                }
+
+                if (r >= 3)
+                {
+                    times[a].Add(result[0]);
+                }
+            }
+        }
+
+        for (var a = 0; a < apps.Count; a++)
+        {
+            reactive[w, a] = applicable[a] ? TrimmedMedian(times[a]) : double.NaN;
+            if (checksums[a] is int c)
+            {
+                Checksums.Record(workloads[w], apps[a].Name, c);
+            }
+        }
+
+        Console.Write('.');
+    }
+}
+finally
+{
+    foreach (var context in contexts)
+    {
+        await context.DisposeAsync();
+    }
 }
 
 // What a first visit downloads: every response body, raw and Brotli-compressed (quality 11, as in production).
@@ -407,6 +428,14 @@ static double Median(List<double> values)
     var n = values.Count;
     return n % 2 == 1 ? values[n / 2] : (values[n / 2 - 1] + values[n / 2]) / 2;
 }
+
+// The order in which the apps take run r: as listed on even runs, reversed on odd ones.
+static IEnumerable<int> Turns(int count, int run) =>
+    run % 2 == 0 ? Enumerable.Range(0, count) : Enumerable.Range(0, count).Reverse();
+
+// The median of an app's runs without its first and last, which take the start and the end of a session's drift.
+static double TrimmedMedian(List<double> values) =>
+    Median(values.Count > 2 ? values.GetRange(1, values.Count - 2) : [.. values]);
 
 static void Npm(string dir, params string[] args) =>
     Run(OperatingSystem.IsWindows() ? "cmd" : "npm", dir, OperatingSystem.IsWindows() ? ["/c", "npm", .. args] : args);

@@ -64,7 +64,12 @@ the renderer and the template compiler; changes to `dom.mjs` still need the brow
   while the app is starting. Polling for `__ready` from the load event on added about 5 ms to
   NetWasm.UI's startup, whose module chain is still running at that point.
 - *Download* sums every response of a first visit, compressed with Brotli quality 11.
-- Values are medians in ms. Cases under ~10 ms move by a few ms between runs.
+- The apps take turns run by run, in alternating order (the first app, then the second, ...; then
+  the same apps in reverse), for every DOM case, startup and each DOM-free workload. Whatever
+  drifts during a run of the runner, the machine warming up or the browser slowing down, then
+  falls on every app alike instead of on whichever app is measured last.
+- Values are medians in ms of each app's runs without its first and last. Cases under ~10 ms move
+  by a few ms between runs.
 - Script time is stable within a few percent between runs. Script + layout is not: even on an
   idle machine it moves by 10–30 % between runs, because the browser's layout dominates. In an
   earlier run, two identical builds of the Oz app measured 67.3 and 53.1 ms for append 1,000 rows.

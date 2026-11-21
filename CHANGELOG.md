@@ -6,6 +6,13 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Changed
+
+- The benchmark runner lets the apps take turns run by run, in alternating order, and reports the
+  median of each app's runs without the first and last. It measured all of one app's runs before
+  the next app's, so whatever drifted during a session, the machine or the browser, always fell on
+  the app measured last.
+
 ### Added
 
 - `samples/Tsp`: a route optimizer (traveling salesman) in a pool of Web Workers that stream
