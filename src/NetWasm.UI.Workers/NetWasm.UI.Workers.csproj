@@ -1,15 +1,15 @@
 <Project Sdk="NetWasm.Sdk">
   <PropertyGroup>
     <!-- netstandard2.1 holds only the attributes and WorkerException, so a contracts project can be shared with
-         servers and tests. The app and the worker use netwasm0.1, which has the runtime. -->
-    <TargetFrameworks>netwasm0.1;netstandard2.1</TargetFrameworks>
+         servers and tests. The app and the worker use net10.0-netwasm, which has the runtime. -->
+    <TargetFrameworks>net10.0-netwasm;netstandard2.1</TargetFrameworks>
     <OutputType>Library</OutputType>
     <RootNamespace>NetWasm.UI.Workers</RootNamespace>
     <PackageId>NwUi.Workers</PackageId>
     <Description>Typed C# Web Workers for NetWasm.UI: share an interface, implement it in a worker project, inject it in the app. Includes the source generator and the nwui.workers JavaScript modules.</Description>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-    <!-- The public API files list the netwasm0.1 surface; netstandard2.1 is a subset of it. -->
+    <!-- The public API files list the net10.0-netwasm surface; netstandard2.1 is a subset of it. -->
     <NoWarn>$(NoWarn);RS0017</NoWarn>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">

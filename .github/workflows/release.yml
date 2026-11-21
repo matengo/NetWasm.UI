@@ -78,7 +78,7 @@ jobs:
           dotnet nuget add source "$RUNNER_TEMP/feed" -n local --configfile nuget.config
           dotnet tool restore
           dotnet publish -c Release
-          test -f bin/Release/netwasm0.1/publish/browser/SmokeApp.wasm
+          test -f bin/Release/net10.0-netwasm/publish/browser/SmokeApp.wasm
           cd "$RUNNER_TEMP"
           dotnet new netwasm-ui-hosted -o SmokeHosted --skipRestore
           cd SmokeHosted

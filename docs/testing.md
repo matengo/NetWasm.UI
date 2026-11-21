@@ -29,7 +29,7 @@ The test project is a plain `net10.0` project:
 
 The code under test must be usable from `net10.0`. A component library that targets
 `netstandard2.1` (see [Your own libraries](libraries.md#your-own-libraries)) is: reference it from
-the test project. A `netwasm0.1` library is not; put such components in the test project instead
+the test project. A `net10.0-netwasm` library is not; put such components in the test project instead
 (`.nwui` files compile there as well).
 
 ## Writing a test

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- A headless component library: behaviour, ARIA and data-state, no CSS. Primitives.Theme styles it. -->
   <PropertyGroup>
-    <!-- netstandard2.1: one build serves browser apps (netwasm0.1), prerendering and NwUi.Testing (net10.0). -->
+    <!-- netstandard2.1: one build serves browser apps (net10.0-netwasm), prerendering and NwUi.Testing (net10.0). -->
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>

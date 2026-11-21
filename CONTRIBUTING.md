@@ -56,7 +56,7 @@ bigger on purpose, update the budget in the same pull request and explain why:
 
 ```powershell
 dotnet publish samples/Counter -c Release -p:NetWasmOptimization=Oz
-node tools/size-report/size-report.mjs samples/Counter/bin/Release/netwasm0.1/publish --name Counter --write-budget size-budget.json
+node tools/size-report/size-report.mjs samples/Counter/bin/Release/net10.0-netwasm/publish --name Counter --write-budget size-budget.json
 ```
 
 ### Public API
@@ -116,7 +116,7 @@ own source. The benchmark table in `site/Pages/BenchmarksPage.nwui` is copied fr
 
 ## Code guidelines
 
-- `netwasm0.1` has no reflection. Do not use `System.Linq` in the libraries; write plain loops.
+- NetWasm has no reflection. Do not use `System.Linq` in the libraries; write plain loops.
   `async` works, but its first use costs about 15–20 KB Brotli, so keep it out of the core
   unless a feature needs it.
 - Watch the Wasm size: avoid interpolated strings with non-string holes, `IFormattable`, new

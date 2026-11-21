@@ -6,6 +6,16 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** NetWasm.UI is built with NetWasm.Sdk 0.15.1 for `net10.0-netwasm`, which replaces
+  `netwasm0.1`. `NwUi`, `NwUi.Browser` and `NwUi.Workers` ship `net10.0-netwasm` builds in place of
+  `netwasm0.1` ones, and the templates create `net10.0-netwasm` apps. To upgrade an app, pin
+  NetWasm.Sdk 0.15.1, change its target framework and update the NwUi packages together; see
+  [Upgrading from `netwasm0.1`](docs/compatibility.md#upgrading-from-netwasm01).
+- The templates, samples and benchmarks set `NetWasmTypeNames` to `false`: none of them reads type
+  names, and NetWasm.Sdk 0.15 would otherwise publish a type-names file the page fetches at startup.
+
 ### Added
 
 - `samples/Tsp`: a route optimizer (traveling salesman) in a pool of Web Workers that stream

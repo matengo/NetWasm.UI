@@ -161,7 +161,8 @@ async function render(a) {
   const dir = resolve(a.dir);
   const baseUrl = pathToFileURL(dir + "/").href;
   installPlatformShims();
-  const doc = { title: "", baseURI: baseUrl, querySelector: () => null, querySelectorAll: () => [], documentElement: { dataset: {} } };
+  // No head: NetWasm's page module adds its modulepreload links only where document.head exists.
+  const doc = { title: "", baseURI: baseUrl, head: null, querySelector: () => null, querySelectorAll: () => [], documentElement: { dataset: {} } };
   globalThis.document ??= doc;
 
   const dom = createPrerenderHost({ path: a.path, base: a.base ?? "" });

@@ -9,7 +9,7 @@ public class WorkerGeneratorTests
     private static readonly CSharpParseOptions Parse = CSharpParseOptions.Default
         .WithFeatures(new[] { new KeyValuePair<string, string>("InterceptorsNamespaces", "NetWasm.UI.Generated") });
 
-    // The runtime targets netwasm0.1, so the tests declare the shapes the generator looks for.
+    // The runtime targets net10.0-netwasm, so the tests declare the shapes the generator looks for.
     private const string Stubs = """
         namespace NetWasm.UI.Workers
         {

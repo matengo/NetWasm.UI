@@ -1,11 +1,11 @@
 # Libraries and packages
 
 An app can use NuGet packages, its own class libraries and JavaScript libraries. This page says
-what works with `netwasm0.1` (NetWasm.Sdk 0.14) and what it costs in download size.
+what works with `net10.0-netwasm` (NetWasm.Sdk 0.15) and what it costs in download size.
 
 ## The framework is included
 
-Every `netwasm0.1` project gets NetWasm's framework without a package reference: collections,
+Every `net10.0-netwasm` project gets NetWasm's framework without a package reference: collections,
 LINQ, `System.Text.Json`, regular expressions, XML, `HttpClient`, compression, cryptography and
 more.
 
@@ -32,9 +32,9 @@ Add a package as usual:
 dotnet add package Humanizer.Core
 ```
 
-NuGet picks the package's `netwasm0.1` asset if it has one. Otherwise it picks its .NET Standard
-2.1, 2.0 or earlier asset. A package that ships only `net8.0` or later assets fails to restore
-with `NU1202`.
+NuGet picks the package's `net10.0-netwasm` asset if it has one. Otherwise it picks its `net10.0`,
+`net9.0` or `net8.0` asset, newest first, and then its .NET Standard asset, as for any .NET 10
+project.
 
 Code that NetWasm does not support usually still compiles, and it throws when it runs:
 
@@ -91,10 +91,10 @@ is the reference for the components themselves. This section covers the project 
 
 ### Choosing a target framework
 
-- **Plain C# code** can target `netstandard2.0`, `netstandard2.1` or `netwasm0.1`.
+- **Plain C# code** can target `netstandard2.0`, `netstandard2.1` or `net10.0-netwasm`.
 - **Components and `.nwui` templates** need a library that references `NwUi`. Target
   `netstandard2.1`: `NwUi` ships a `netstandard2.1` build, so the same library works in browser apps
-  (`netwasm0.1`), in [prerendering](deployment.md) and in [tests](testing.md) (`net10.0`). The
+  (`net10.0-netwasm`), in [prerendering](deployment.md) and in [tests](testing.md) (`net10.0`). The
   `.nwui` files are compiled in the library, and the app uses the components like its own:
 
 ```xml
@@ -115,11 +115,10 @@ is the reference for the components themselves. This section covers the project 
 A `.nwui` file in the app then needs `@using MyComponents` to use `<Greeting Name="..." />`.
 
 On `netstandard2.1`, `record` types and `init` accessors in your own code need a polyfill:
-`namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }`. An app that
-references the library with `ProjectReference` warns with `NU1702`, which only notes the
-framework fallback; add `<NoWarn>$(NoWarn);NU1702</NoWarn>` to the app. `dotnet add reference`
-refuses this combination, so write the `<ProjectReference>` in the app's project file yourself.
-Target `netwasm0.1` instead (`<Project Sdk="NetWasm.Sdk">`, `<OutputType>Library</OutputType>`)
+`namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }`. An app
+references the library with `dotnet add reference` or a `<ProjectReference>`, as any .NET project
+references a `netstandard2.1` library.
+Target `net10.0-netwasm` instead (`<Project Sdk="NetWasm.Sdk">`, `<OutputType>Library</OutputType>`)
 only if the library has its own `[JSImport]` interop; it then can't be used from `net10.0` tests or
 servers.
 

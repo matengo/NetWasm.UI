@@ -152,7 +152,7 @@ public sealed class CounterView : Component
 | | |
 |---|---|
 | .NET SDK | 10.0.3xx or 11.0.x (C# 15 needs 11). The NetWasm SDK is resolved from `global.json`. |
-| NetWasm.Sdk | 0.14.2, target framework `netwasm0.1` |
+| NetWasm.Sdk | 0.15.1, target framework `net10.0-netwasm` |
 | Browsers | Chrome/Edge 137+, Firefox 131+, Safari 18.4+ (needed for Wasm exception handling with `exnref`) |
 
 **Licensing.** NetWasm.UI is MIT. The NetWasm compiler and tools use the
@@ -211,8 +211,8 @@ dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Co
 
 | Path                         | What                                                                 |
 |------------------------------|----------------------------------------------------------------------|
-| `src/NetWasm.UI`             | Core: reactivity, binary renderer, component/builder API, router, forms. Targets `netwasm0.1`, plus `net10.0` for tests. |
-| `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings and the `dom.mjs` decoder. `netwasm0.1` only. |
+| `src/NetWasm.UI`             | Core: reactivity, binary renderer, component/builder API, router, forms. Targets `net10.0-netwasm`, plus `net10.0` for tests. |
+| `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings and the `dom.mjs` decoder. `net10.0-netwasm` only. |
 | `src/NetWasm.UI.Generator`   | Roslyn source generator: `*.nwui` templates → `Component` partial classes. Ships inside the `NwUi` package. |
 | `src/NetWasm.UI.AspNetCore`  | `NwUi.AspNetCore`: hosting in ASP.NET Core, live reload and client publishing. |
 | `samples/Counter`            | Demo app: counter, todos, routing, nested routes, forms and `/components`. |
@@ -235,7 +235,7 @@ dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Co
 
 ## Known limitations
 
-- No reflection in `netwasm0.1`, so libraries that rely on it throw at run time. See
+- No reflection on NetWasm, so libraries that rely on it throw at run time. See
   [Libraries and packages](docs/libraries.md).
 - One app per Wasm module.
 - No server-side rendering (SSR) per request. Pages can be

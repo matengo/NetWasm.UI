@@ -45,7 +45,7 @@
     <NetWasmCollectSiteFilesDependsOn>$(NetWasmCollectSiteFilesDependsOn);NetWasmUIInjectAssets</NetWasmCollectSiteFilesDependsOn>
   </PropertyGroup>
   <Target Name="NetWasmUIInjectAssets" DependsOnTargets="NwUiCollectAssets"
-          Condition="'$(NetWasmUIInjectAssets)' != 'false' and '$(_NwUiAssetsTargetsImported)' == 'true' and '$(TargetFramework)' == 'netwasm0.1' and '$(DesignTimeBuild)' != 'true' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
+          Condition="'$(NetWasmUIInjectAssets)' != 'false' and '$(_NwUiAssetsTargetsImported)' == 'true' and '$(TargetPlatformIdentifier)' == 'netwasm' and '$(DesignTimeBuild)' != 'true' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
     <PropertyGroup>
       <NetWasmUIAssetsHtml Condition="'$(NetWasmUIAssetsHtml)' == '' and Exists('$(MSBuildProjectDirectory)\index.html')">$(MSBuildProjectDirectory)\index.html</NetWasmUIAssetsHtml>
       <NetWasmUIAssetsHtml Condition="'$(NetWasmUIAssetsHtml)' == ''">$(MSBuildProjectDirectory)\wwwroot\index.html</NetWasmUIAssetsHtml>

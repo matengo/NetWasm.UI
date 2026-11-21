@@ -4,7 +4,7 @@
 
 - .NET SDK 10.0.303 or later; .NET 11 works too and is needed for C# 15. `global.json` rolls
   forward to the latest installed SDK.
-- The NetWasm SDK is pinned in `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.14.2" }`). It
+- The NetWasm SDK is pinned in `global.json` (`"msbuild-sdks": { "NetWasm.Sdk": "0.15.1" }`). It
   downloads its host tooling on first restore.
 - A browser listed in [Compatibility](compatibility.md#browsers).
 
@@ -39,7 +39,7 @@ To add NetWasm.UI to an existing NetWasm project, you need the same pieces as th
 ```xml
 <Project Sdk="NetWasm.Sdk">
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
+    <TargetFramework>net10.0-netwasm</TargetFramework>
     <OutputType>JsModule</OutputType>
     <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
     <RootNamespace>MyApp</RootNamespace>

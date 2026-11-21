@@ -1,13 +1,13 @@
 <Project Sdk="NetWasm.Sdk">
   <!-- A route optimizer in C# Web Workers. Published to GitHub Pages under /tsp/ by .github/workflows/pages.yml. -->
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
+    <TargetFramework>net10.0-netwasm</TargetFramework>
     <OutputType>JsModule</OutputType>
     <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
     <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
+    <!-- No type-names sidecar: the app does not read type names, so Release skips that download. -->
+    <NetWasmTypeNames>false</NetWasmTypeNames>
     <RootNamespace>Tsp</RootNamespace>
-    <!-- Tsp.Contracts targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
-    <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />

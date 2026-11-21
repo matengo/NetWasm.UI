@@ -13,10 +13,10 @@
   <PropertyGroup>
     <_NwUiAssetsTargetsImported>true</_NwUiAssetsTargetsImported>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_NwUiPackAssets</TargetsForTfmSpecificContentInPackage>
-    <!-- The assets are packed once, by one target framework: netwasm0.1 when the library targets it, else the first
-         (a netstandard2.1 library, or one that targets netstandard2.1 and net10.0). -->
+    <!-- The assets are packed once, by one target framework: the NetWasm one (net10.0-netwasm) when the library
+         targets it, else the first (a netstandard2.1 library, or one that targets netstandard2.1 and net10.0). -->
     <_NwUiAssetPackTfm Condition="'$(TargetFrameworks)' == ''">$(TargetFramework)</_NwUiAssetPackTfm>
-    <_NwUiAssetPackTfm Condition="'$(_NwUiAssetPackTfm)' == '' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFrameworks)', '(^|;)\s*netwasm0\.1\s*(;|$)'))">netwasm0.1</_NwUiAssetPackTfm>
+    <_NwUiAssetPackTfm Condition="'$(_NwUiAssetPackTfm)' == ''">$([System.Text.RegularExpressions.Regex]::Match('$(TargetFrameworks)', '(?&lt;=(?:^|;)\s*)[^;\s]+-netwasm(?=\s*(?:;|$))').Value)</_NwUiAssetPackTfm>
     <_NwUiAssetPackTfm Condition="'$(_NwUiAssetPackTfm)' == ''">$([System.Text.RegularExpressions.Regex]::Match('$(TargetFrameworks)', '[^;\s]+').Value)</_NwUiAssetPackTfm>
   </PropertyGroup>
 
@@ -58,7 +58,7 @@
   <Target Name="NwUiCollectAssets"
           BeforeTargets="NetWasmWriteCompilationIdentity;CoreCompile"
           DependsOnTargets="ResolveProjectReferences;GetNwUiAssets"
-          Condition="'$(TargetFramework)' == 'netwasm0.1' and '$(DesignTimeBuild)' != 'true' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')"
+          Condition="'$(TargetPlatformIdentifier)' == 'netwasm' and '$(DesignTimeBuild)' != 'true' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')"
           Returns="@(NwUiResolvedAsset)">
     <MSBuild Projects="@(_MSBuildProjectReferenceExistent)" Targets="GetNwUiAssets" BuildInParallel="$(BuildInParallel)"
              Properties="%(_MSBuildProjectReferenceExistent.SetConfiguration); %(_MSBuildProjectReferenceExistent.SetPlatform); %(_MSBuildProjectReferenceExistent.SetTargetFramework)"
@@ -88,7 +88,7 @@
     <NetWasmCollectSiteFilesDependsOn>$(NetWasmCollectSiteFilesDependsOn);_NwUiAssetSiteFiles</NetWasmCollectSiteFilesDependsOn>
   </PropertyGroup>
   <Target Name="_NwUiAssetSiteFiles" DependsOnTargets="NwUiCollectAssets"
-          Condition="'$(TargetFramework)' == 'netwasm0.1' and '$(DesignTimeBuild)' != 'true' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
+          Condition="'$(TargetPlatformIdentifier)' == 'netwasm' and '$(DesignTimeBuild)' != 'true' and ('$(_NetWasmWorkerKind)' == 'jsexport' or '$(OutputType)' == 'Exe')">
     <ItemGroup>
       <NetWasmSiteFile Include="@(NwUiResolvedAsset)" Condition="'%(NwUiResolvedAsset.Module)' == ''" SitePath="%(NwUiResolvedAsset.SitePath)" />
     </ItemGroup>

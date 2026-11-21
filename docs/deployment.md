@@ -4,7 +4,7 @@
 
 ```powershell
 dotnet publish -c Release
-# → bin/Release/netwasm0.1/publish/
+# → bin/Release/net10.0-netwasm/publish/
 ```
 
 `Release` uses `NetWasmOptimization=Oz` (smallest output). The dev server builds `Debug` with `O0`
@@ -142,7 +142,7 @@ Wasm in Node instead, for these reasons:
   downloads. That includes the NetWasm-compiled and trimmed Wasm, the generated JavaScript glue,
   and the app's own `[JSImport]` modules. A CoreCLR render would test a second build, and its BCL,
   trimming and globalization can differ.
-- **No change to the app.** A .NET render would need the app to multi-target `netwasm0.1`
+- **No change to the app.** A .NET render would need the app to multi-target `net10.0-netwasm`
   and `net11.0`. Every `[JSImport]` (history, storage, custom modules) would have to be stubbed or
   guarded, because CoreCLR has no JavaScript host.
 - **No extra dependency.** NetWasm already ships Node for its own tooling, and the targets use
@@ -194,7 +194,7 @@ comparison with SolidJS, React and Blazor.
 To measure your own app:
 
 ```shell
-node tools/size-report/size-report.mjs bin/Release/netwasm0.1/publish --name MyApp
+node tools/size-report/size-report.mjs bin/Release/net10.0-netwasm/publish --name MyApp
 ```
 
 ### Size budget
@@ -350,6 +350,6 @@ NetWasm compiles a closed world ahead of time, so code size follows what is *rea
 
 These changes took the demo's `Counter.wasm` from 645 KB (102 KB Brotli) to 463 KB (77 KB Brotli).
 
-To find what is big, look at `bin/Release/netwasm0.1/<App>.core.wasm` (before `wasm-opt`, with a
+To find what is big, look at `bin/Release/net10.0-netwasm/<App>.core.wasm` (before `wasm-opt`, with a
 name section) and run `wasm-opt <core.wasm> --print-call-graph` (from the `netwasm.hosttools`
 package).

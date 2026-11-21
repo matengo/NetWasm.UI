@@ -52,16 +52,14 @@ and the JavaScript modules.
 
 | Project | Target | Contains | References |
 |---|---|---|---|
-| Contracts (`Library`) | `netstandard2.1` (or `netwasm0.1`) | `[WorkerContract]` interfaces and their JSON types | `NwUi.Workers` |
-| Worker (`JsModule`, `<NetWasmJavaScriptHosts>worker</NetWasmJavaScriptHosts>`) | `netwasm0.1` | `[WorkerService]` classes | Contracts, `NwUi.Workers` |
-| App | `netwasm0.1` | Components; `AddWorker<T>()` | Contracts, `NwUi.Workers`, the worker with `NetWasmWorker="true"` |
+| Contracts (`Library`) | `netstandard2.1` (or `net10.0-netwasm`) | `[WorkerContract]` interfaces and their JSON types | `NwUi.Workers` |
+| Worker (`JsModule`, `<NetWasmJavaScriptHosts>worker</NetWasmJavaScriptHosts>`) | `net10.0-netwasm` | `[WorkerService]` classes | Contracts, `NwUi.Workers` |
+| App | `net10.0-netwasm` | Components; `AddWorker<T>()` | Contracts, `NwUi.Workers`, the worker with `NetWasmWorker="true"` |
 
 The `netstandard2.1` part of `NwUi.Workers` holds only the attributes and `WorkerException`, so a
 .NET Standard contracts project can also be used by a server or by ordinary unit tests, for example
 with a fake implementation of the interface. A `JsonSerializerContext` there needs
-`<PackageReference Include="System.Text.Json" Version="10.0.0" />` (`netwasm0.1` has it in the box).
-Apps and workers that reference the project add `<NoWarn>$(NoWarn);NU1702</NoWarn>`: the warning only
-notes the framework fallback.
+`<PackageReference Include="System.Text.Json" Version="10.0.0" />` (`net10.0-netwasm` has it in the box).
 
 ```xml
 <!-- App .csproj: publishes the worker into browser/workers/MyApp.Worker/ -->

@@ -33,8 +33,8 @@ times repeat within about 1 %, and the bytes allocated and the batch size are ex
 
 ```powershell
 dotnet publish benchmarks/WasmBench -c Release -p:NetWasmOptimization=Oz
-wasmtime run benchmarks/WasmBench/bin/Release/netwasm0.1/publish/WasmBench.wasm            # all cases
-wasmtime run benchmarks/WasmBench/bin/Release/netwasm0.1/publish/WasmBench.wasm create 50  # filter, runs
+wasmtime run benchmarks/WasmBench/bin/Release/net10.0-netwasm/publish/WasmBench.wasm       # all cases
+wasmtime run benchmarks/WasmBench/bin/Release/net10.0-netwasm/publish/WasmBench.wasm create 50  # filter, runs
 ```
 
 It runs the cases of the browser runner from the same starting state. Each line is the case, the

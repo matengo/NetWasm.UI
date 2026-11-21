@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI.Workers\NetWasm.UI.Workers.csproj" />
-    <!-- JsonSerializerContext; netwasm0.1 has System.Text.Json in the box. -->
+    <!-- JsonSerializerContext; net10.0-netwasm has System.Text.Json in the box. -->
     <PackageReference Include="System.Text.Json" Version="10.0.0" />
   </ItemGroup>
 </Project>
