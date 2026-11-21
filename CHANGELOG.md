@@ -15,6 +15,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ### Added
 
+- The benchmark runner measures in Firefox with `--browser firefox`, with `performance.now()` at
+  full resolution. Chromium stays the default, as in js-framework-benchmark.
 - `samples/Tsp`: a route optimizer (traveling salesman) in a pool of Web Workers that stream
   shorter tours while the page stays responsive. It is published on GitHub Pages under `/tsp/` and
   linked from the examples page. See [Web Workers](docs/workers.md).

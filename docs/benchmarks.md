@@ -8,7 +8,7 @@
 | `solid` | The same app (based on the official keyed Solid implementation, with `createSelector`) and the same workloads in JS, built with Vite. |
 | `react` | The official keyed `react-hooks` implementation (React 19, `memo` rows), built with Vite. |
 | `BlazorBench` | The same app in Blazor WebAssembly (.NET 10, row components with `ShouldRender`, `InvariantGlobalization`), published both as default (interpreter) and with `RunAOTCompilation`. It links `Labels.cs` and `PlainBench.cs` from NetWasmBench, so `sort`/`sieve` run the same C#. |
-| `Runner` | Publishes and builds all apps, serves them with Kestrel and drives Chromium with Playwright. |
+| `Runner` | Publishes and builds all apps, serves them with Kestrel and drives Chromium (or Firefox) with Playwright. |
 
 ## Running
 
@@ -18,7 +18,14 @@ dotnet run --project benchmarks/Runner -c Release -- --runs 10
 #          --apps netwasm-oz,solid   only these apps (output folders under benchmarks/.out)
 #          --cases create,diamond    only cases/workloads whose name contains one of these
 #          --gc NetWasm,Compact      also run the Oz app built with each of these NetWasm collectors
+#          --browser firefox         measure in Firefox instead of Chromium
 ```
+
+js-framework-benchmark measures in Chrome, so Chromium is the default. Firefox gives a second
+opinion: it runs the same cases with its own collector and layout engine, and the runner turns off
+its 1 ms rounding of `performance.now()`. A page cannot force a collection in Firefox, so its runs
+start without the GC that each Chromium run is given. Playwright installs Firefox with
+`pwsh benchmarks/Runner/bin/Release/net10.0/playwright.ps1 install firefox`.
 
 Blazor AOT needs the `wasm-tools` workload (`dotnet workload install wasm-tools`) and takes a few
 minutes to build; skip it with `--no-aot`.
