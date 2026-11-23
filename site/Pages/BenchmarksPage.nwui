@@ -28,8 +28,8 @@
         </table>
     </div>
 
-    <p class="fine-print">Windows arm64 laptop, Chromium 153, script + layout, NetWasm.Sdk 0.14.2
-       with NetWasmGC, NetWasm.UI after 0.14.0; mean of two runs of 20 on an idle machine in the "Best performance" power mode.
+    <p class="fine-print">Windows arm64 laptop, Chromium 153, script + layout, NetWasm.Sdk 0.15.2
+       with NetWasmGC, NetWasm.UI 0.16.0; mean of two runs of 20 on an idle machine in the "Best performance" power mode.
        Each measured click follows the same last-resort GC that js-framework-benchmark forces. Layout times still move 10–30 % between runs.
        Blazor is the interpreter build. "–" means the workload does not apply (no signals).
        Download sums every response of a first visit, compressed with Brotli quality 11.</p>
@@ -41,11 +41,11 @@
         </div>
         <div class="callout">
             <h3>On par with Solid</h3>
-            <p>DOM updates take 0.95–1.11× SolidJS's time, and reactive and compute workloads are faster than Solid, most of them about 2× (up to 10× for compute).</p>
+            <p>DOM updates take 0.85–1.07× SolidJS's time, and reactive and compute workloads are faster than Solid, most of them about 2× (up to 9× for compute).</p>
         </div>
         <div class="callout">
             <h3>Far ahead of Blazor</h3>
-            <p>3–30× faster than Blazor WebAssembly, with a ~18× smaller download and ~9× faster startup.</p>
+            <p>3–36× faster than Blazor WebAssembly, with a ~17× smaller download and ~11× faster startup.</p>
         </div>
         <div class="callout">
             <h3>No loading waterfall</h3>
@@ -90,23 +90,23 @@
 
     private static readonly Row[] Rows =
     [
-        new("create 1,000 rows", 43.2, 42.0, 43.2, 60.8, 200.2),
-        new("replace 1,000 rows", 50.1, 47.3, 50.9, 74.1, 236.7),
-        new("partial update (every 10th)", 23.1, 22.6, 24.2, 31.8, 78.9),
-        new("select row", 1.7, 1.6, 1.7, 7.7, 57.0),
-        new("swap rows", 5.8, 4.9, 5.9, 45.9, 54.7),
-        new("remove row", 5.6, 4.8, 5.7, 10.6, 59.1),
-        new("create 10,000 rows", 425.9, 407.1, 389.8, 582.0, 1366.1),
-        new("append 1,000 rows", 55.7, 54.3, 50.4, 70.1, 207.9),
-        new("clear 1,000 rows", 8.5, 8.8, 8.3, 15.6, 47.7),
-        new("reactive: deep (100-chain)", 9.3, 6.9, 17.9, NA, NA),
-        new("reactive: broad (1,000 fan-out)", 27.8, 17.1, 32.2, NA, NA),
-        new("reactive: diamond", 2.4, 1.6, 5.0, NA, NA),
-        new("reactive: create/dispose 10k", 7.8, 4.8, 14.4, NA, NA),
-        new("sort 100k strings (no UI)", 48.7, 44.0, 104.4, NA, 261.1),
-        new("sieve 2M (no UI)", 5.8, 6.7, 55.5, NA, 32.5),
-        new("startup (ms)", 98.3, 106.1, 21.3, 47.6, 911.3),
-        new("download, Brotli (KB)", 119.2, 138.0, 6.2, 58.4, 2087.4),
+        new("create 1,000 rows", 42.5, 41.4, 43.8, 62.6, 200.8),
+        new("replace 1,000 rows", 49.5, 46.8, 51.6, 75.7, 235.4),
+        new("partial update (every 10th)", 24.7, 23.2, 24.7, 32.4, 80.8),
+        new("select row", 1.6, 1.4, 1.7, 7.8, 57.9),
+        new("swap rows", 5.8, 5.7, 6.8, 49.6, 57.3),
+        new("remove row", 6.0, 5.0, 6.2, 11.4, 62.8),
+        new("create 10,000 rows", 436.2, 423.6, 418.1, 632.0, 1418.8),
+        new("append 1,000 rows", 55.7, 55.9, 52.2, 75.8, 223.5),
+        new("clear 1,000 rows", 8.3, 8.4, 9.7, 15.9, 50.6),
+        new("reactive: deep (100-chain)", 9.5, 7.2, 19.0, NA, NA),
+        new("reactive: broad (1,000 fan-out)", 29.1, 18.6, 35.1, NA, NA),
+        new("reactive: diamond", 2.3, 1.6, 4.2, NA, NA),
+        new("reactive: create/dispose 10k", 7.0, 4.5, 14.8, NA, NA),
+        new("sort 100k strings (no UI)", 47.0, 45.1, 113.0, NA, 285.6),
+        new("sieve 2M (no UI)", 6.2, 6.2, 57.5, NA, 34.3),
+        new("startup (ms)", 89.4, 94.2, 21.7, 49.4, 969.1),
+        new("download, Brotli (KB)", 122.8, 140.3, 6.2, 58.4, 2087.3),
     ];
 
     partial void OnInit() => AppRoot.SetTitle("Benchmarks");

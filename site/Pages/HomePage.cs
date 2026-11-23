@@ -97,7 +97,7 @@ public sealed class HomePage : Component
                 Stat("~135 KB", "a whole app with router and forms, Brotli, Wasm and JS together"),
                 Stat("≤ 1", "Wasm→JS call per state change, however many nodes it touches"),
                 Stat("0", "reflection, runtime template engines or virtual DOM"),
-                Stat("3–30×", "faster than Blazor WebAssembly, with a ~18× smaller download")));
+                Stat("3–36×", "faster than Blazor WebAssembly, with a ~17× smaller download")));
 
     private static Node Stat(string value, string label) =>
         Div(Class("stat"), Strong(value), Span(label));
@@ -169,15 +169,15 @@ public sealed class HomePage : Component
                     SectionHead(
                         "Speed, measured",
                         "Faster than React. On par with Solid.",
-                        "In a js-framework-benchmark-style comparison NetWasm.UI is faster than React on every DOM case, on par with SolidJS on DOM updates (0.95–1.11× its time) and faster than Solid on reactive and compute workloads. Lower is better."),
+                        "In a js-framework-benchmark-style comparison NetWasm.UI is faster than React on every DOM case, on par with SolidJS on DOM updates (0.85–1.07× its time) and faster than Solid on reactive and compute workloads. Lower is better."),
                     Link("/benchmarks", Class("btn"), "All benchmark results →")),
                 Div(
                     Class("bars"),
                     P(Class("bars-title"), "Create 1,000 rows, ms (script + layout)"),
-                    Bar("NetWasm.UI", 43.2, 200.2, true),
-                    Bar("SolidJS", 43.2, 200.2, false),
-                    Bar("React", 60.8, 200.2, false),
-                    Bar("Blazor WASM", 200.2, 200.2, false))));
+                    Bar("NetWasm.UI", 42.5, 200.8, true),
+                    Bar("SolidJS", 43.8, 200.8, false),
+                    Bar("React", 62.6, 200.8, false),
+                    Bar("Blazor WASM", 200.8, 200.8, false))));
 
     private static Node Bar(string name, double value, double max, bool highlight)
     {
