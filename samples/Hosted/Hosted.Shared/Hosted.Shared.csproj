@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Types shared by Hosted.Server (net11.0) and Hosted.Client (netwasm0.1). Plain C# with no UI can target
-       .NET Standard and be referenced from both; components and .nwui templates need a netwasm0.1 library instead. -->
+  <!-- Types shared by Hosted.Server (net11.0) and Hosted.Client (net10.0-netwasm). Plain C# with no UI can target
+       .NET Standard and be referenced from both; components and .nwui templates need a net10.0-netwasm library instead. -->
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>Hosted.Shared</RootNamespace>

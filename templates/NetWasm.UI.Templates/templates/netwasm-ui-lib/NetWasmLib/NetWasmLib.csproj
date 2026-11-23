@@ -14,7 +14,7 @@
     <PackageTags>netwasm;netwasm-ui;components;headless</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi" Version="0.15.1" />
+    <PackageReference Include="NwUi" Version="0.16.0" />
   </ItemGroup>
   <!-- Stylesheets, fonts and JavaScript modules the components need go here; apps serve them from
        _content/NetWasmLib/. A headless library usually has none.

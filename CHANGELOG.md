@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-23
+
 ### Changed
 
 - **Breaking:** NetWasm.UI is built with NetWasm.Sdk 0.15.1 for `net10.0-netwasm`, which replaces

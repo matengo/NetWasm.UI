@@ -1,17 +1,17 @@
 <Project Sdk="NetWasm.Sdk">
   <!-- The browser half of samples/Hosted: a NetWasm.UI app. Hosted.Server publishes it and serves it. -->
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
+    <TargetFramework>net10.0-netwasm</TargetFramework>
     <OutputType>JsModule</OutputType>
     <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
     <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
     <RootNamespace>Hosted.Client</RootNamespace>
-    <!-- Hosted.Shared targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
-    <NoWarn>$(NoWarn);NU1702</NoWarn>
+    <!-- No type-names sidecar: the app does not read type names, so Release skips that download. -->
+    <NetWasmTypeNames>false</NetWasmTypeNames>
   </PropertyGroup>
   <ItemGroup>
     <!-- NetWasm.UI, its browser host and the .nwui source generator (through the NwUi package it depends on). -->
-    <PackageReference Include="NwUi.Browser" Version="0.15.1" />
+    <PackageReference Include="NwUi.Browser" Version="0.16.0" />
     <ProjectReference Include="..\Hosted.Shared\Hosted.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
