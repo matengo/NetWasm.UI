@@ -54,7 +54,7 @@ The library is a plain .NET project, not a NetWasm one:
 </Project>
 ```
 
-- `netstandard2.1` makes one build that runs in browser apps (`netwasm0.1`), in
+- `netstandard2.1` makes one build that runs in browser apps (`net10.0-netwasm`), in
   [prerendering](deployment.md) on a server and in `net10.0` tests. See
   [Choosing a target framework](libraries.md#choosing-a-target-framework) for when to pick
   something else.
@@ -219,15 +219,11 @@ cd ..
 dotnet new netwasm-ui -o MyApp
 ```
 
-Add the reference to `MyApp/MyApp.csproj` by hand. `dotnet add reference` refuses it because the
-app targets `netwasm0.1` and the library `netstandard2.1`, a combination the CLI check does not
-know. The build itself accepts it and only notes the fallback with warning `NU1702`, which is
-expected, so silence it:
+Add the reference to the app, with `dotnet add MyApp reference MyUi/MyUi/MyUi.csproj` or by hand.
+The app targets `net10.0-netwasm`, which uses a `netstandard2.1` library as any .NET 10 project
+does:
 
 ```xml
-<PropertyGroup>
-  <NoWarn>$(NoWarn);NU1702</NoWarn>
-</PropertyGroup>
 <ItemGroup>
   <ProjectReference Include="..\MyUi\MyUi\MyUi.csproj" />
 </ItemGroup>
@@ -419,8 +415,7 @@ NuGet caches packages by id and version, so bump `<Version>` (or clear the `myui
 `~/.nuget/packages`) when you repack.
 
 Run the app again. The published site should contain `_content/MyUi.Theme/theme.css`, and its
-`index.html` should have the link. With a package reference, `NU1702` does not occur, so you can
-remove the `NoWarn`. When everything works, push the packages:
+`index.html` should have the link. When everything works, push the packages:
 
 ```shell
 dotnet nuget push packages/*.nupkg --source https://api.nuget.org/v3/index.json --api-key <key>

@@ -1,6 +1,6 @@
 <Project Sdk="NetWasm.Sdk">
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
+    <TargetFramework>net10.0-netwasm</TargetFramework>
     <OutputType>Library</OutputType>
     <RootNamespace>NetWasm.UI.Browser</RootNamespace>
     <PackageId>NwUi.Browser</PackageId>

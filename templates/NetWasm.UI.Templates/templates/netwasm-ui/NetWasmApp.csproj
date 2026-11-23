@@ -1,12 +1,14 @@
 <Project Sdk="NetWasm.Sdk">
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
+    <TargetFramework>net10.0-netwasm</TargetFramework>
     <!-- A browser app: JavaScript calls the [JSExport] methods in Program.cs. -->
     <OutputType>JsModule</OutputType>
     <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
     <!-- NetWasmGC: faster allocation and collection than the default Compact collector, for about 1.6 KB more
          download (Brotli). Remove this line to keep Compact. -->
     <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
+    <!-- No type-names sidecar: the app does not read type names, so Release skips that download. -->
+    <NetWasmTypeNames>false</NetWasmTypeNames>
     <RootNamespace>NetWasmApp</RootNamespace>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>

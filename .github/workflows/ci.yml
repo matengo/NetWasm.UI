@@ -50,7 +50,7 @@ jobs:
       - name: Production publish (Oz), size report and budget
         run: |
           dotnet publish samples/Counter -c Release -p:NetWasmOptimization=Oz
-          node tools/size-report/size-report.mjs samples/Counter/bin/Release/netwasm0.1/publish \
+          node tools/size-report/size-report.mjs samples/Counter/bin/Release/net10.0-netwasm/publish \
             --name Counter --budget size-budget.json --markdown "$GITHUB_STEP_SUMMARY"
 
   e2e-browsers:
@@ -134,9 +134,9 @@ jobs:
           EOF
           dotnet tool restore
           dotnet publish -c Release -p:NetWasmOptimization=O1
-          test -f bin/Release/netwasm0.1/publish/index.html
-          test -f bin/Release/netwasm0.1/publish/browser/SmokeApp.wasm
-          grep -q '<link rel="modulepreload" href="/browser/SmokeApp.mjs" />' bin/Release/netwasm0.1/publish/index.html
+          test -f bin/Release/net10.0-netwasm/publish/index.html
+          test -f bin/Release/net10.0-netwasm/publish/browser/SmokeApp.wasm
+          grep -q '<link rel="modulepreload" href="/browser/SmokeApp.mjs" />' bin/Release/net10.0-netwasm/publish/index.html
 
       - name: Hosted template smoke test (new → publish server with prerendered client)
         env:
@@ -184,8 +184,8 @@ jobs:
           sed -i 's|<package pattern="NwUi\*" />|<package pattern="NwUi*" /></packageSource><packageSource key="libfeed"><package pattern="SmokeLib" />|; s|</packageSources>|  <add key="libfeed" value="'"$RUNNER_TEMP"'/libfeed" />\n</packageSources>|' nuget.config
           sed -i 's|</Project>|  <ItemGroup><PackageReference Include="SmokeLib" Version="0.1.0" /></ItemGroup>\n</Project>|' SmokeApp.csproj
           dotnet publish -c Release -p:NetWasmOptimization=O1
-          test -f bin/Release/netwasm0.1/publish/_content/SmokeLib/smoke.css
-          grep -q '<link rel="stylesheet" href="/_content/SmokeLib/smoke.css" />' bin/Release/netwasm0.1/publish/index.html
+          test -f bin/Release/net10.0-netwasm/publish/_content/SmokeLib/smoke.css
+          grep -q '<link rel="stylesheet" href="/_content/SmokeLib/smoke.css" />' bin/Release/net10.0-netwasm/publish/index.html
 
       - uses: actions/upload-artifact@v4
         with:

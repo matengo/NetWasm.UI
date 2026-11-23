@@ -2,9 +2,11 @@
   <!-- The keyed benchmark app without a browser: a console program for Wasmtime that mounts BenchApp.nwui on a
        host that discards the render batches, and times the C# side of each case. See docs/benchmarks.md. -->
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
+    <TargetFramework>net10.0-netwasm</TargetFramework>
     <OutputType>Exe</OutputType>
     <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
+    <!-- No type-names sidecar: the app does not read type names, so Release skips that download. -->
+    <NetWasmTypeNames>false</NetWasmTypeNames>
     <RootNamespace>NetWasmBench</RootNamespace>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

@@ -37,8 +37,8 @@ flowchart LR
 
 | Project | Role |
 |---|---|
-| `src/NetWasm.UI` | Reactivity, renderer, components, `Html` API, router. Targets `netwasm0.1`, `net10.0` (tests, servers) and `netstandard2.1` (component libraries). Has no browser dependency. |
-| `src/NetWasm.UI.Browser` | `[JSImport]`/`[JSExport]` bindings, `BrowserApp`, browser history and `dom.mjs`. `netwasm0.1` only. |
+| `src/NetWasm.UI` | Reactivity, renderer, components, `Html` API, router. Targets `net10.0-netwasm`, `net10.0` (tests, servers) and `netstandard2.1` (component libraries). Has no browser dependency. |
+| `src/NetWasm.UI.Browser` | `[JSImport]`/`[JSExport]` bindings, `BrowserApp`, browser history and `dom.mjs`. `net10.0-netwasm` only. |
 | `src/NetWasm.UI.Generator` | Roslyn incremental source generator for `.nwui` templates (`netstandard2.0`). |
 
 The core talks to the browser through `IDomHost` (`ApplyBatch`), so unit tests run on `net10.0`

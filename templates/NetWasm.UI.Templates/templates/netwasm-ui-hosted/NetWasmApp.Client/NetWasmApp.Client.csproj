@@ -1,17 +1,17 @@
 <Project Sdk="NetWasm.Sdk">
   <!-- The browser half of the app: a NetWasm.UI app. NetWasmApp.Server publishes it and serves it. -->
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
+    <TargetFramework>net10.0-netwasm</TargetFramework>
     <OutputType>JsModule</OutputType>
     <NetWasmJavaScriptHosts>page</NetWasmJavaScriptHosts>
     <!-- NetWasmGC: faster allocation and collection than the default Compact collector, for about 1.6 KB more
          download (Brotli). Remove this line to keep Compact. -->
     <NetWasmGarbageCollector>NetWasm</NetWasmGarbageCollector>
+    <!-- No type-names sidecar: the app does not read type names, so Release skips that download. -->
+    <NetWasmTypeNames>false</NetWasmTypeNames>
     <RootNamespace>NetWasmApp.Client</RootNamespace>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <!-- NetWasmApp.Shared targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
-    <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <!-- NetWasm.UI, its browser host and the .nwui source generator. -->

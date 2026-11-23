@@ -2,12 +2,12 @@
   <!-- The route optimizer: a C# Web Worker. samples/Tsp references it with NetWasmWorker="true" and publishes it
        into browser/workers/Tsp.Solver/. -->
   <PropertyGroup>
-    <TargetFramework>netwasm0.1</TargetFramework>
+    <TargetFramework>net10.0-netwasm</TargetFramework>
     <OutputType>JsModule</OutputType>
     <NetWasmJavaScriptHosts>worker</NetWasmJavaScriptHosts>
+    <!-- No type-names sidecar: the worker does not read type names, so Release skips that download. -->
+    <NetWasmTypeNames>false</NetWasmTypeNames>
     <RootNamespace>Tsp.Solver</RootNamespace>
-    <!-- Tsp.Contracts targets .NET Standard, which netwasm0.1 consumes; NU1702 only notes the framework fallback. -->
-    <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tsp.Contracts\Tsp.Contracts.csproj" />

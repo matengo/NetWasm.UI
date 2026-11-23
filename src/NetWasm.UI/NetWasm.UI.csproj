@@ -1,7 +1,7 @@
 <Project Sdk="NetWasm.Sdk">
   <PropertyGroup>
     <!-- netstandard2.1 lets component libraries target one framework that works in apps, prerendering and tests. -->
-    <TargetFrameworks>netwasm0.1;net10.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net10.0-netwasm;net10.0;netstandard2.1</TargetFrameworks>
     <OutputType>Library</OutputType>
     <RootNamespace>NetWasm.UI</RootNamespace>
     <!-- The NetWasm. prefix on nuget.org is reserved for the NetWasm toolchain. -->

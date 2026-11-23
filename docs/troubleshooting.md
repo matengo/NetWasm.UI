@@ -47,11 +47,11 @@ cache `browser/*.wasm` because NetWasm file names do not change between builds; 
   [Services](services.md#auto-wired-services). If that call instead throws
   `InvalidOperationException` at run time, the generator did not intercept it: check that the
   project references NwUi and that `InterceptorsNamespaces` includes `NetWasm.UI.Generated`.
-- Reflection is not available in `netwasm0.1`. For `System.Text.Json`, use a source-generated
+- Reflection is not available on NetWasm. For `System.Text.Json`, use a source-generated
   `JsonSerializerContext`. Remove references to the retired `NetWasm.System.*` packages: the
   framework includes them from NetWasm.Sdk 0.14. See [Libraries and packages](libraries.md).
 - `NU1202` for a NuGet package: the package has only `net8.0` or later assets. NetWasm can use
-  packages with a `netwasm0.1` or .NET Standard asset.
+  packages with a `net10.0`, `net9.0`, `net8.0` or .NET Standard asset.
 - `PlatformNotSupportedException` from a library: it reached reflection or another operation
   NetWasm does not support. See [Libraries and packages](libraries.md#nuget-packages).
 - `NWSDK078`: a page app needs a `Main` method, even an empty one, next to its `[JSExport]`
@@ -76,7 +76,7 @@ new generic instantiations, and `Uri.EscapeDataString`. See
 
 ## Known limitations
 
-- `netwasm0.1` has no reflection, so libraries that rely on it throw at run time (see
+- NetWasm has no reflection, so libraries that rely on it throw at run time (see
   [Libraries and packages](libraries.md)).
 - `Scheduler`, `Renderer`, the tracker and `Router.Current` are static: one app per Wasm module
   instance.
