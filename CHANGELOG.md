@@ -6,6 +6,10 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Changed
+
+- The repository, samples and templates pin NetWasm.Sdk 0.15.2 (was 0.15.1).
+
 ## [0.16.0] - 2026-11-23
 
 ### Changed

@@ -4,7 +4,7 @@
 
 | NetWasm.UI | NetWasm.Sdk | Target framework | .NET SDK |
 |---|---|---|---|
-| 0.16.x | 0.15.1 | `net10.0-netwasm` | 10.0.3xx or 11.0.x |
+| 0.16.x | 0.15.2 | `net10.0-netwasm` | 10.0.3xx or 11.0.x |
 | 0.15.x | 0.14.2 | `netwasm0.1` | 10.0.3xx or 11.0.x |
 | 0.14.x | 0.14.2 | `netwasm0.1` | 10.0.3xx or 11.0.x |
 | 0.13.x | 0.14.2 | `netwasm0.1` | 10.0.3xx or 11.0.x |
@@ -26,7 +26,7 @@ NetWasm.Sdk 0.15 replaces the `netwasm0.1` target framework with `net10.0-netwas
 target framework like `net10.0-android`. NetWasm.UI releases from the first one in the table above
 with `net10.0-netwasm` are built for it, and an app moves to them in one step:
 
-1. **Pin the SDK.** In `global.json`, set `"msbuild-sdks": { "NetWasm.Sdk": "0.15.1" }`.
+1. **Pin the SDK.** In `global.json`, set `"msbuild-sdks": { "NetWasm.Sdk": "0.15.2" }`.
 2. **Change the target framework.** In every app, worker and library project that targets
    `netwasm0.1`, change `<TargetFramework>netwasm0.1</TargetFramework>` to
    `<TargetFramework>net10.0-netwasm</TargetFramework>`, and replace `netwasm0.1` with

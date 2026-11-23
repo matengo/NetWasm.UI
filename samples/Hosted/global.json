@@ -4,6 +4,6 @@
     "rollForward": "latestFeature"
   },
   "msbuild-sdks": {
-    "NetWasm.Sdk": "0.15.1"
+    "NetWasm.Sdk": "0.15.2"
   }
 }
