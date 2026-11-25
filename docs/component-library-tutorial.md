@@ -8,7 +8,8 @@ suggest:
 3. **`MyUi.Theme`**, a design system: an `Expander` that wraps `Disclosure`, and a stylesheet.
 4. **An app** that uses both, first as projects and then as NuGet packages.
 
-The finished code is in this repository: `samples/Primitives.Kit` is the headless library,
+The finished code is in this repository: `src/NetWasm.UI.Primitives` (the `NwUi.Primitives`
+package) is the headless library,
 `samples/Primitives.Theme` the design system, `samples/Primitives` the app, and
 `tests/NetWasm.UI.Tests/KitTests.cs` the tests.
 
@@ -428,7 +429,7 @@ NetWasm.UI is 0.x, and a library should say which `NwUi` versions it supports.
 
 - [Building a headless library](headless-libraries.md): API conventions, compound components
   such as tabs, patterns for dialogs and menus, and an accessibility checklist.
-- `samples/Primitives.Kit/Tabs.cs`: a compound component whose parts share state through a context.
+- `src/NetWasm.UI.Primitives/Tabs.cs`: a compound component whose parts share state through a context.
 - [Templates](templates.md#events-on-components): events and generic components (`Select<TItem>`).
 - [Libraries and packages](libraries.md#your-own-libraries): target frameworks, assets and
   JavaScript modules.

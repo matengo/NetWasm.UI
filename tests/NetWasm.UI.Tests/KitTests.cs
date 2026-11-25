@@ -1,12 +1,12 @@
 using NetWasm.UI.Reactive;
-using Primitives.Kit;
+using NetWasm.UI.Primitives;
 using Primitives.Theme;
 using static NetWasm.UI.Html;
 
 namespace NetWasm.UI.Tests;
 
 /// <summary>
-/// The headless components in samples/Primitives.Kit and the design-system wrapper in samples/Primitives.Theme.
+/// The headless components in src/NetWasm.UI.Primitives (NwUi.Primitives) and the design-system wrapper in samples/Primitives.Theme.
 /// Both target netstandard2.1, so this net10.0 project uses them unchanged. docs/component-library-tutorial.md
 /// quotes these tests.
 /// </summary>

@@ -13,7 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" />
     <ProjectReference Include="..\..\src\NetWasm.UI.Browser\NetWasm.UI.Browser.csproj" />
-    <!-- A design system (Primitives.Theme) on a headless library (Primitives.Kit). The theme's stylesheet is an
+    <!-- A design system (Primitives.Theme) on a headless library (NwUi.Primitives). The theme's stylesheet is an
          NwUiAsset, linked from index.html by the build. -->
     <ProjectReference Include="..\Primitives.Theme\Primitives.Theme.csproj" />
     <!-- Compiles *.nwui templates into components at build time. -->

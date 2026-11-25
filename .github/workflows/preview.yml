@@ -1,0 +1,65 @@
+name: Preview packages
+
+# Every push to main that touches the libraries publishes preview packages to GitHub Packages, so component
+# libraries in other repositories can build against unreleased changes:
+#   https://nuget.pkg.github.com/matengo/index.json
+# Versions are the next minor with a CI suffix (0.16.0 released → 0.17.0-ci.<run>): they sort after the last
+# release and before the next, and stay outside a range such as [0.16.0, 0.17.0) that a library pins.
+# GitHub Packages needs a token with read:packages to restore, also
+# for public packages. See docs/headless-libraries.md#preview-packages.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tools/DevServer/**'
+      - 'Directory.Build.props'
+      - 'global.json'
+      - '.github/workflows/preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: preview
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Version
+        run: |
+          PREFIX=$(sed -n 's:.*<VersionPrefix>\(.*\)</VersionPrefix>.*:\1:p' Directory.Build.props)
+          IFS=. read -r MAJOR MINOR _ <<< "$PREFIX"
+          VERSION="$MAJOR.$((MINOR + 1)).0-ci.$GITHUB_RUN_NUMBER"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Preview version: $VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Unit tests
+        run: dotnet test tests/NetWasm.UI.Tests -c Release
+
+      - name: Pack
+        run: |
+          for p in src/NetWasm.UI src/NetWasm.UI.Browser src/NetWasm.UI.AspNetCore src/NetWasm.UI.Testing src/NetWasm.UI.Workers src/NetWasm.UI.Primitives tools/DevServer; do
+            dotnet pack "$p" -c Release -p:Version=$VERSION -o "$RUNNER_TEMP/feed"
+          done
+          ls -l "$RUNNER_TEMP/feed"
+
+      - name: Publish to GitHub Packages
+        run: |
+          dotnet nuget push "$RUNNER_TEMP/feed/*.nupkg" --api-key "${{ secrets.GITHUB_TOKEN }}" \
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --skip-duplicate
