@@ -1,7 +1,7 @@
 using System;
 using NetWasm.UI;
 using NetWasm.UI.Reactive;
-using Primitives.Kit;
+using NetWasm.UI.Primitives;
 using static NetWasm.UI.Html;
 
 namespace Primitives.Theme;

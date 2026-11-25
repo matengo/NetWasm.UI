@@ -3,7 +3,7 @@ using NetWasm.UI;
 using NetWasm.UI.Reactive;
 using static NetWasm.UI.Html;
 
-namespace Primitives.Kit;
+namespace NetWasm.UI.Primitives;
 
 /// <summary>
 /// A button that shows and hides a panel (the WAI-ARIA disclosure pattern). Headless: it renders the

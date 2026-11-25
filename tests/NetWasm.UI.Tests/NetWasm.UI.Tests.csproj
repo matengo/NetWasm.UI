@@ -16,7 +16,7 @@
     <ProjectReference Include="..\..\src\NetWasm.UI\NetWasm.UI.csproj" SetTargetFramework="TargetFramework=net10.0" />
     <ProjectReference Include="..\..\src\NetWasm.UI.Testing\NetWasm.UI.Testing.csproj" />
     <!-- netstandard2.1 component libraries (headless + theme), tested here as a library's own tests would. -->
-    <ProjectReference Include="..\..\samples\Primitives.Kit\Primitives.Kit.csproj" />
+    <ProjectReference Include="..\..\src\NetWasm.UI.Primitives\NetWasm.UI.Primitives.csproj" />
     <ProjectReference Include="..\..\samples\Primitives.Theme\Primitives.Theme.csproj" />
     <Using Include="NetWasm.UI.Testing" />
     <!-- Runs the .nwui generator on Templates/ and also exposes TemplateCompiler to the tests. -->

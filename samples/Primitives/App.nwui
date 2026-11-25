@@ -1,6 +1,6 @@
 @* Reference components built only on core primitives. None of them is part of NetWasm.UI itself. *@
 @using System.Linq
-@using Primitives.Kit
+@using NetWasm.UI.Primitives
 @using Primitives.Theme
 <main>
     <h1>Primitives</h1>

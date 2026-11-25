@@ -4,7 +4,7 @@ using NetWasm.UI;
 using NetWasm.UI.Reactive;
 using static NetWasm.UI.Html;
 
-namespace Primitives.Kit;
+namespace NetWasm.UI.Primitives;
 
 /// <summary>
 /// The root of a compound tabs component (the WAI-ARIA tabs pattern):
@@ -126,7 +126,7 @@ public sealed class TabPanel : Component
 /// <summary>What the parts of <see cref="Tabs"/> share. Internal: callers talk to the components only.</summary>
 internal sealed class TabsState
 {
-    public static readonly Context<TabsState> Context = new("Primitives.Kit.Tabs");
+    public static readonly Context<TabsState> Context = new("NetWasm.UI.Primitives.Tabs");
 
     private readonly string id;
     private readonly Action<string>? onChange;

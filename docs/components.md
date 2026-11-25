@@ -379,7 +379,7 @@ invisible and `tabindex="-1"` elements. They run after the pending DOM updates, 
 from `OnMount` to focus a panel that was just rendered. `Html.Focus(id)` focuses an element by
 the id `ActiveElementId()` returned, to give focus back when a panel closes. For a modal, use
 `<dialog>.showModal()`, which traps and restores focus natively. A focus scope with a trap and
-roving tabindex are library components built on these; see `samples/Primitives.Kit`
+roving tabindex are library components built on these; see `NwUi.Primitives`
 (`FocusScope`, `RovingFocus`) and [Building a headless library](headless-libraries.md).
 
 **Portal.** `Portal(target, content…)` (or `<Portal Target="body">…</Portal>` in a template)

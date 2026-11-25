@@ -86,4 +86,4 @@ These are not part of the public API and may change in any release:
 Do not depend on them. Use `createDomHost` and the documented options.
 
 Upgrade all NetWasm.UI packages and tools together. The template, `NwUi`,
-`NwUi.Browser` and `NwUi.DevServer` are released with the same version number.
+`NwUi.Browser`, `NwUi.Primitives` and `NwUi.DevServer` are released with the same version number.

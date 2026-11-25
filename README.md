@@ -60,6 +60,7 @@ namespaces are `NetWasm.UI`.
 | [`NwUi.DevServer`](https://www.nuget.org/packages/NwUi.DevServer) | `dotnet nwui-dev`: publishes, serves (Brotli, SPA fallback) and live-reloads. | In the template. Otherwise `dotnet tool install --local NwUi.DevServer`. |
 | [`NwUi.AspNetCore`](https://www.nuget.org/packages/NwUi.AspNetCore) | Hosts the app in ASP.NET Core next to your API: `MapNetWasmUI()`, live reload and client publishing. See [ASP.NET Core](docs/deployment.md#aspnet-core-with-an-api-on-the-same-origin). | `dotnet add package NwUi.AspNetCore` (in the server). |
 | [`NwUi.Workers`](https://www.nuget.org/packages/NwUi.Workers) (preview) | Typed C# Web Workers: a shared interface, `AddWorker<T>()` / `AddWorkerPool<T>()` and a source generator. See [Web Workers](docs/workers.md). | `dotnet add package NwUi.Workers` in the app, the worker and the contracts project. |
+| [`NwUi.Primitives`](https://www.nuget.org/packages/NwUi.Primitives) (preview) | Headless components for design systems: disclosure, compound tabs, focus scope and roving focus. See [Building a headless library](docs/headless-libraries.md#building-on-nwuiprimitives). | `dotnet add package NwUi.Primitives` in the component library or app. |
 | VS Code: *NetWasm.UI templates (.nwui)* | Syntax highlighting for `.nwui`. | See below. |
 
 ### VS Code extension
@@ -215,13 +216,13 @@ dotnet run --project samples/Hosted/Hosted.Server         # hosted in ASP.NET Co
 | `src/NetWasm.UI.Browser`     | Browser host: `[JSImport]` bindings and the `dom.mjs` decoder. `net10.0-netwasm` only. |
 | `src/NetWasm.UI.Generator`   | Roslyn source generator: `*.nwui` templates → `Component` partial classes. Ships inside the `NwUi` package. |
 | `src/NetWasm.UI.AspNetCore`  | `NwUi.AspNetCore`: hosting in ASP.NET Core, live reload and client publishing. |
+| `src/NetWasm.UI.Primitives`  | `NwUi.Primitives`: headless components (`netstandard2.1`): disclosure, compound tabs, focus scope. |
 | `samples/Counter`            | Demo app: counter, todos, routing, nested routes, forms and `/components`. |
 | `samples/Fetch`              | `HttpClient` + `System.Text.Json` with `Resource` and `Suspense`.    |
 | `samples/Widgets`            | Several independent apps (Wasm instances) on one page.              |
 | `samples/Interop`            | `[JSImport]`, `JSObject`, callbacks and Promises: a JS library in a component. |
 | `samples/Primitives`         | Reference components for a component library: dialog, popover, tabs, disclosure, generic select and data table. |
-| `samples/Primitives.Kit`     | A headless component library (`netstandard2.1`): disclosure, compound tabs, focus scope. |
-| `samples/Primitives.Theme`   | A design system on top of `Primitives.Kit`: wrapper components and a stylesheet asset. |
+| `samples/Primitives.Theme`   | A design system on top of `NwUi.Primitives`: wrapper components and a stylesheet asset. |
 | `samples/Tsp`                | Route optimizer (traveling salesman) in a pool of Web Workers; also on GitHub Pages at `/tsp/`. |
 | `samples/Hosted`             | ASP.NET Core server with a weather API hosting a prerendered client; uses only the NuGet packages. |
 | `site/`                      | The project website, built with NetWasm.UI and published to GitHub Pages. |

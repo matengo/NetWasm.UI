@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Headless components: behaviour, focus, keyboard, ARIA and data-state, no CSS. Design systems (in this
+       repository samples/Primitives.Theme, elsewhere their own repositories) style them. -->
+  <PropertyGroup>
+    <!-- netstandard2.1: one build serves browser apps (net10.0-netwasm), prerendering and NwUi.Testing (net10.0). -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>NetWasm.UI.Primitives</RootNamespace>
+    <PackageId>NwUi.Primitives</PackageId>
+    <Description>Headless components for NetWasm.UI: disclosure, tabs, focus scope and roving focus. Behaviour, keyboard and ARIA without styles, for design systems to build on.</Description>
+    <!-- Compares the package with the previous release and fails the pack on a breaking change. Set
+         PackageValidationBaselineVersion once a version of NwUi.Primitives is on nuget.org. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NetWasm.UI\NetWasm.UI.csproj" />
+  </ItemGroup>
+  <!-- A package reference to NwUi imports this file from buildTransitive; a project reference does not. -->
+  <Import Project="..\NetWasm.UI\build\NetWasm.UI.targets" />
+</Project>

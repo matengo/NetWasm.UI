@@ -1,5 +1,5 @@
-/* Primitives.Theme: a small design system on top of the headless Primitives.Kit. It styles the Kit's
-   ARIA and data-* attributes, so the Kit stays free of CSS. Shipped as an NwUiAsset and linked before
+/* Primitives.Theme: a small design system on top of the headless NwUi.Primitives. It styles the primitives'
+   ARIA and data-* attributes, so the primitives stay free of CSS. Shipped as an NwUiAsset and linked before
    the app's own styles, which win. Override the variables to rebrand. */
 :root {
   --ui-accent: #6a8cff;

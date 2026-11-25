@@ -1,4 +1,4 @@
-namespace Primitives.Kit;
+namespace NetWasm.UI.Primitives;
 
 /// <summary>
 /// Keyboard navigation for a roving-tabindex group (tabs, menus, toolbars): only the active item has

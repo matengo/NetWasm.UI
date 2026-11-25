@@ -6,6 +6,19 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+### Added
+
+- `NwUi.Primitives`, a new package with headless components for design systems: `Disclosure`,
+  compound `Tabs` (`TabList`, `Tab`, `TabPanel`), `FocusScope` and `RovingFocus`. They were
+  `samples/Primitives.Kit` and are now in `src/NetWasm.UI.Primitives`, in the
+  `NetWasm.UI.Primitives` namespace (was `Primitives.Kit`). The public API is tracked in
+  `PublicAPI.*.txt`, and pack validates the package. See
+  [Building on NwUi.Primitives](docs/headless-libraries.md#building-on-nwuiprimitives).
+- Preview packages: every push to `main` that changes the libraries publishes the `NwUi*`
+  packages to GitHub Packages as `<next minor>-ci.<run>`, so component libraries in other
+  repositories can build against unreleased changes. See
+  [Preview packages](docs/headless-libraries.md#preview-packages).
+
 ### Changed
 
 - The repository, samples and templates pin NetWasm.Sdk 0.15.2 (was 0.15.1).

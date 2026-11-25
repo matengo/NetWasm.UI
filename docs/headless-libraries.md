@@ -4,8 +4,9 @@ A headless library ships behaviour without looks: a dialog, a menu or tabs with 
 keyboard handling, focus moves and ARIA attributes, styled by the app or by a design-system
 library on top. This page shows which NetWasm.UI pieces such a library is built from, the
 conventions that make the components of different libraries look alike to callers, and the
-patterns for the common widgets. `samples/Primitives.Kit` is a small library built this way,
-`samples/Primitives.Theme` styles it, and `samples/Primitives` uses both. The kit targets
+patterns for the common widgets. [`NwUi.Primitives`](#building-on-nwuiprimitives)
+(`src/NetWasm.UI.Primitives`) is a small library built this way, `samples/Primitives.Theme` styles
+it, and `samples/Primitives` uses both. The primitives target
 `netstandard2.1`, so the same build runs in the browser and in `net10.0` tests; see
 [Your own libraries](libraries.md#your-own-libraries) for the project file.
 
@@ -26,6 +27,72 @@ A typical stack has three packages:
    Each design system is a separate package with its own CSS.
 3. **App**: references one design system (or the headless package and its own CSS), and
    overrides styles with its own stylesheet, which is linked after the libraries'.
+
+## Building on NwUi.Primitives
+
+`NwUi.Primitives` is a headless layer released with NetWasm.UI: `Disclosure`, compound `Tabs`
+(`TabList`, `Tab`, `TabPanel`), `FocusScope` and `RovingFocus`, in the `NetWasm.UI.Primitives`
+namespace. A design system can wrap these instead of writing its own, in its own repository:
+
+```xml
+<PackageReference Include="NwUi" Version="[0.17.0, 0.18.0)" />
+<PackageReference Include="NwUi.Primitives" Version="[0.17.0, 0.18.0)" />
+```
+
+`samples/Primitives.Theme` is a design system built this way, and the E2E and unit tests run it
+on every pull request, so a change to the primitives that breaks a design system shows up here first.
+
+**Compatibility.** `NwUi.Primitives` has the same version as `NwUi`, and you upgrade them
+together. Its public API is tracked in `PublicAPI.*.txt` like the other packages, and its pack
+validates the package against the previous release. In 0.x a minor release may still change it,
+with the change listed in the [CHANGELOG](../CHANGELOG.md). Cap the range as above (see
+[Versions](libraries.md#packaging-and-versioning)) and keep a table in the design system's README:
+
+| MyUi.Fluent | NwUi and NwUi.Primitives |
+|---|---|
+| 1.1.x | 0.18.x |
+| 1.0.x | 0.17.x |
+
+### Preview packages
+
+Every push to `main` that changes the libraries publishes the `NwUi*` packages (not the
+templates) to GitHub Packages, with the next minor version and a CI suffix: after the 0.16.0
+release they are `0.17.0-ci.<run>`. Use them to build a design system against changes before
+they are released. Add the feed in `nuget.config`:
+
+```xml
+<configuration>
+  <packageSources>
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+    <add key="nwui-preview" value="https://nuget.pkg.github.com/matengo/index.json" />
+  </packageSources>
+  <packageSourceCredentials>
+    <nwui-preview>
+      <add key="Username" value="%NWUI_FEED_USER%" />
+      <add key="ClearTextPassword" value="%NWUI_FEED_TOKEN%" />
+    </nwui-preview>
+  </packageSourceCredentials>
+</configuration>
+```
+
+GitHub Packages asks for a token even for public packages: a personal access token with
+`read:packages`, set in the environment and stored as a secret in CI. Make the version a property,
+so CI can build once against the range and once against the newest preview:
+
+```xml
+<PropertyGroup>
+  <NwUiVersion Condition="'$(NwUiVersion)' == ''">[0.17.0, 0.18.0)</NwUiVersion>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="NwUi" Version="$(NwUiVersion)" />
+  <PackageReference Include="NwUi.Primitives" Version="$(NwUiVersion)" />
+</ItemGroup>
+```
+
+```shell
+dotnet test                            # the supported release
+dotnet test -p:NwUiVersion='*-*'       # the newest version, previews included
+```
 
 ## Use the platform first
 
@@ -66,7 +133,7 @@ non-modal panel, comboboxes and data tables.
 ## API conventions
 
 Callers learn a library from one component and expect the rest to work the same. These are the
-conventions `Primitives.Kit` follows; a library that keeps them lets an app swap one design system
+conventions `NwUi.Primitives` follows; a library that keeps them lets an app swap one design system
 for another without rewriting its markup.
 
 **State: controlled, uncontrolled and a change callback.** Every piece of state a caller might
@@ -108,7 +175,7 @@ publish it through `data-state` so CSS can reach it from the root.
 ## Compound components
 
 A widget with several parts that the caller arranges (tabs, an accordion, a menu with its items)
-is a set of components that share state through a context. `samples/Primitives.Kit/Tabs.cs` has
+is a set of components that share state through a context. `src/NetWasm.UI.Primitives/Tabs.cs` has
 four: `Tabs` (the root), `TabList`, `Tab` and `TabPanel`. The caller writes the markup between them:
 
 ```html
@@ -127,7 +194,7 @@ The root creates the shared state and provides it; the parts use it:
 ```csharp
 internal sealed class TabsState
 {
-    public static readonly Context<TabsState> Context = new("Primitives.Kit.Tabs");
+    public static readonly Context<TabsState> Context = new("NetWasm.UI.Primitives.Tabs");
     // the selected value, the registered tabs in build order, ids from UseId…
 }
 
@@ -169,11 +236,11 @@ OnCleanup(() => state.Unregister(value));
   tabs nested in each other never see each other's state. Put the library in the name anyway: it
   is what the error message shows.
 - **A part outside its root throws** when it calls `Use`: `No value provided for context
-  'Primitives.Kit.Tabs'`. Say which root a part needs in its doc comment.
+  'NetWasm.UI.Primitives.Tabs'`. Say which root a part needs in its doc comment.
 
 ## Example: a focus scope
 
-`samples/Primitives.Kit/FocusScope.cs` keeps focus inside a non-modal panel. It needs no JavaScript:
+`src/NetWasm.UI.Primitives/FocusScope.cs` keeps focus inside a non-modal panel. It needs no JavaScript:
 
 ```csharp
 var previous = 0;
@@ -192,7 +259,7 @@ OnDocument("focusin", e => { if (!e.Inside) content.FocusFirst(); }, within: roo
 ```
 
 `RovingFocus.Move(key, from, count, vertical)` in the same folder is the arrow-key logic that tabs,
-menus and toolbars share; `samples/Primitives.Kit/Tabs.cs` uses it to move the selection and `Focus()`.
+menus and toolbars share; `src/NetWasm.UI.Primitives/Tabs.cs` uses it to move the selection and `Focus()`.
 
 ## State for styling
 
@@ -218,7 +285,7 @@ The [WAI-ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/patterns/) de
 states and keys of each widget; follow them, and test with a screen reader.
 
 **Disclosure and accordion.** A `button` with `aria-expanded` and `aria-controls`, and a panel
-that is `hidden` while closed (`samples/Primitives.Kit/Disclosure.cs`). An accordion is a list of
+that is `hidden` while closed (`src/NetWasm.UI.Primitives/Disclosure.cs`). An accordion is a list of
 disclosures; with "one open at a time", make it a compound component whose root keeps the open
 value, as `Tabs` does.
 
@@ -307,7 +374,7 @@ cover:
 - the keyboard: every key of the pattern, and wrapping at both ends,
 - that `class`, `id` and an `@on…` handler from the tag land on the root.
 
-`tests/NetWasm.UI.Tests/KitTests.cs` does this for the kit's `Disclosure`, `Tabs` and the theme's
+`tests/NetWasm.UI.Tests/KitTests.cs` does this for the primitives' `Disclosure`, `Tabs` and the theme's
 `Expander`, and `dotnet new netwasm-ui-lib` creates a test project with the same setup. Test CSS,
 layout, focus trapping by the browser and animations in a browser, as `tests/NetWasm.UI.E2E` does
 with Playwright.

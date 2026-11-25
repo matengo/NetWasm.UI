@@ -1,7 +1,7 @@
 using NetWasm.UI;
 using static NetWasm.UI.Html;
 
-namespace Primitives.Kit;
+namespace NetWasm.UI.Primitives;
 
 /// <summary>
 /// Manages focus for a panel that appears on top of the page (a menu, a non-modal dialog). Built only on core

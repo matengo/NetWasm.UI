@@ -118,11 +118,11 @@ public class TestRendererTests
     [Fact]
     public void Netstandard_library_component_traps_and_restores_focus()
     {
-        // Primitives.Kit targets netstandard2.1, so this net10.0 project consumes it unchanged.
+        // NwUi.Primitives targets netstandard2.1, so this net10.0 project consumes it unchanged.
         var open = new Signal<bool>(false);
         using var r = TestRenderer.Render(new Lambda(() => Div(
             Button(Attr("id", "opener"), On("click", () => open.Value = true), "open"),
-            When(() => open.Value, () => Div(new Primitives.Kit.FocusScope
+            When(() => open.Value, () => Div(new NetWasm.UI.Primitives.FocusScope
             {
                 Trap = true,
                 ChildContent = new Slot(() => new Content[]
