@@ -7,9 +7,11 @@
     <RootNamespace>NetWasm.UI.Primitives</RootNamespace>
     <PackageId>NwUi.Primitives</PackageId>
     <Description>Headless components for NetWasm.UI: disclosure, tabs, focus scope and roving focus. Behaviour, keyboard and ARIA without styles, for design systems to build on.</Description>
-    <!-- Compares the package with the previous release and fails the pack on a breaking change. Set
-         PackageValidationBaselineVersion once a version of NwUi.Primitives is on nuget.org. -->
+    <!-- Compares the package with the last release and fails the pack on a breaking change. Bump the
+         baseline after each release. An intended break in a 0.x minor: pack with
+         -p:GenerateCompatibilitySuppressionFile=true and commit CompatibilitySuppressions.xml. -->
     <EnablePackageValidation>true</EnablePackageValidation>
+    <PackageValidationBaselineVersion>0.17.0</PackageValidationBaselineVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NetWasm.UI\NetWasm.UI.csproj" />

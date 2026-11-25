@@ -95,6 +95,8 @@ rebuilt package with the same version.
 3. Push a tag `v<version>` (for example `v0.1.0`). `.github/workflows/release.yml` builds, tests,
    publishes the packages to NuGet and the extension to the VS Code Marketplace, and creates a
    GitHub release.
+4. Once the packages are on nuget.org, set `PackageValidationBaselineVersion` in
+   `src/NetWasm.UI.Primitives/NetWasm.UI.Primitives.csproj` to the released version.
 
 Publishing needs, once: a Trusted Publishing policy on nuget.org (owner `matengo`, repository
 `NetWasm.UI`, workflow file `release.yml`), the repository variable `NUGET_USER` (your nuget.org
