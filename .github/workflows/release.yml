@@ -55,6 +55,13 @@ jobs:
             || { echo "::error::NetWasmLib.Tests.csproj does not reference NwUi.Testing $VERSION"; exit 1; }
           grep -q "## \[$VERSION\]" CHANGELOG.md \
             || { echo "::error::CHANGELOG.md has no '## [$VERSION]' section"; exit 1; }
+          # The released API is shipped: every PublicAPI.Unshipped.txt holds only the header.
+          for f in src/*/PublicAPI.Unshipped.txt; do
+            if tr -d '\r' < "$f" | grep -qv -e '^#nullable enable$' -e '^[[:space:]]*$'; then
+              echo "::error file=$f::Move the lines in $f into PublicAPI.Shipped.txt"; FAIL=1
+            fi
+          done
+          [ -z "$FAIL" ] || exit 1
 
       - name: Unit tests
         run: dotnet test tests/NetWasm.UI.Tests -c Release

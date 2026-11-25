@@ -1,1 +1,4 @@
 #nullable enable
+Microsoft.AspNetCore.Builder.NetWasmUIWebApplicationExtensions
+static Microsoft.AspNetCore.Builder.NetWasmUIWebApplicationExtensions.MapNetWasmUI(this Microsoft.AspNetCore.Builder.WebApplication! app, string! clientPath = "client") -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static Microsoft.AspNetCore.Builder.NetWasmUIWebApplicationExtensions.UseNetWasmUIDevServer(this Microsoft.AspNetCore.Builder.WebApplication! app) -> Microsoft.AspNetCore.Builder.WebApplication!

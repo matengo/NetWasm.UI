@@ -87,8 +87,8 @@ rebuilt package with the same version.
 
 ### Releasing
 
-1. Update the [CHANGELOG](CHANGELOG.md) and move `PublicAPI.Unshipped.txt` into
-   `PublicAPI.Shipped.txt`.
+1. Update the [CHANGELOG](CHANGELOG.md) and move every `PublicAPI.Unshipped.txt` into
+   `PublicAPI.Shipped.txt`; `release.yml` stops if an `Unshipped` file has more than its header.
 2. Bump `VersionPrefix` in `Directory.Build.props`, and the versions the template pins in
    `templates/NetWasm.UI.Templates/templates/netwasm-ui/NetWasmApp.csproj` and
    `.config/dotnet-tools.json`.
