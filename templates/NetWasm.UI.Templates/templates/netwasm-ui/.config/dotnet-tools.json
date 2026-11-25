@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "nwui.devserver": {
-      "version": "0.16.0",
+      "version": "0.17.0",
       "commands": [ "nwui-dev" ],
       "rollForward": false
     }

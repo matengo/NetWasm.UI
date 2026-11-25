@@ -107,7 +107,7 @@ is the reference for the components themselves. This section covers the project 
     <RootNamespace>MyComponents</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NwUi" Version="0.16.0" />
+    <PackageReference Include="NwUi" Version="0.17.0" />
   </ItemGroup>
 </Project>
 ```
@@ -169,13 +169,13 @@ under `nwui-assets/` and a generated `build/` and `buildTransitive/MyUi.targets`
 them. `NwUi` becomes a dependency of the package. An app that uses the library still references
 `NwUi.Browser` itself, which brings the template compiler and the browser renderer.
 
-**Versions.** NetWasm.UI is 0.x, so a minor release (0.16 to 0.17) may change APIs. A
-`PackageReference` with `Version="0.16.0"` means "0.16.0 or later", so an app that moves to a newer
+**Versions.** NetWasm.UI is 0.x, so a minor release (0.17 to 0.18) may change APIs. A
+`PackageReference` with `Version="0.17.0"` means "0.17.0 or later", so an app that moves to a newer
 `NwUi` gets your library built against the older one. Either:
 
 - release a version of your library for each `NwUi` minor version and say in its README which one
   it needs, or
-- cap the range, `Version="[0.16.0, 0.17.0)"`, so NuGet reports a conflict instead of a build or
+- cap the range, `Version="[0.17.0, 0.18.0)"`, so NuGet reports a conflict instead of a build or
   runtime error when the versions do not match.
 
 Change your own major version when you rename or remove a public prop, a slot, a `data-*` or

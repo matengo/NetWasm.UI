@@ -6,6 +6,8 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-25
+
 ### Added
 
 - `NwUi.Primitives`, a new package with headless components for design systems: `Disclosure`,

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0
+
+- Version aligned with NwUi 0.17.0; no grammar changes.
+
 ## 0.16.0
 
 - Version aligned with NwUi 0.16.0; no grammar changes.

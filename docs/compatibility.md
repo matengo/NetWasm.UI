@@ -4,6 +4,7 @@
 
 | NetWasm.UI | NetWasm.Sdk | Target framework | .NET SDK |
 |---|---|---|---|
+| 0.17.x | 0.15.2 | `net10.0-netwasm` | 10.0.3xx or 11.0.x |
 | 0.16.x | 0.15.2 | `net10.0-netwasm` | 10.0.3xx or 11.0.x |
 | 0.15.x | 0.14.2 | `netwasm0.1` | 10.0.3xx or 11.0.x |
 | 0.14.x | 0.14.2 | `netwasm0.1` | 10.0.3xx or 11.0.x |
