@@ -5,9 +5,11 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Playwright;
 
-// Builds the NetWasm.UI, SolidJS, React and Blazor benchmark apps, serves them with Kestrel and measures them in Chromium.
+// Builds the NetWasm.UI, SolidJS, React and Blazor benchmark apps, serves them with Kestrel and measures them in Chromium
+// or Firefox.
 // Usage: dotnet run --project benchmarks/Runner -c Release -- [--runs N] [--skip-build] [--no-o3] [--no-aot] [--headed]
-//        [--gc NetWasm,Compact] [--apps netwasm-oz,solid] [--cases create,diamond,startup]
+//        [--browser chromium|firefox] [--gc NetWasm,Compact] [--apps netwasm-oz,solid] [--cases create,diamond,startup]
+// --browser picks the browser: Chromium, the one js-framework-benchmark uses, by default.
 // --gc adds an Oz app built with each named NetWasm collector (NetWasmGarbageCollector), to compare collectors.
 // --no-aot skips Blazor AOT, which needs the wasm-tools workload and takes minutes to build.
 // --apps and --cases narrow a run for quick iteration: apps by path, cases by any part of their name.
@@ -17,6 +19,7 @@ var skipBuild = false;
 var headed = false;
 var withO3 = true;
 var withAot = true;
+var browserName = "chromium";
 string[] collectors = [];
 string[]? onlyApps = null;
 string[]? onlyCases = null;
@@ -29,11 +32,18 @@ for (var i = 0; i < args.Length; i++)
         case "--headed": headed = true; break;
         case "--no-o3": withO3 = false; break;
         case "--no-aot": withAot = false; break;
+        case "--browser": browserName = args[++i]; break;
         case "--gc": collectors = args[++i].Split(','); break;
         case "--apps": onlyApps = args[++i].Split(','); break;
         case "--cases": onlyCases = args[++i].Split(','); break;
         default: Console.Error.WriteLine("Unknown option: " + args[i]); return 1;
     }
+}
+
+if (browserName is not ("chromium" or "firefox"))
+{
+    Console.Error.WriteLine("Unknown browser: " + browserName + " (chromium or firefox)");
+    return 1;
 }
 
 var root = FindRepoRoot();
@@ -155,13 +165,21 @@ await web.StartAsync();
 var baseUrl = web.Urls.First();
 
 using var playwright = await Playwright.CreateAsync();
-await using var browser = await playwright.Chromium.LaunchAsync(new()
-{
-    Headless = !headed,
-    Args = ["--js-flags=--expose-gc"],
-});
+await using var browser = browserName == "chromium"
+    ? await playwright.Chromium.LaunchAsync(new()
+    {
+        Headless = !headed,
+        Args = ["--js-flags=--expose-gc"],
+    })
+    // Firefox rounds performance.now() to 1 ms unless this is off. A page cannot force a collection there, so its
+    // runs start without the GC that Chromium's are given.
+    : await playwright.Firefox.LaunchAsync(new()
+    {
+        Headless = !headed,
+        FirefoxUserPrefs = new Dictionary<string, object> { ["privacy.reduceTimerPrecision"] = false },
+    });
 
-Console.WriteLine($"Chromium {browser.Version}, {runs} runs per case, median shown.\n");
+Console.WriteLine($"{(browserName == "chromium" ? "Chromium" : "Firefox")} {browser.Version}, {runs} runs per case, median shown.\n");
 
 // Each DOM case: setup clicks, the measured click, and a check that the DOM ended up as expected.
 // The setup is the warm-up js-framework-benchmark gives the same case, so every case is measured warmed up.
@@ -216,8 +234,8 @@ foreach (var (name, prep, click, check) in ops.Where(o => Selected(o.Name)))
                   const before2 = rows() >= 2 ? id(2) : 0;
                   const el = document.querySelector(sel);
                   // The collection js-framework-benchmark forces before each measured run (forceGC in
-                  // webdriver-ts/src/forkedBenchmarkRunnerPuppeteer.ts).
-                  window.gc({ type: 'major', execution: 'sync', flavor: 'last-resort' });
+                  // webdriver-ts/src/forkedBenchmarkRunnerPuppeteer.ts), where the browser offers one.
+                  window.gc?.({ type: 'major', execution: 'sync', flavor: 'last-resort' });
                   await new Promise(r => setTimeout(r, 20));
                   const t0 = performance.now();
                   el.click();
@@ -284,7 +302,7 @@ try
             {
                 var result = await pages[a].EvaluateAsync<double[]?>("""
                     name => {
-                      window.gc();
+                      window.gc?.();
                       const t0 = performance.now();
                       const c = window.bench.reactive(name);
                       return c === null ? null : [performance.now() - t0, c];

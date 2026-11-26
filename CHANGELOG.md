@@ -13,6 +13,11 @@ See [Compatibility and versioning](docs/compatibility.md).
   the next app's, so whatever drifted during a session, the machine or the browser, always fell on
   the app measured last.
 
+### Added
+
+- The benchmark runner measures in Firefox with `--browser firefox`, with `performance.now()` at
+  full resolution. Chromium stays the default, as in js-framework-benchmark.
+
 ## [0.17.0] - 2026-11-25
 
 ### Added
