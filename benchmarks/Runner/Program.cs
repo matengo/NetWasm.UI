@@ -430,6 +430,13 @@ async Task<IPage> OpenAsync(IBrowserContext context, string path)
     // warm-up (webdriver-ts/src/forkedBenchmarkRunnerPuppeteer.ts). Playwright's NetworkIdle is the same wait.
     await page.GotoAsync($"{baseUrl}/{path}/", new() { WaitUntil = WaitUntilState.NetworkIdle });
     await page.WaitForFunctionAsync("window.__ready !== undefined");
+    // The measured runs call window.gc only where it exists, as Firefox has none. Chromium must have it, or every run
+    // would silently skip the collection js-framework-benchmark forces.
+    if (browserName == "chromium" && !await page.EvaluateAsync<bool>("typeof window.gc === 'function'"))
+    {
+        throw new InvalidOperationException("window.gc is missing: launch Chromium with --js-flags=--expose-gc");
+    }
+
     return page;
 }
 
