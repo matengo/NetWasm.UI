@@ -172,6 +172,25 @@ public static class Html
         Attr("aria-live", "polite"),
         Text(() => field.ShownError));
 
+    /// <summary>
+    /// What <see cref="Bind(Field{string})"/> adds besides the value, for controls it does not cover: a number input
+    /// bound to a <c>Field&lt;int&gt;</c>, a <c>&lt;select&gt;</c> of enum values, the input of a custom component. Sets
+    /// <c>id</c>, marks the field touched on blur, sets <c>aria-invalid</c> and <c>aria-describedby</c> while an error
+    /// shows, and makes the element the one <see cref="Form.Submit(System.Action)"/> focuses when the field is the first
+    /// invalid one. Bind the value yourself:
+    /// <code>
+    /// Input(Type("number"), Value(() => age.Value.ToString()),
+    ///       OnInput(e => age.Value = int.TryParse(e.Value, out var n) ? n : 0), Spread(FieldAttributes(age)))
+    /// </code>
+    /// In a .nwui template: <c>@attributes="FieldAttributes(age)"</c>.
+    /// </summary>
+    public static Content[] FieldAttributes(FormField field) => new Content[]
+    {
+        Id(field.Id),
+        OnBlur(_ => field.MarkTouched()),
+        FieldAria(field),
+    };
+
     private static Attr FieldAria(FormField field) => UI.Attr.Custom(e =>
     {
         field.ElementId = e.Id;

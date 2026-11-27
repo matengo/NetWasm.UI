@@ -61,6 +61,25 @@ public class TestRendererTests
     }
 
     [Fact]
+    public void Field_attributes_in_a_template_wire_a_number_input()
+    {
+        var view = new AgeForm();
+        using var r = TestRenderer.Render(view);
+        var input = r.Find("input");
+        Assert.Equal(view.Age.Id, input.GetAttribute("id"));
+        Assert.Equal(view.Age.Id, r.Find("label").GetAttribute("for"));
+
+        r.Input(input, "12");
+        view.Form.Submit(() => { });
+
+        Assert.Equal(12, view.Age.Value);
+        Assert.Equal("true", input.GetAttribute("aria-invalid"));
+        Assert.Equal(view.Age.ErrorId, input.GetAttribute("aria-describedby"));
+        Assert.Equal("Must be 18 or over", r.Find(".field-error").Text);
+        Assert.Equal(input.GetAttribute("id"), r.Focused?.GetAttribute("id"));
+    }
+
+    [Fact]
     public void Finds_and_clicks_through_a_generated_component()
     {
         using var r = TestRenderer.Render(new Clicker());

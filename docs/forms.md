@@ -67,6 +67,24 @@ Generated ids are unique within one Wasm instance. When [several apps share a
 page](embedding.md), set `Id` explicitly in `OnInit`, before the field is rendered, so the
 instances do not collide.
 
+### Other field types
+
+`@bind` covers text (`Field<string>`) and checkboxes (`Field<bool>`). For any other control, such as
+a number input bound to a `Field<int>`, a `<select>` of enum values or the input of a custom
+component, bind the value yourself and add `FieldAttributes(field)`. It gives the control
+everything else `@bind` does: the `id`, touched on blur, the `aria-*` attributes, and the focus
+when a submit finds the field invalid.
+
+```razor
+<label for="@age.Id">Age</label>
+<input type="number" value="@age.Value"
+       @oninput="(DomEvent e) => age.Value = int.TryParse(e.Value, out var n) ? n : 0"
+       @attributes="FieldAttributes(age)" />
+@render(FieldError(age))
+```
+
+In C#: `Input(Type("number"), Value(() => age.Value.ToString()), OnInput(…), Spread(FieldAttributes(age)))`.
+
 ## Validators
 
 `Required`, `MinLength`, `MaxLength`, `Email`, `Digits`, `MustBeChecked` and `Must(predicate,

@@ -189,6 +189,39 @@ public class FormTests : RendererTest
     }
 
     [Fact]
+    public void Field_attributes_wire_a_control_that_bind_does_not_cover()
+    {
+        var form = new Form();
+        var name = form.Field("ok");
+        var age = form.Field(0, Validators.Must<int>(n => n >= 18, "Must be 18 or over"));
+        age.Id = "age";
+
+        App.Mount(new Lambda(() => El("form",
+            Input(Bind(name)),
+            Input(Type("number"), Value(() => age.Value.ToString()),
+                OnInput(e => age.Value = int.TryParse(e.Value, out var n) ? n : 0), Spread(FieldAttributes(age))),
+            FieldError(age))), "#app");
+        var input = Dom.QueryAll("input")[1];
+
+        Assert.Equal("age", input.Attributes["id"]);
+        Assert.False(input.Attributes.ContainsKey("aria-invalid"));
+
+        Fire(input, "input", "12");
+        Fire(input, "blur");
+        Assert.Equal(12, age.Value);
+        Assert.True(age.Touched);
+        Assert.Equal("true", input.Attributes["aria-invalid"]);
+        Assert.Equal("age-error", input.Attributes["aria-describedby"]);
+
+        Dom.Log.Clear();
+        form.Submit(() => { });
+        Assert.Contains(("Focus", input.Id.ToString()), Dom.Log);
+
+        Fire(input, "input", "21");
+        Assert.False(input.Attributes.ContainsKey("aria-invalid"));
+    }
+
+    [Fact]
     public void Bind_checkbox_field()
     {
         var accept = new Field<bool>(false, Validators.MustBeChecked("Accept"));

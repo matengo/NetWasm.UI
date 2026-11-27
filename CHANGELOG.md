@@ -19,6 +19,10 @@ See [Compatibility and versioning](docs/compatibility.md).
   and `TestElement.NamespaceUri` in `NwUi.Testing`. They use two new render ops,
   `CreateSvgElement` and `DefineSvgTemplate`, which `dom.mjs`, the prerenderer and `FakeDomHost`
   handle.
+- `Html.FieldAttributes(field)`: what `Bind(field)` adds besides the value (`id`, touched on blur,
+  `aria-invalid` and `aria-describedby`, and the element `Form.Submit` focuses), for controls
+  `Bind` does not cover, such as a number input bound to a `Field<int>` or a `<select>` of enum
+  values. In a template: `@attributes="FieldAttributes(age)"`.
 - The benchmark runner measures in Firefox with `--browser firefox`, with `performance.now()` at
   full resolution. Chromium stays the default, as in js-framework-benchmark.
 
