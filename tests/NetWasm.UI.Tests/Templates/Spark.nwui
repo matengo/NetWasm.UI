@@ -1,0 +1,4 @@
+@* A component meant to be rendered inside an <svg>: its own template is parsed on its own, so its root is an <svg>. *@
+<svg class="spark" x="0" y="0" width="20" height="10">
+    <circle class="spark-dot" cx="5" cy="5" r="2" />
+</svg>

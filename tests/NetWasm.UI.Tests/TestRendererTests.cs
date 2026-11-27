@@ -23,11 +23,15 @@ public class TestRendererTests
 
         Assert.Equal(SvgNamespace, r.Find("svg").NamespaceUri);
         Assert.Equal(SvgNamespace, r.Find("g.dots").NamespaceUri);
-        Assert.Equal(3, r.FindAll("circle").Count);
+        Assert.Equal(3, r.FindAll("g.dots circle").Count);
         Assert.All(r.FindAll("circle"), c => Assert.Equal(SvgNamespace, c.NamespaceUri));
         Assert.Equal(SvgNamespace, r.Find("rect.frame").NamespaceUri);
         Assert.Equal(HtmlNamespace, r.Find("div.note").NamespaceUri);
         Assert.Equal(HtmlNamespace, r.Find("figure").NamespaceUri);
+
+        // A component inside the <svg> whose own root is an <svg> (the documented way) renders SVG elements.
+        Assert.Equal(SvgNamespace, r.Find("svg.spark").NamespaceUri);
+        Assert.Equal(SvgNamespace, r.Find("circle.spark-dot").NamespaceUri);
 
         // The same markup is an SVG <a> inside the <svg> and an HTML <a> outside it.
         var links = r.FindAll("a");
@@ -39,7 +43,7 @@ public class TestRendererTests
         chart.Points.Value = new[] { 10, 30, 50, 70, 90 };
         chart.ShowFrame.Value = false;
         chart.ShowFrame.Value = true;
-        Assert.Equal(5, r.FindAll("circle").Count);
+        Assert.Equal(5, r.FindAll("g.dots circle").Count);
         Assert.All(r.FindAll("circle"), c => Assert.Equal(SvgNamespace, c.NamespaceUri));
         Assert.Equal(SvgNamespace, r.Find("rect.frame").NamespaceUri);
     }

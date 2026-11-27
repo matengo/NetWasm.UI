@@ -12,6 +12,7 @@
         @if (ShowFrame.Value) {
             <a href="#legend">legend</a>
         }
+        <Spark />
         <foreignObject width="100" height="10">
             @if (ShowFrame.Value) {
                 <div class="note">html again</div>
