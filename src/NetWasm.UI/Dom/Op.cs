@@ -40,6 +40,8 @@ public enum Op : byte
     RemoveAnimated = 28,  // id                 (sets data-state="closed", detaches once its animations finish)
     FocusEdge = 29,       // id, edge(u8: 0 first, 1 last)  (focus the first/last tabbable descendant; the element
                           // itself when it has none)
+    CreateSvgElement = 30, // id, tag           (an element in the SVG namespace)
+    DefineSvgTemplate = 31, // templateId, html (DefineTemplate for SVG content: parsed as if inside an <svg> element)
 }
 
 /// <summary>The target of <see cref="Op.AddGlobalListener"/>.</summary>

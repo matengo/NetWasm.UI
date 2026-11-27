@@ -33,6 +33,21 @@ public class HtmlTemplateTests : RendererTest
     }
 
     [Fact]
+    public void Svg_templates_and_svg_builder_elements_use_the_svg_ops()
+    {
+        var row = Template.Svg("<g $><circle r=\"1\"/><text><!--$--></text></g>");
+        App.Mount(new Host(() => SvgEl("svg", row.Clone().With(0, Class("row")).Text(1, "label").Root, El("span", "html"))), "#app");
+
+        Assert.True(Dom.Query("svg")!.Svg);
+        Assert.True(Dom.Query("g")!.Svg);
+        Assert.True(Dom.Query("circle")!.Svg);
+        Assert.Equal("text", Dom.Query("circle")!.Parent!.Children[1].Tag);
+        Assert.False(Dom.Query("span")!.Svg);
+        Assert.Contains(Dom.Log, entry => entry.Op == "CreateSvgElement");
+        Assert.Contains(Dom.Log, entry => entry.Op == "DefineSvgTemplate");
+    }
+
+    [Fact]
     public void Clone_renders_static_html_and_fills_holes()
     {
         var title = new Signal<string>("Hello");

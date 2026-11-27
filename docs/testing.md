@@ -65,7 +65,7 @@ write the DOM is already up to date.
 | `DispatchDocument`, `DispatchWindow` | Fire an event at a `Html.OnDocument` or `Html.OnWindow` listener directly |
 | `SetRect(element, rect)`, `Viewport` | Set what `Measure` returns and notify `Html.OnResize` observers |
 
-A `TestElement` has `Tag`, `Text`, `Html`, `Value`, `Attributes`, `GetAttribute`,
+A `TestElement` has `Tag`, `NamespaceUri`, `Text`, `Html`, `Value`, `Attributes`, `GetAttribute`,
 `GetProperty`, `Children`, `Parent`, `IsConnected` and its own `Find` and `FindAll`. Elements
 compare equal when they wrap the same node, so `Assert.Equal(r.Find("#a"), r.Focused)` works.
 

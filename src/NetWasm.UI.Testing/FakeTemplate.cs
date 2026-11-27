@@ -23,9 +23,11 @@ internal sealed class FakeTemplate
         this.holes = holes;
     }
 
-    public static FakeTemplate Parse(string html)
+    /// <summary>Parses template markup; <paramref name="svg"/> parses it as SVG content (Op.DefineSvgTemplate).</summary>
+    public static FakeTemplate Parse(string html, bool svg = false)
     {
-        var top = new FakeNode { Kind = "element", Tag = "#fragment" };
+        // As the HTML parser: <svg> starts SVG content and <foreignObject> inside it switches back to HTML.
+        var top = new FakeNode { Kind = "element", Tag = svg ? "svg" : "#fragment", Svg = svg };
         var stack = new Stack<FakeNode>();
         stack.Push(top);
         var holes = new List<FakeNode>();
@@ -80,7 +82,10 @@ internal sealed class FakeTemplate
                 i++;
             }
 
-            var el = new FakeNode { Kind = "element", Tag = html.Substring(nameStart, i - nameStart).ToLowerInvariant() };
+            var tagName = html.Substring(nameStart, i - nameStart).ToLowerInvariant();
+            var parent = stack.Peek();
+            var inSvg = parent.Svg ? parent.Tag != "foreignobject" : tagName == "svg";
+            var el = new FakeNode { Kind = "element", Tag = tagName, Svg = inSvg };
             var marked = false;
             while (html[i] != '>')
             {
@@ -130,6 +135,8 @@ internal sealed class FakeTemplate
                 }
             }
 
+            // "/>" closes a foreign (SVG) element; on an HTML element the parser ignores it.
+            var selfClosing = html[i - 1] == '/';
             i++;
             var isRoot = stack.Count == 1 && top.Children.Count == 0;
             Append(stack.Peek(), el);
@@ -138,7 +145,7 @@ internal sealed class FakeTemplate
                 holes.Add(el);
             }
 
-            if (!VoidTags.Contains(el.Tag))
+            if (!VoidTags.Contains(el.Tag) && !(selfClosing && el.Svg))
             {
                 stack.Push(el);
             }
@@ -165,7 +172,7 @@ internal sealed class FakeTemplate
 
     private static FakeNode Copy(FakeNode node, FakeNode? parent, Dictionary<FakeNode, FakeNode> map)
     {
-        var copy = new FakeNode { Kind = node.Kind, Tag = node.Tag, Text = node.Text, Parent = parent };
+        var copy = new FakeNode { Kind = node.Kind, Tag = node.Tag, Svg = node.Svg, Text = node.Text, Parent = parent };
         foreach (var (k, v) in node.Attributes)
         {
             copy.Attributes[k] = v;

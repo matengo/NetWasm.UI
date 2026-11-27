@@ -1,0 +1,14 @@
+@using NetWasm.UI.Forms
+@* A control that @bind does not cover (a number input bound to a Field<int>), wired with FieldAttributes. *@
+<form novalidate>
+    <label for="@Age.Id">Age</label>
+    <input type="number" value="@Age.Value" @oninput="(DomEvent e) => Age.Value = int.TryParse(e.Value, out var n) ? n : 0" @attributes="FieldAttributes(Age)" />
+    @render(FieldError(Age))
+</form>
+
+@code {
+    public Form Form { get; } = new();
+    public Field<int> Age { get; private set; } = null!;
+
+    partial void OnInit() => Age = Form.Field(0, Validators.Must<int>(n => n >= 18, "Must be 18 or over"));
+}

@@ -12,6 +12,73 @@ public class TestRendererTests
         protected override Node Build() => build();
     }
 
+    private const string SvgNamespace = "http://www.w3.org/2000/svg";
+    private const string HtmlNamespace = "http://www.w3.org/1999/xhtml";
+
+    [Fact]
+    public void Rows_and_blocks_inside_svg_are_svg_elements_and_foreign_object_switches_back()
+    {
+        var chart = new Chart();
+        using var r = TestRenderer.Render(chart);
+
+        Assert.Equal(SvgNamespace, r.Find("svg").NamespaceUri);
+        Assert.Equal(SvgNamespace, r.Find("g.dots").NamespaceUri);
+        Assert.Equal(3, r.FindAll("g.dots circle").Count);
+        Assert.All(r.FindAll("circle"), c => Assert.Equal(SvgNamespace, c.NamespaceUri));
+        Assert.Equal(SvgNamespace, r.Find("rect.frame").NamespaceUri);
+        Assert.Equal(HtmlNamespace, r.Find("div.note").NamespaceUri);
+        Assert.Equal(HtmlNamespace, r.Find("figure").NamespaceUri);
+
+        // A component inside the <svg> whose own root is an <svg> (the documented way) renders SVG elements.
+        Assert.Equal(SvgNamespace, r.Find("svg.spark").NamespaceUri);
+        Assert.Equal(SvgNamespace, r.Find("circle.spark-dot").NamespaceUri);
+
+        // The same markup is an SVG <a> inside the <svg> and an HTML <a> outside it.
+        var links = r.FindAll("a");
+        Assert.Equal(2, links.Count);
+        Assert.Equal(SvgNamespace, links[0].NamespaceUri);
+        Assert.Equal(HtmlNamespace, links[1].NamespaceUri);
+
+        // New rows and a re-shown block keep the namespace.
+        chart.Points.Value = new[] { 10, 30, 50, 70, 90 };
+        chart.ShowFrame.Value = false;
+        chart.ShowFrame.Value = true;
+        Assert.Equal(5, r.FindAll("g.dots circle").Count);
+        Assert.All(r.FindAll("circle"), c => Assert.Equal(SvgNamespace, c.NamespaceUri));
+        Assert.Equal(SvgNamespace, r.Find("rect.frame").NamespaceUri);
+    }
+
+    [Fact]
+    public void Svg_builder_elements_are_svg_and_el_stays_html()
+    {
+        using var r = TestRenderer.Render(new Lambda(() => SvgEl("svg", Attr("viewBox", "0 0 10 10"),
+            SvgEl("circle", Attr("r", "4")),
+            SvgEl("foreignObject", El("p", "html")))));
+
+        Assert.Equal(SvgNamespace, r.Find("svg").NamespaceUri);
+        Assert.Equal(SvgNamespace, r.Find("circle").NamespaceUri);
+        Assert.Equal(HtmlNamespace, r.Find("p").NamespaceUri);
+    }
+
+    [Fact]
+    public void Field_attributes_in_a_template_wire_a_number_input()
+    {
+        var view = new AgeForm();
+        using var r = TestRenderer.Render(view);
+        var input = r.Find("input");
+        Assert.Equal(view.Age.Id, input.GetAttribute("id"));
+        Assert.Equal(view.Age.Id, r.Find("label").GetAttribute("for"));
+
+        r.Input(input, "12");
+        view.Form.Submit(() => { });
+
+        Assert.Equal(12, view.Age.Value);
+        Assert.Equal("true", input.GetAttribute("aria-invalid"));
+        Assert.Equal(view.Age.ErrorId, input.GetAttribute("aria-describedby"));
+        Assert.Equal("Must be 18 or over", r.Find(".field-error").Text);
+        Assert.Equal(input.GetAttribute("id"), r.Focused?.GetAttribute("id"));
+    }
+
     [Fact]
     public void Finds_and_clicks_through_a_generated_component()
     {

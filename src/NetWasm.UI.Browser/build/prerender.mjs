@@ -267,7 +267,7 @@ function createPrerenderHost({ path, base }) {
     while (!r.done) {
       const op = r.u8();
       switch (op) {
-        case 1: { const id = r.i32(); nodes.set(id, element(r.str())); break; }
+        case 1: case 30: { const id = r.i32(); nodes.set(id, element(r.str())); break; }
         case 2: { const id = r.i32(); nodes.set(id, text(r.str())); break; }
         case 3: nodes.set(r.i32(), comment("")); break;
         case 4: { const n = nodes.get(r.i32()); n.data = r.str(); n.raw = false; break; }
@@ -328,7 +328,9 @@ function createPrerenderHost({ path, base }) {
         }
         case 16: r.i32(); break;
         case 29: r.i32(); r.u8(); break;
-        case 17: { const id = r.i32(); templates.set(id, defineTemplate(r.str())); break; }
+        // DefineSvgTemplate (31) as DefineTemplate: the page's HTML parser puts the serialized markup, which sits
+        // inside its <svg>, in the SVG namespace.
+        case 17: case 31: { const id = r.i32(); templates.set(id, defineTemplate(r.str())); break; }
         case 18: {
           const t = templates.get(r.i32());
           const first = r.i32();

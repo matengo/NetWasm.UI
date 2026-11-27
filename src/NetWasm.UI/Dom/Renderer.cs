@@ -84,10 +84,10 @@ public static class Renderer
 
     // ---- node creation ----
 
-    internal static int CreateElement(string tag)
+    internal static int CreateElement(string tag, bool svg = false)
     {
         var id = AllocateNodeId();
-        batch.Op(Op.CreateElement);
+        batch.Op(svg ? Op.CreateSvgElement : Op.CreateElement);
         batch.Int(id);
         batch.String(tag);
         return id;
@@ -110,9 +110,9 @@ public static class Renderer
         return id;
     }
 
-    internal static void DefineTemplate(int templateId, string html)
+    internal static void DefineTemplate(int templateId, string html, bool svg = false)
     {
-        batch.Op(Op.DefineTemplate);
+        batch.Op(svg ? Op.DefineSvgTemplate : Op.DefineTemplate);
         batch.Int(templateId);
         batch.String(html);
     }

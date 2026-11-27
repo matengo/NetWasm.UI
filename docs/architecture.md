@@ -70,6 +70,7 @@ Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs`, `build/prerend
 | Op | Operands | Note |
 |----|----------|------|
 | CreateElement / CreateText / CreateAnchor | id, tag / text / – | anchors are comment nodes used as insertion markers |
+| CreateSvgElement | id, tag | an element in the SVG namespace (`createElementNS`), from `Html.SvgEl` |
 | SetText, SetAttribute, RemoveAttribute, SetProperty, SetBoolProperty | id, … | |
 | AppendChild, InsertBefore | parent/reference, child | `InsertBefore` uses `reference.parentNode`; appending to a comment inserts before it (template insertion points) |
 | Remove / Release | id | `Remove` detaches but keeps the handle; `Release` drops it and its listeners |
@@ -79,6 +80,7 @@ Defined in `src/NetWasm.UI/Dom/Op.cs`; the decoders in `dom.mjs`, `build/prerend
 | Focus | id | |
 | FocusEdge | id, edge (u8: 0 = first, 1 = last) | focuses the first or last tabbable descendant (not disabled, not inert, visible), or the element itself if there is none |
 | DefineTemplate | templateId, html | parses the HTML into a `<template>` once and records the paths to its holes |
+| DefineSvgTemplate | templateId, html | `DefineTemplate` for SVG content (`Template.Svg`, and `.nwui` blocks inside an `<svg>`): the HTML is parsed inside an `<svg>` wrapper, which is then dropped, so its elements are SVG elements. `build/prerender.mjs` treats it as `DefineTemplate`, since the page's parser puts the serialized markup in the SVG namespace |
 | CloneTemplate | templateId, firstId | clones it; the root gets `firstId`, hole *i* gets `firstId + i` |
 | TemplateListener | templateId, hole, event, slot (u8), flags | the element at that hole of every clone listens for the event, with no op per clone. The event is dispatched to handler 0, with the clone's `firstId` (i32) and the slot before the event payload. See [Rows](#rows) |
 | SetTextInt | id, value (i32) | sets a text node to the decimal number, so C# builds no string |

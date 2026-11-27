@@ -17,6 +17,13 @@ public static class Html
 
     public static Element El(string tag, params Content[] content) => new(tag, content);
 
+    /// <summary>
+    /// An SVG element: <c>SvgEl("svg", Attr("viewBox", "0 0 10 10"), SvgEl("circle", Attr("r", "4")))</c>.
+    /// Use it for the <c>svg</c> element and everything inside it; an element made with <see cref="El"/> is an
+    /// HTML element, which the browser does not draw inside an <c>svg</c>.
+    /// </summary>
+    public static Element SvgEl(string tag, params Content[] content) => new(tag, svg: true, content);
+
     public static Element Div(params Content[] content) => new("div", content);
     public static Element Span(params Content[] content) => new("span", content);
     public static Element P(params Content[] content) => new("p", content);
@@ -164,6 +171,25 @@ public static class Html
         Class("field-error"),
         Attr("aria-live", "polite"),
         Text(() => field.ShownError));
+
+    /// <summary>
+    /// What <see cref="Bind(Field{string})"/> adds besides the value, for controls it does not cover: a number input
+    /// bound to a <c>Field&lt;int&gt;</c>, a <c>&lt;select&gt;</c> of enum values, the input of a custom component. Sets
+    /// <c>id</c>, marks the field touched on blur, sets <c>aria-invalid</c> and <c>aria-describedby</c> while an error
+    /// shows, and makes the element the one <see cref="Form.Submit(System.Action)"/> focuses when the field is the first
+    /// invalid one. Bind the value yourself:
+    /// <code>
+    /// Input(Type("number"), Value(() => age.Value.ToString()),
+    ///       OnInput(e => age.Value = int.TryParse(e.Value, out var n) ? n : 0), Spread(FieldAttributes(age)))
+    /// </code>
+    /// In a .nwui template: <c>@attributes="FieldAttributes(age)"</c>.
+    /// </summary>
+    public static Content[] FieldAttributes(FormField field) => new Content[]
+    {
+        Id(field.Id),
+        OnBlur(_ => field.MarkTouched()),
+        FieldAria(field),
+    };
 
     private static Attr FieldAria(FormField field) => UI.Attr.Custom(e =>
     {

@@ -39,6 +39,11 @@ internal sealed class TemplateEmitter
     private readonly List<string> templates = new();
     // Per template: its ".Listen(...)" calls (rows of an @foreach), or "" for a plain template.
     private readonly List<string> templateListeners = new();
+    // Per template: whether its markup is SVG content (it is cloned inside an <svg>; see Template.Svg).
+    private readonly List<bool> templateSvg = new();
+
+    // Whether the template being emitted is cloned inside an <svg> element (and not inside a <foreignObject>).
+    private bool svgContext;
 
     // The events a template can listen for: the ones dom.mjs delegates (Template.CanListen has the same list;
     // a test compares the three).
@@ -145,7 +150,12 @@ internal sealed class TemplateEmitter
         for (var i = 0; i < templates.Count; i++)
         {
             header.Append("    private static readonly global::NetWasm.UI.Template __nwT").Append(i.ToString(CultureInfo.InvariantCulture));
-            if (templateListeners[i].Length == 0)
+            if (templateSvg[i])
+            {
+                header.Append(" = global::NetWasm.UI.Template.Svg(").Append(Literal(templates[i])).Append(')')
+                    .Append(templateListeners[i]).Append(";\n");
+            }
+            else if (templateListeners[i].Length == 0)
             {
                 header.Append(" = new(").Append(Literal(templates[i])).Append(");\n");
             }
@@ -294,7 +304,7 @@ internal sealed class TemplateEmitter
         var html = new StringBuilder();
         var calls = new List<System.Action>();
         var holeCount = 0;
-        BuildTemplate(el, skip, isRoot: true, html, calls, ref holeCount);
+        BuildTemplate(el, skip, isRoot: true, html, calls, ref holeCount, svgContext);
 
         var index = TemplateIndex(html.ToString(), string.Empty);
         sb.Append("__nwT").Append(index.ToString(CultureInfo.InvariantCulture)).Append(".Clone()");
@@ -310,7 +320,7 @@ internal sealed class TemplateEmitter
     {
         for (var i = 0; i < templates.Count; i++)
         {
-            if (templates[i] == markup && templateListeners[i] == listeners)
+            if (templates[i] == markup && templateListeners[i] == listeners && templateSvg[i] == svgContext)
             {
                 return i;
             }
@@ -318,6 +328,7 @@ internal sealed class TemplateEmitter
 
         templates.Add(markup);
         templateListeners.Add(listeners);
+        templateSvg.Add(svgContext);
         return templates.Count - 1;
     }
 
@@ -334,7 +345,7 @@ internal sealed class TemplateEmitter
         var calls = new List<System.Action>();
         var holeCount = 0;
         var row = new RowParts();
-        BuildTemplate(root, key, isRoot: true, html, calls, ref holeCount, row);
+        BuildTemplate(root, key, isRoot: true, html, calls, ref holeCount, svgContext, row);
         var index = TemplateIndex(html.ToString(), row.Listeners.ToString());
 
         // With a typed loop variable every lambda parameter needs its type.
@@ -417,8 +428,13 @@ internal sealed class TemplateEmitter
         return false;
     }
 
-    private void BuildTemplate(TElement el, TAttribute? skip, bool isRoot, StringBuilder html, List<System.Action> calls, ref int holeCount, RowParts? row = null)
+    /// <param name="svg">Whether <paramref name="el"/> sits in SVG content: inside an <c>&lt;svg&gt;</c> and not inside a
+    /// <c>&lt;foreignObject&gt;</c>. Blocks and components inside it are emitted in the same context, so their
+    /// templates are SVG content too (<c>Template.Svg</c>).</param>
+    private void BuildTemplate(TElement el, TAttribute? skip, bool isRoot, StringBuilder html, List<System.Action> calls, ref int holeCount, bool svg, RowParts? row = null)
     {
+        var childSvg = (svg || string.Equals(el.Tag, "svg", System.StringComparison.OrdinalIgnoreCase))
+            && !string.Equals(el.Tag, "foreignObject", System.StringComparison.OrdinalIgnoreCase);
         var refName = RefOf(el, "global::NetWasm.UI.Element");
         var dynamic = new TElement(el.Tag);
         var statics = new List<TAttribute>();
@@ -620,7 +636,7 @@ internal sealed class TemplateEmitter
                 }
 
                 case TElement e when !e.IsComponent:
-                    BuildTemplate(e, null, isRoot: false, html, calls, ref holeCount, row);
+                    BuildTemplate(e, null, isRoot: false, html, calls, ref holeCount, childSvg, row);
                     break;
                 default:
                 {
@@ -629,7 +645,7 @@ internal sealed class TemplateEmitter
                     calls.Add(() =>
                     {
                         sb.Append(".With(").Append(h.ToString(CultureInfo.InvariantCulture)).Append(", ");
-                        EmitNode(child, nodePosition: false);
+                        InSvgContext(childSvg, () => EmitNode(child, nodePosition: false));
                         sb.Append(')');
                     });
                     break;
@@ -645,7 +661,8 @@ internal sealed class TemplateEmitter
                 for (var i = tail; i < children.Count; i++)
                 {
                     sb.Append(", ");
-                    EmitNode(children[i], nodePosition: false);
+                    var child = children[i];
+                    InSvgContext(childSvg, () => EmitNode(child, nodePosition: false));
                 }
 
                 sb.Append(')');
@@ -653,6 +670,20 @@ internal sealed class TemplateEmitter
         }
 
         html.Append("</").Append(el.Tag).Append('>');
+    }
+
+    private void InSvgContext(bool svg, System.Action emit)
+    {
+        var saved = svgContext;
+        svgContext = svg;
+        try
+        {
+            emit();
+        }
+        finally
+        {
+            svgContext = saved;
+        }
     }
 
     private static bool IsInsertable(TNode node) =>

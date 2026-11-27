@@ -1,1 +1,6 @@
 #nullable enable
+NetWasm.UI.Dom.Op.CreateSvgElement = 30 -> NetWasm.UI.Dom.Op
+NetWasm.UI.Dom.Op.DefineSvgTemplate = 31 -> NetWasm.UI.Dom.Op
+static NetWasm.UI.Html.FieldAttributes(NetWasm.UI.Forms.FormField! field) -> NetWasm.UI.Content[]!
+static NetWasm.UI.Html.SvgEl(string! tag, params NetWasm.UI.Content[]! content) -> NetWasm.UI.Element!
+static NetWasm.UI.Template.Svg(string! html) -> NetWasm.UI.Template!
