@@ -35,6 +35,12 @@ public sealed class PrimitivesTests : PageTest
         Assert.Equal([Svg, Svg, Svg, Svg], await Page.EvaluateAsync<string[]>(Namespaces, "#chart rect.bar"));
         Assert.Equal([Svg], await Page.EvaluateAsync<string[]>(Namespaces, "#average"));
         Assert.True(await Page.Locator("#average").EvaluateAsync<bool>("e => e.getBBox().width > 0"));
+
+        // A row's handler and its bound class work on SVG elements.
+        await Page.Locator("#chart rect.bar").Nth(2).DispatchEventAsync("click");
+        await Expect(Page.Locator("#selected-bar")).ToHaveTextAsync("bar 3");
+        await Expect(Page.Locator("#chart rect.selected")).ToHaveCountAsync(1);
+        Assert.Equal("bar selected", await Page.Locator("#chart rect.bar").Nth(2).GetAttributeAsync("class"));
     }
 
     [Fact]

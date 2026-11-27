@@ -105,7 +105,7 @@
         @* Rows and blocks inside an <svg> are SVG elements; a <foreignObject> holds HTML again. *@
         <svg id="chart" viewBox="0 0 100 40" width="200" height="80" role="img" aria-label="Bar chart">
             @foreach (var bar in Bars.Value) {
-                <rect class="bar" @key="bar" x="@((bar - 1) * 20 + 2)" y="@(40 - bar * 6)" width="16" height="@(bar * 6)" />
+                <rect class="@(SelectedBar.Value == bar ? "bar selected" : "bar")" @key="bar" x="@((bar - 1) * 20 + 2)" y="@(40 - bar * 6)" width="16" height="@(bar * 6)" @onclick="() => SelectedBar.Value = bar" />
             }
             @if (ShowAverage.Value) {
                 <line id="average" x1="0" x2="100" y1="20" y2="20" stroke="currentColor" />
@@ -114,6 +114,7 @@
                 <span id="chart-note">@Bars.Value.Count bars</span>
             </foreignObject>
         </svg>
+        <span id="selected-bar">@(SelectedBar.Value == 0 ? "none" : "bar " + SelectedBar.Value)</span>
         <button id="add-bar" type="button" @onclick="AddBar">Add bar</button>
         <button id="toggle-average" type="button" @onclick="() => ShowAverage.Value = !ShowAverage.Value">Average</button>
     </section>
@@ -137,6 +138,7 @@
 
     public Signal<IReadOnlyList<int>> Bars { get; } = new(new[] { 1, 2, 3 });
     public Signal<bool> ShowAverage { get; } = new(false);
+    public Signal<int> SelectedBar { get; } = new(0);
 
     private void AddBar() => Bars.Value = Bars.Value.Append(Bars.Value.Count + 1).ToArray();
 

@@ -378,7 +378,11 @@ export function createDomHost(options = {}) {
     const t = doc.createElement("template");
     t.innerHTML = trustedTemplateHtml(svg ? `<svg>${html}</svg>` : html);
     const content = t.content;
-    if (svg) content.replaceChildren(...content.firstChild.childNodes);
+    if (svg) {
+      // An HTML element such as <div> ends the parser's SVG content, so it lands outside the wrapper.
+      if (content.childNodes.length !== 1) throw new Error("NetWasm.UI: inside <svg>, a block's root must be an SVG element; put HTML in a <foreignObject>");
+      content.replaceChildren(...content.firstChild.childNodes);
+    }
 
     // JSX-like whitespace: text that is only whitespace and spans lines is layout, not content.
     const blank = [];
