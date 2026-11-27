@@ -97,6 +97,9 @@ using static NetWasm.UI.Html;
 - Each template, `@if`/`else` block and `@foreach` body must have exactly one root node. `@if` and
   `@foreach` must sit inside an element.
 - Literal attribute values are strings, so pass other types as code: `Step="@(2)"`, `Max="@max"`.
+- Markup inside an `<svg>` is SVG, `@if` and `@foreach` blocks included; a `<foreignObject>` holds
+  HTML again. A component's template is parsed on its own, as HTML, so a component meant to be
+  rendered inside an `<svg>` needs an `<svg>` root (nested `<svg>` elements are valid SVG).
 
 ## Rows of an `@foreach`
 

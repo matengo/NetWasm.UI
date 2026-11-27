@@ -100,6 +100,23 @@
             }
         </ul>
     </section>
+    <section id="svg-demo">
+        <h2>SVG</h2>
+        @* Rows and blocks inside an <svg> are SVG elements; a <foreignObject> holds HTML again. *@
+        <svg id="chart" viewBox="0 0 100 40" width="200" height="80" role="img" aria-label="Bar chart">
+            @foreach (var bar in Bars.Value) {
+                <rect class="bar" @key="bar" x="@((bar - 1) * 20 + 2)" y="@(40 - bar * 6)" width="16" height="@(bar * 6)" />
+            }
+            @if (ShowAverage.Value) {
+                <line id="average" x1="0" x2="100" y1="20" y2="20" stroke="currentColor" />
+            }
+            <foreignObject x="60" y="0" width="40" height="12">
+                <span id="chart-note">@Bars.Value.Count bars</span>
+            </foreignObject>
+        </svg>
+        <button id="add-bar" type="button" @onclick="AddBar">Add bar</button>
+        <button id="toggle-average" type="button" @onclick="() => ShowAverage.Value = !ShowAverage.Value">Average</button>
+    </section>
 </main>
 
 @code {
@@ -117,6 +134,11 @@
     public Signal<string> CaptureLog { get; } = new("");
 
     public Signal<bool> PanelOpen { get; } = new(false);
+
+    public Signal<IReadOnlyList<int>> Bars { get; } = new(new[] { 1, 2, 3 });
+    public Signal<bool> ShowAverage { get; } = new(false);
+
+    private void AddBar() => Bars.Value = Bars.Value.Append(Bars.Value.Count + 1).ToArray();
 
     public Signal<IReadOnlyList<int>> Toasts { get; } = new(System.Array.Empty<int>());
     private int nextToast;

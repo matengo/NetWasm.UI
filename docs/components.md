@@ -72,6 +72,10 @@ Elements: `Div`, `Span`, `P`, `H1`–`H3`, `Ul`, `Ol`, `Li`, `Button`, `Input`, 
 `Tbody`, `Tr`, `Th`, `Td`, `Select`, `Option`, `Textarea`, `Pre`, `Code`, `Img`, `Br`, `Hr`.
 Anything else: `El("article", …)`.
 
+SVG elements are made with `SvgEl`, the `<svg>` element and everything inside it:
+`SvgEl("svg", Attr("viewBox", "0 0 10 10"), SvgEl("circle", Attr("r", "4")))`. An element made with
+`El` is an HTML element, which the browser does not draw inside an `<svg>`.
+
 An `Element` you keep a reference to can be focused (`input.Focus()`) or given more content
 later (`el.Add(...)`).
 
@@ -220,6 +224,9 @@ The HTML must have one root element. Whitespace-only text that contains a line b
 dropped, as in templates. The template is sent to the browser once and then cloned with
 `cloneNode`, so creating a row costs one op plus one per hole instead of one per node.
 `.nwui` templates do this automatically.
+
+Markup that is cloned into an `<svg>`, such as a row of circles, is SVG content: create it with
+`Template.Svg("<circle $ r=\"1\"></circle>")`, so its elements are SVG elements.
 
 ## Events and delegation
 

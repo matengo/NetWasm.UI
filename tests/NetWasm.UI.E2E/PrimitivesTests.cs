@@ -18,6 +18,26 @@ public sealed class PrimitivesTests : PageTest
     }
 
     [Fact]
+    public async Task Rows_and_blocks_inside_svg_are_drawn_as_svg_elements()
+    {
+        await OpenPrimitivesAsync();
+        const string Namespaces = "sel => [...document.querySelectorAll(sel)].map(e => e.namespaceURI)";
+        const string Svg = "http://www.w3.org/2000/svg";
+
+        Assert.Equal([Svg, Svg, Svg], await Page.EvaluateAsync<string[]>(Namespaces, "#chart rect.bar"));
+        Assert.True(await Page.Locator("#chart rect.bar").First.EvaluateAsync<bool>("e => e.getBBox().height > 0"));
+        Assert.Equal(["http://www.w3.org/1999/xhtml"], await Page.EvaluateAsync<string[]>(Namespaces, "#chart-note"));
+
+        await Page.ClickAsync("#add-bar");
+        await Page.ClickAsync("#toggle-average");
+        await Expect(Page.Locator("#chart rect.bar")).ToHaveCountAsync(4);
+        await Expect(Page.Locator("#chart-note")).ToHaveTextAsync("4 bars");
+        Assert.Equal([Svg, Svg, Svg, Svg], await Page.EvaluateAsync<string[]>(Namespaces, "#chart rect.bar"));
+        Assert.Equal([Svg], await Page.EvaluateAsync<string[]>(Namespaces, "#average"));
+        Assert.True(await Page.Locator("#average").EvaluateAsync<bool>("e => e.getBBox().width > 0"));
+    }
+
+    [Fact]
     public async Task Library_stylesheet_asset_is_linked_before_the_app_styles_and_applied()
     {
         await OpenPrimitivesAsync();
