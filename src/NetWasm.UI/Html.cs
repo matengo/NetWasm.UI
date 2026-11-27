@@ -17,6 +17,13 @@ public static class Html
 
     public static Element El(string tag, params Content[] content) => new(tag, content);
 
+    /// <summary>
+    /// An SVG element: <c>SvgEl("svg", Attr("viewBox", "0 0 10 10"), SvgEl("circle", Attr("r", "4")))</c>.
+    /// Use it for the <c>svg</c> element and everything inside it; an element made with <see cref="El"/> is an
+    /// HTML element, which the browser does not draw inside an <c>svg</c>.
+    /// </summary>
+    public static Element SvgEl(string tag, params Content[] content) => new(tag, svg: true, content);
+
     public static Element Div(params Content[] content) => new("div", content);
     public static Element Span(params Content[] content) => new("span", content);
     public static Element P(params Content[] content) => new("p", content);

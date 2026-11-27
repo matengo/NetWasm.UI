@@ -18,6 +18,10 @@ public sealed class TestElement
     /// <summary>The tag name, e.g. <c>button</c>.</summary>
     public string Tag => Node.Tag;
 
+    /// <summary>The element's namespace: <c>http://www.w3.org/2000/svg</c> for SVG elements, otherwise
+    /// <c>http://www.w3.org/1999/xhtml</c> (as the browser's <c>namespaceURI</c>).</summary>
+    public string NamespaceUri => Node.Svg ? "http://www.w3.org/2000/svg" : "http://www.w3.org/1999/xhtml";
+
     /// <summary>The attributes. Boolean attributes have an empty value.</summary>
     public IReadOnlyDictionary<string, string> Attributes => Node.Attributes;
 

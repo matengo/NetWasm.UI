@@ -85,7 +85,13 @@ public sealed class Anchor : Node
 public sealed class Element : Node
 {
     public Element(string tag, params Content[] content)
-        : base(Renderer.CreateElement(tag))
+        : this(tag, svg: false, content)
+    {
+    }
+
+    /// <summary>An element in the SVG namespace when <paramref name="svg"/> is true (see <see cref="Html.SvgEl"/>).</summary>
+    internal Element(string tag, bool svg, Content[] content)
+        : base(Renderer.CreateElement(tag, svg))
     {
         Tag = tag;
         for (var i = 0; i < content.Length; i++)

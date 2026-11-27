@@ -15,8 +15,18 @@ See [Compatibility and versioning](docs/compatibility.md).
 
 ### Added
 
+- `Html.SvgEl` for SVG elements in builder code, `Template.Svg` for markup cloned into an `<svg>`,
+  and `TestElement.NamespaceUri` in `NwUi.Testing`. They use two new render ops,
+  `CreateSvgElement` and `DefineSvgTemplate`, which `dom.mjs`, the prerenderer and `FakeDomHost`
+  handle.
 - The benchmark runner measures in Firefox with `--browser firefox`, with `performance.now()` at
   full resolution. Chromium stays the default, as in js-framework-benchmark.
+
+### Fixed
+
+- `@if` and `@foreach` blocks inside an `<svg>` in `.nwui` templates render SVG elements. Their
+  templates were parsed on their own as HTML, so the browser did not draw them. The generator now
+  knows when a block sits inside an `<svg>` (and when a `<foreignObject>` switches back to HTML).
 
 ## [0.17.0] - 2026-11-25
 
