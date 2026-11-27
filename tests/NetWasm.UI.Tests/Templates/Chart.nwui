@@ -1,0 +1,29 @@
+@* SVG content: rows and blocks inside an <svg> are SVG elements; a <foreignObject> switches back to HTML. *@
+<figure>
+    <svg viewBox="0 0 100 10">
+        <g class="dots">
+            @foreach (var x in Points.Value) {
+                <circle @key="x" cx="@x" cy="5" r="1" />
+            }
+        </g>
+        @if (ShowFrame.Value) {
+            <rect class="frame" width="100" height="10" />
+        }
+        @if (ShowFrame.Value) {
+            <a href="#legend">legend</a>
+        }
+        <foreignObject width="100" height="10">
+            @if (ShowFrame.Value) {
+                <div class="note">html again</div>
+            }
+        </foreignObject>
+    </svg>
+    @if (ShowFrame.Value) {
+        <a href="#legend">legend</a>
+    }
+</figure>
+
+@code {
+    public Signal<IReadOnlyList<int>> Points { get; } = new(new[] { 10, 50, 90 });
+    public Signal<bool> ShowFrame { get; } = new(true);
+}

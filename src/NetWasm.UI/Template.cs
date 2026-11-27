@@ -48,15 +48,32 @@ public sealed class Template
     private int listenerCount;
 
     public Template(string html)
+        : this(html, svg: false)
+    {
+    }
+
+    private Template(string html, bool svg)
     {
         Html = html ?? throw new ArgumentNullException(nameof(html));
+        IsSvg = svg;
         Id = nextId++;
         Scan(html, out kinds, out tags);
     }
 
+    /// <summary>
+    /// A template of SVG content: its markup is parsed as if it were inside an <c>&lt;svg&gt;</c> element, so its
+    /// elements are SVG elements (a <c>&lt;foreignObject&gt;</c> switches back to HTML). Use it for markup that is
+    /// cloned into an <c>&lt;svg&gt;</c>, such as a row of circles; the .nwui generator does this for blocks inside
+    /// an <c>&lt;svg&gt;</c>.
+    /// </summary>
+    public static Template Svg(string html) => new(html, svg: true);
+
     internal int Id { get; }
 
     internal string Html { get; }
+
+    /// <summary>Whether the markup is SVG content (see <see cref="Svg"/>).</summary>
+    internal bool IsSvg { get; }
 
     /// <summary>Number of holes including the root (hole 0).</summary>
     public int HoleCount => kinds.Length;
@@ -74,7 +91,7 @@ public sealed class Template
     {
         if (definedIn != Renderer.Generation)
         {
-            Renderer.DefineTemplate(Id, Html);
+            Renderer.DefineTemplate(Id, Html, IsSvg);
             for (var slot = 0; slot < listenerCount; slot++)
             {
                 Renderer.TemplateListener(Id, listenerHoles![slot], listenerEvents![slot], slot, listenerFlags![slot]);

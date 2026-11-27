@@ -23,6 +23,19 @@ public partial class TemplateTests : RendererTest
     }
 
     [Fact]
+    public void Blocks_inside_svg_are_defined_as_svg_templates()
+    {
+        App.Mount(new Chart(), "#app");
+
+        Assert.All(Dom.QueryAll("circle"), c => Assert.True(c.Svg));
+        Assert.True(Dom.Query("rect")!.Svg);
+        Assert.False(Dom.Query("div")!.Svg);
+        Assert.False(Dom.Query("figure")!.Svg);
+        Assert.Contains(Dom.Log, entry => entry.Op == "DefineSvgTemplate");
+        Assert.Contains(Dom.Log, entry => entry.Op == "DefineTemplate");
+    }
+
+    [Fact]
     public void Greeting_renders_text_expressions_attributes_and_entities()
     {
         App.Mount(new Greeting { Name = "Ada" }, "#app");

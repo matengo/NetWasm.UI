@@ -40,10 +40,13 @@ const OP = {
   ReleaseBlock: 27,
   RemoveAnimated: 28,
   FocusEdge: 29,
+  CreateSvgElement: 30,
+  DefineSvgTemplate: 31,
 };
 
 const FLAG_PREVENT_DEFAULT = 1;
 const FLAG_STOP_PROPAGATION = 2;
+const SVG_NS = "http://www.w3.org/2000/svg";
 const FLAG_PREVENT_DEFAULT_PLAIN_CLICK = 4;
 const FLAG_CAPTURE = 8;
 const FLAG_PASSIVE = 16;
@@ -369,10 +372,13 @@ export function createDomHost(options = {}) {
   // Parses the HTML once. Holes (see NetWasm.UI.Template): the root, elements with a `$` attribute,
   // <!--$--> (becomes an empty text node) and <!--@--> (an insertion point), in document order.
   // The HTML is the compile-time template text from the .nwui generator, never user data.
-  function defineTemplate(id, html) {
+  // SVG content (Template.Svg) is parsed inside an <svg> element, so the parser puts it in the SVG namespace (and a
+  // <foreignObject> back in HTML); the wrapper is then dropped.
+  function defineTemplate(id, html, svg) {
     const t = doc.createElement("template");
-    t.innerHTML = trustedTemplateHtml(html);
+    t.innerHTML = trustedTemplateHtml(svg ? `<svg>${html}</svg>` : html);
     const content = t.content;
+    if (svg) content.replaceChildren(...content.firstChild.childNodes);
 
     // JSX-like whitespace: text that is only whitespace and spans lines is layout, not content.
     const blank = [];
@@ -616,9 +622,11 @@ export function createDomHost(options = {}) {
     while (!r.done) {
       const op = r.u8();
       switch (op) {
-        case OP.CreateElement: {
+        case OP.CreateElement:
+        case OP.CreateSvgElement: {
           const id = r.i32();
-          const n = doc.createElement(r.str());
+          const tag = r.str();
+          const n = op === OP.CreateElement ? doc.createElement(tag) : doc.createElementNS(SVG_NS, tag);
           n[idKey] = id;
           nodes[id] = n;
           break;
@@ -812,9 +820,10 @@ export function createDomHost(options = {}) {
           mounted.add(n);
           break;
         }
-        case OP.DefineTemplate: {
+        case OP.DefineTemplate:
+        case OP.DefineSvgTemplate: {
           const id = r.i32();
-          defineTemplate(id, r.str());
+          defineTemplate(id, r.str(), op === OP.DefineSvgTemplate);
           break;
         }
         case OP.CloneTemplate: {

@@ -1,1 +1,2 @@
 #nullable enable
+NetWasm.UI.Testing.TestElement.NamespaceUri.get -> string!

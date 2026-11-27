@@ -15,6 +15,9 @@ internal sealed class FakeDomHost : IDomHost, IDomQueries
         public int Id { get; set; }
         public string Kind { get; init; } = "";   // element | text | anchor
         public string Tag { get; init; } = "";
+
+        /// <summary>An element in the SVG namespace (as dom.mjs makes for Op.CreateSvgElement and SVG content).</summary>
+        public bool Svg { get; init; }
         public string Text { get; set; } = "";
         public Dictionary<string, string> Attributes { get; } = new();
         public Dictionary<string, object> Properties { get; } = new();
@@ -160,12 +163,13 @@ internal sealed class FakeDomHost : IDomHost, IDomQueries
             switch (op)
             {
                 case Op.CreateElement:
+                case Op.CreateSvgElement:
                 {
                     var id = ReadInt(ops, ref pos);
                     var tag = ReadString(ops, ref pos);
                     ExpectFree(id);
-                    Nodes[id] = new FakeNode { Id = id, Kind = "element", Tag = tag };
-                    Log.Add(("CreateElement", $"{id} {tag}"));
+                    Nodes[id] = new FakeNode { Id = id, Kind = "element", Tag = tag, Svg = op == Op.CreateSvgElement };
+                    Log.Add((op.ToString(), $"{id} {tag}"));
                     break;
                 }
                 case Op.CreateText:
@@ -404,11 +408,12 @@ internal sealed class FakeDomHost : IDomHost, IDomQueries
                     break;
                 }
                 case Op.DefineTemplate:
+                case Op.DefineSvgTemplate:
                 {
                     var id = ReadInt(ops, ref pos);
                     var html = ReadString(ops, ref pos);
-                    templates[id] = FakeTemplate.Parse(html);
-                    Log.Add(("DefineTemplate", $"{id} {html}"));
+                    templates[id] = FakeTemplate.Parse(html, svg: op == Op.DefineSvgTemplate);
+                    Log.Add((op.ToString(), $"{id} {html}"));
                     break;
                 }
                 case Op.TemplateListener:
